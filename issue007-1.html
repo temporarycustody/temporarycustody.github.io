@@ -614,7 +614,7 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
       ticks.forEach((i, k) => i.classList.toggle('cur', k === j));
       const hint = $('hint');
       if (!anim && idx === 0 && mode === 'step') {
-        hint.innerHTML = `<b>${VERB} to begin, with sound</b>` + (HOVER ? 'Click or &rarr; to go on &middot; &larr; to go back' : 'Tap to go on &middot; swipe right to go back') + `<br>${VERB} a chapter or a quotation to see the source`;
+        hint.innerHTML = `<b>${VERB} to begin, with sound</b>` + `${VERB} a chapter or a quotation to see the source`;
         hint.classList.add('on');
       } else if (!anim && idx === last && mode === 'step') { hint.innerHTML = `<b>${VERB} to begin again</b>`; hint.classList.add('on'); }
       else hint.classList.remove('on');
