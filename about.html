@@ -19,7 +19,7 @@ body{position:fixed;inset:0;-webkit-tap-highlight-color:transparent;touch-action
 #grain{position:absolute;inset:0;opacity:.55;pointer-events:none;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.44  0 0 0 0 0.40  0 0 0 .05 0'/></filter><rect width='240' height='240' filter='url(%23n)'/></svg>")}
 .pl{position:absolute;display:block;height:auto;transition:left .9s ease,top .9s ease,width .9s ease,opacity .9s ease;pointer-events:none}
-.pl.big{left:240px;top:90px;width:600px}
+.pl.big{width:var(--plw,454px);left:calc((1080px - var(--plw,454px)) / 2);top:calc(390px - var(--plw,454px) / 2)}
 .pl.small{left:435px;top:30px;width:210px}
 .pl.wide{left:370px;top:14px;width:340px}
 #pl{opacity:1}#pls{opacity:0}
@@ -116,6 +116,7 @@ body{position:fixed;inset:0;-webkit-tap-highlight-color:transparent;touch-action
     ui.classList.toggle('tall', tall); ui.classList.toggle('narrow', W < 600);
     stage.style.transform = `translate(${x}px,${y}px) scale(${s})`;
     Object.assign(ui.style, { left: x + 'px', top: y + 'px', width: 1080 * s + 'px', height: 1080 * s + 'px' });
+    stage.style.setProperty('--plw', (Math.min(Math.max(190, 0.42 * Math.min(W, H)), 460) / s) + 'px');   // the plate is never larger on screen than on the index
     ui.style.fontSize = Math.max(10.5, 13.5 * s) + 'px';
     $('hint').style.fontSize = Math.max(11.5, 17 * s) + 'px';
   }
