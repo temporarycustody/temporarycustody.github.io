@@ -594,7 +594,7 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
       fill.style.width = (j / last * 100) + '%';
       ticks.forEach((i, k) => i.classList.toggle('cur', k === j));
       const hint = $('hint');
-      if (!anim && idx === 0 && mode === 'step') {
+      if (!anim && !window.__goHold && idx === 0 && mode === 'step') {
         hint.innerHTML = `<b>${VERB} to begin, with sound</b>` + `${VERB} a chapter or a quotation to see the source`;
         hint.classList.add('on');
       } else if (!anim && idx === last && mode === 'step') { hint.innerHTML = `<b>${VERB} to begin again</b>`; hint.classList.add('on'); }
@@ -737,7 +737,17 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
     });
     document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') pause(); });
 
+    const GO = /^#go\b/.test(location.hash);
+    if (GO) { window.__goHold = true; t = ST[1].t0; }   // arrived from the index: hold on blank paper, no opening splash, no click gate
     show(t); announce(0);
+    if (GO) {
+      const tIdx = ST.findIndex(s => s.k === 'title');
+      const kick = () => { if (ctx && ctx.state !== 'running') ctx.resume(); };
+      ['pointerdown', 'keydown', 'touchend'].forEach(e => addEventListener(e, kick, { passive: true }));
+      const go = () => { window.__goHold = false; began = true; initAudio(); idx = 0; run(ST[1].t0, ST[tIdx].settle, tIdx, true); };
+      // the opening lines play on their own and settle on the title page; a click or key skips ahead as usual
+      if ($('ld')) { const iv = setInterval(() => { if (!$('ld')) { clearInterval(iv); go(); } }, 50); } else go();
+    }
     window.__ix = { advance, back, jumpTo, play, pause, state: () => ({ t, idx, mode, anim: !!anim, last, ctx: ctx ? ctx.state : null, beds: Object.keys(BED), evT: EV.length ? +EV[evCur].a.currentTime.toFixed(2) : null, evPaused: EV.length ? EV[evCur].a.paused : null }) };
   }
   const wait = () => window.__ready ? start() : setTimeout(wait, 30);
