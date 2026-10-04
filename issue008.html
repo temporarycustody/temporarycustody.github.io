@@ -590,7 +590,7 @@ document.fonts.ready.then(()=>{BUILD();buildUL();chartDots();window.__seek(0);wi
       const url = URL.createObjectURL(new Blob([b64('a_events')], { type: 'audio/mpeg' }));
       for (let k = 0; k < 2; k++) {
         const a = new Audio(); a.src = url; a.preload = 'auto'; a.setAttribute('playsinline', '');
-        const g = ctx.createGain(); g.gain.value = 0; ctx.createMediaElementSource(a).connect(g); g.connect(master);
+        const tr = ctx.createGain(); tr.gain.value = 1.4791; const g = ctx.createGain(); g.gain.value = 0; ctx.createMediaElementSource(a).connect(tr); tr.connect(g); g.connect(master);
         EV.push({ a, g, timer: 0 });
       }
       for (const [k, L] of Object.entries(IX.loops)) {
@@ -599,7 +599,7 @@ document.fonts.ready.then(()=>{BUILD();buildUL();chartDots();window.__seek(0);wi
           const ch = buf.getChannelData(0); let off = 0; while (off < 6000 && Math.abs(ch[off]) < 1e-4) off++;
           const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
           src.loopStart = off / buf.sampleRate; src.loopEnd = off / buf.sampleRate + L;
-          const g = ctx.createGain(); g.gain.value = 0; src.connect(g); g.connect(master); src.start(0, src.loopStart);
+          const tr = ctx.createGain(); tr.gain.value = ({"edge": 1.0965, "A": 0.9333, "B": 0.9226, "C": 1.0233, "fire": 0.9886, "oars": 0.8318})[k] || 1; const g = ctx.createGain(); g.gain.value = 0; src.connect(tr); tr.connect(g); g.connect(master); src.start(0, src.loopStart);
           BED[k] = g; if (k === curBed) g.gain.setTargetAtTime(BED_LEVEL, ctx.currentTime, 0.6);
         }, () => {});
       }
