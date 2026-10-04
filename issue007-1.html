@@ -622,15 +622,16 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
           const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
           src.loopStart = off / buf.sampleRate; src.loopEnd = off / buf.sampleRate + L;
           const g = ctx.createGain(); g.gain.value = 0; src.connect(g); g.connect(master); src.start(0, src.loopStart);
-          BED[k] = g; if (k === curBed) g.gain.setTargetAtTime(1, ctx.currentTime, 0.6);
+          BED[k] = g; if (k === curBed) g.gain.setTargetAtTime(BED_LEVEL, ctx.currentTime, 0.6);
         }, () => {});
       }
     }
     const segAt = tt => { let s = ST[0]; for (const x of ST) if (x.t0 <= tt + 1e-3) s = x; return s; };
+    const BED_LEVEL = 0.4;   // the looped background beds sit at 40% of full; events and everything else are untouched
     const bedType = s => s.bed;            // from the score's own bed map
     function bedUpdate(tt) {
       const k = bedType(segAt(tt)); if (k === curBed || !ctx) { curBed = k; return; } curBed = k;
-      for (const [n, g] of Object.entries(BED)) g.gain.setTargetAtTime(n === k ? 1 : 0, ctx.currentTime, k === null ? 0.35 : 0.9);
+      for (const [n, g] of Object.entries(BED)) g.gain.setTargetAtTime(n === k ? BED_LEVEL : 0, ctx.currentTime, k === null ? 0.35 : 0.9);
     }
     function evFade(e, d) {
       if (!e) return; clearTimeout(e.timer); const n = ctx.currentTime, g = e.g.gain;
