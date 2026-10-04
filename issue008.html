@@ -39,11 +39,10 @@ html,body{width:1080px;height:1080px;background:var(--paper);overflow:hidden}
 .tags{gap:10px 12px;align-items:center}
 .tag{position:relative;font-family:var(--mono);font-size:18px;line-height:1.3;letter-spacing:.03em;padding:6px 12px;white-space:nowrap}
 .tag.k1{color:var(--grey);border-top:1.5px solid var(--grey);border-bottom:1.5px solid var(--grey)}
-.tag.k2{color:var(--blue);border:1.5px solid var(--blue);outline:1px solid var(--blue);outline-offset:3px;padding-left:26px;margin:4px 4px}
-.tag.k3{color:var(--crimson);border:1.5px dotted var(--crimson);padding-left:26px;margin:4px 4px}
-.tag.k2::before,.tag.k3::before{content:"";position:absolute;left:0;top:0;bottom:0;width:10px;border-right:1.5px solid currentColor;background:repeating-linear-gradient(135deg,currentColor 0 1.3px,transparent 1.3px 4.2px)}
+.tag.k2{color:var(--blue);border:1.5px solid var(--blue);outline:1px solid var(--blue);outline-offset:3px;padding-left:14px;margin:4px 4px}
+.tag.k3{color:var(--crimson);border:1.5px dotted var(--crimson);padding-left:14px;margin:4px 4px}
 .does{left:84px;width:900px;padding-left:30px}
-.does::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:11px;border-left:1.5px solid var(--ink);border-right:1.5px solid var(--ink);background:repeating-linear-gradient(135deg,var(--ink) 0 1.3px,transparent 1.3px 4.2px)}
+.does::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:7px;border-left:1.5px solid var(--ink);border-right:1.5px solid var(--ink)}
 .does h4{font-family:var(--mono);font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin-bottom:8px}
 .does p{font-family:var(--prose);font-size:29px;line-height:1.46;color:var(--ink-mid)}
 
@@ -405,12 +404,12 @@ function BUILD(){
   const TOP=140, BOT=950;
   for(const s of segs.filter(s=>s.k==='beat')){ const ui=B[s.i]; const el=ui.el; el.style.opacity=1;
     if(ui.tags){ui.tags.style.opacity=1;} if(ui.does){ui.does.style.opacity=1;}
-    const H=()=>el.offsetHeight+(ui.tags?30+ui.tags.offsetHeight:0)+(ui.does?28+ui.does.offsetHeight:0);
+    const H=()=>el.offsetHeight+(ui.tags?56+ui.tags.offsetHeight:0)+(ui.does?40+ui.does.offsetHeight:0);
     let fs=parseFloat(getComputedStyle(el).fontSize);
     while(H()>BOT-TOP && fs>30){fs-=1;el.style.fontSize=fs+'px';}
     let y=Math.round(Math.max(TOP,(TOP+BOT)/2-H()/2-10)); s.top=y; s.h=el.offsetHeight; el.style.top=y+'px'; y+=el.offsetHeight;
-    if(ui.tags){y+=30;ui.tags.style.top=y+'px'; y+=ui.tags.offsetHeight;}
-    if(ui.does){y+=28;ui.does.style.top=y+'px'; y+=ui.does.offsetHeight;} s.bot=y;
+    if(ui.tags){y+=56;ui.tags.style.top=y+'px'; y+=ui.tags.offsetHeight;}
+    if(ui.does){y+=40;ui.does.style.top=y+'px'; y+=ui.does.offsetHeight;} s.bot=y;
     [el,ui.tags,ui.does].forEach(e=>e&&(e.style.opacity=0)); }
   for(const k of ['pair','swap','ladder']){const el=$(k);el.style.opacity=1;
     el.style.top=Math.round(Math.max(120,(1080-el.offsetHeight)/2-10))+'px'; el.style.opacity=0;}
