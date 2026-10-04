@@ -613,7 +613,7 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
       const url = URL.createObjectURL(new Blob([b64('a_events')], { type: 'audio/mpeg' }));
       for (let k = 0; k < 2; k++) {
         const a = new Audio(); a.src = url; a.preload = 'auto'; a.setAttribute('playsinline', '');
-        const g = ctx.createGain(); g.gain.value = 0; ctx.createMediaElementSource(a).connect(g); g.connect(master);
+        const tr = ctx.createGain(); tr.gain.value = 0.6683; const g = ctx.createGain(); g.gain.value = 0; ctx.createMediaElementSource(a).connect(tr); tr.connect(g); g.connect(master);
         EV.push({ a, g, timer: 0 });
       }
       for (const [k, L] of Object.entries(IX.loops)) {
@@ -622,7 +622,7 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
           const ch = buf.getChannelData(0); let off = 0; while (off < 6000 && Math.abs(ch[off]) < 1e-4) off++;
           const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
           src.loopStart = off / buf.sampleRate; src.loopEnd = off / buf.sampleRate + L;
-          const g = ctx.createGain(); g.gain.value = 0; src.connect(g); g.connect(master); src.start(0, src.loopStart);
+          const tr = ctx.createGain(); tr.gain.value = ({"edge": 1.5136, "cave": 1.2735, "fire": 0.9661, "day": 0.8035, "stream": 1.3032, "mouth": 1.2023})[k] || 1; const g = ctx.createGain(); g.gain.value = 0; src.connect(tr); tr.connect(g); g.connect(master); src.start(0, src.loopStart);
           BED[k] = g; if (k === curBed) g.gain.setTargetAtTime(BED_LEVEL, ctx.currentTime, 0.6);
         }, () => {});
       }
