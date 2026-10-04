@@ -737,7 +737,8 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
     });
     document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') pause(); });
 
-    const GO = /^#go\b/.test(location.hash);
+    const GO = /^#go\b/.test(location.hash) || window.name === 'tc-go';   // the index sets both when an essay link is followed
+    if (GO) window.name = '';
     if (GO) { window.__goHold = true; t = ST[1].t0; }   // arrived from the index: hold on blank paper, no opening splash, no click gate
     show(t); announce(0);
     if (GO) {

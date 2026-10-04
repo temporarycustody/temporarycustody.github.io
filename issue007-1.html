@@ -196,9 +196,9 @@ body{-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-sele
 #hint b{display:block;font-weight:400;color:var(--ink-mid)}
 #hint.on{opacity:1}
 #ctrl{position:absolute;right:3.2%;bottom:4.6%;display:flex;gap:1.6em;letter-spacing:.18em;text-transform:uppercase}
-#ctrl button{all:unset;cursor:pointer;color:var(--ink-faint);padding:.5em 0;transition:color .2s}
-#ctrl button:hover,#ctrl button:focus-visible{color:var(--ink)}
-#ctrl button:focus-visible{outline:1px solid var(--ink-faint);outline-offset:3px}
+#ctrl button,#ctrl a{all:unset;cursor:pointer;color:var(--ink-faint);padding:.5em 0;transition:color .2s}
+#ctrl button:hover,#ctrl button:focus-visible,#ctrl a:hover,#ctrl a:focus-visible{color:var(--ink)}
+#ctrl button:focus-visible,#ctrl a:focus-visible{outline:1px solid var(--ink-faint);outline-offset:3px}
 #ctrl button.on{color:var(--ink-mid)}
 #rail{position:absolute;left:0;right:0;bottom:0;height:18px;cursor:pointer}
 #rail .base{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--rule-hair)}
@@ -552,6 +552,7 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
   ui.innerHTML =
     `<div id="hint"></div>
      <div id="ctrl" class="hit">
+       <a id="bHome" href="index.html">Home</a>
        <button id="bBack" type="button" aria-label="Previous section">&lsaquo; Back</button>
        <button id="bParts" type="button" aria-haspopup="dialog">Parts</button>
        <button id="bPlay" type="button">Play</button>
@@ -660,7 +661,7 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
       ticks.forEach((i, k) => i.classList.toggle('cur', k === j));
       const hint = $('hint');
       if (!anim && !window.__goHold && idx === 0 && mode === 'step') {
-        hint.innerHTML = `<b>${VERB} to begin, with sound</b>` + (HOVER ? 'Click or &rarr; to go on &middot; &larr; to go back' : 'Tap to go on &middot; swipe right to go back') + `<br>${VERB} a chapter or a quotation to see the source`;
+        hint.innerHTML = `<b>${VERB} to begin, with sound</b>` + `${VERB} a chapter or a quotation to see the source`;
         hint.classList.add('on');
       } else if (!anim && idx === last && mode === 'step') { hint.innerHTML = `<b>${VERB} to begin again</b>`; hint.classList.add('on'); }
       else hint.classList.remove('on');
@@ -802,7 +803,8 @@ Promise.all(["400 20px 'Gentium Book Plus'","italic 400 20px 'Gentium Book Plus'
     });
     document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') pause(); });
 
-    const GO = /^#go\b/.test(location.hash);
+    const GO = /^#go\b/.test(location.hash) || window.name === 'tc-go';   // the index sets both when an essay link is followed
+    if (GO) window.name = '';
     if (GO) { window.__goHold = true; t = ST[1].t0; }   // arrived from the index: hold on blank paper, no opening splash, no click gate
     show(t); announce(0);
     if (GO) {
