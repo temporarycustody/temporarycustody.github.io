@@ -269,7 +269,16 @@ body{-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-sele
 #fctr .bx::before{display:none}
 #fbox{overflow:visible;background:none}
 #pbox svg,#fbox svg{overflow:visible}
-</style><style id="nocirc">#stage #intro .circ{display:none!important}#stage #intro .mast{margin-top:0}</style><style id="ldbar">#ld .ldx,#ldT,#ldR,#ldTT{display:none!important}#ldB{position:absolute;left:50%;top:79%;width:min(360px,52vw);height:3px;margin-left:calc(min(360px,52vw)/-2);background:#d9d7ce;overflow:hidden;transition:opacity .4s}#ldB i{display:block;height:100%;width:0;background:#111}#ld.out #ldB{opacity:0}</style></head>
+</style><style id="nocirc">#stage #intro .circ{display:none!important}#stage #intro .mast{margin-top:0}</style><style id="ldbar">#ld .ldx,#ldT,#ldR,#ldTT{display:none!important}#ldB{position:absolute;left:50%;top:79%;width:min(360px,52vw);height:3px;margin-left:calc(min(360px,52vw)/-2);background:#d9d7ce;overflow:hidden;transition:opacity .4s}#ldB i{display:block;height:100%;width:0;background:#111}#ld.out #ldB{opacity:0}</style><style id="fill">html,body{background:var(--paper)!important}
+#stage .ib{left:88px;width:904px;font-size:46px}
+#stage .beat{left:88px;width:904px;font-size:52px}
+#stage .beat.short{font-size:70px}
+#stage .psec,#stage .pmark{left:88px}
+#stage .tags{left:88px;width:904px}
+#stage .does{left:112px;width:864px}
+#stage .panel{left:88px;width:904px}
+@media (max-aspect-ratio:4/5){#stage .beat{font-size:61px}#stage .beat.short{font-size:80px}#stage .ib{font-size:54px}#stage .does p{font-size:35px}#stage .tags .tag,#stage .tag{font-size:22px}}
+</style></head>
 <body>
 <div id="ld"><div id="ldS"><div id="ldI"><div id="ldSc"><canvas data-puddle="load" width="900" height="600"></canvas></div><div class="ldx"><div class="pub">TEMPORARY CUSTODY</div><div class="iss">Issue 8</div></div></div></div><div id="ldU"><div id="ldB"><i></i></div><div id="ldT" role="status">Loading</div><div id="ldH"><a href="index.html">Home</a></div></div></div>
 <script id="ldbarjs">(function(){var f=document.querySelector("#ldB i"),t0=performance.now(),ld=document.getElementById("ld");(function k(){if(!f||!ld)return;var d=ld.classList.contains("out")||!document.body.contains(ld),T=window.__pudT0||t0,p=d?1:Math.max(0,Math.min(1,(performance.now()-T)/3500));f.style.width=(p*100)+"%";if(!d)requestAnimationFrame(k)})()})();</script><script>window.__whenReady=function(fn){var iv=setInterval(function(){if(document.readyState==="complete"){clearInterval(iv);fn()}},50)};</script><script id="puddlejs">
@@ -543,7 +552,7 @@ window.__seek=function(t){
   if(cur&&cur.g!==undefined){const tx=(cur.gn||GNAME[cur.g])+(cur.ch?' · '+cur.ch:''); {const hx=__psecHTML(cur.gn||GNAME[cur.g],cur.ch); if($('psec').__h!==hx){$('psec').innerHTML=hx;$('psec').__h=hx;}} SIG.push(tx);}
   put($('pmark'),'opacity',r3(cur&&cur.k==='beat'?fa:0).toString());
   if(cur&&cur.k==='beat'){const tx=`<b>¶${cur.i}</b>${DATA.names[cur.i]}`; if($('pmark').innerHTML!==tx)$('pmark').innerHTML=tx; SIG.push(tx);}
-  if(cur&&cur.k==='beat'){const top=cur.top,h=cur.h,pad=22,L=64-pad,R=64+952+pad-20,Bt=top+h+pad-20;
+  if(cur&&cur.k==='beat'){const top=cur.top,h=cur.h,pad=22,L=88-pad,R=88+904+pad-20,Bt=top+h+pad-20;
     [['rtl',L,top-pad],['rtr',R,top-pad],['rbl',L,Bt],['rbr',R,Bt]].forEach(([id,x,y])=>{put($(id),'left',x+'px');put($(id),'top',y+'px');put($(id),'opacity',r3(fa*0.9).toString());});}
   else ['rtl','rtr','rbl','rbr'].forEach(id=>put($(id),'opacity','0'));
   const pa=Math.max(t<=iS.t1?1:0, t>=eS.t0?oo(t,eS.t0,1.0):0);
