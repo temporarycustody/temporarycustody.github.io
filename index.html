@@ -5,10 +5,14 @@
   <title>Temporary Custody</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #faf9f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
-    #__bundler_loading { position: fixed; bottom: 20px; right: 20px; font: 13px/1.4 -apple-system, BlinkMacSystemFont, sans-serif; color: #666; background: #fff; padding: 8px 14px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 10000; }
-    #__bundler_thumbnail { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #faf9f5; z-index: 9999; }
-    #__bundler_thumbnail svg { width: 100%; height: 100%; object-fit: contain; }
+    body { background: #f2f1ea; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    #__bundler_loading { display: none; position: fixed; bottom: 20px; right: 20px; font: 13px/1.4 -apple-system, BlinkMacSystemFont, sans-serif; color: #666; background: #fff; padding: 8px 14px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 10000; }
+    #__bundler_thumbnail { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f2f1ea; z-index: 9999; }
+    #__bundler_thumbnail .tcl { position: relative; width: 140px; height: 2px; background: #d9d6ca; overflow: hidden; opacity: 0; animation: tclIn .5s ease .7s forwards; }
+    #__bundler_thumbnail .tcl::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; background: #1b1713; animation: tclRun 1.4s ease-in-out infinite; }
+    @keyframes tclIn { to { opacity: 1; } }
+    @keyframes tclRun { 0% { left: -40%; } 100% { left: 100%; } }
+    @media (prefers-reduced-motion: reduce) { #__bundler_thumbnail .tcl::after { animation: none; left: 0; width: 100%; } }
     #__bundler_placeholder { color: #999; font-size: 14px; }
   </style>
   <noscript>
@@ -19,14 +23,14 @@
   </noscript>
 </head>
 <body>
-  <div id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" sc-camel-view-box="0 0 120 84"><rect width="120" height="84" fill="#0e0e10"></rect><text x="60" y="48" font-family="Georgia,serif" font-weight="700" font-size="34" fill="#f2f1ec" text-anchor="middle">TC</text></svg></div>
+  <div id="__bundler_thumbnail"><div class="tcl"></div></div>
   <div id="__bundler_loading">Unpacking...</div>
 
   <script>
     
 document.addEventListener('DOMContentLoaded', async function() {
   const loading = document.getElementById('__bundler_loading');
-  function setStatus(msg) { if (loading) loading.textContent = msg; }
+  function setStatus(msg) { if (loading) { loading.textContent = msg; if (/^Error/.test(msg)) loading.style.display = 'block'; } }
 
   const FONT_MIME = /^(font[/]|application[/](x-)?font-|application[/]vnd\.ms-fontobject)/i;
   const MIME_TOKEN = /^[\w.+-]+[/][\w.+-]+$/;
