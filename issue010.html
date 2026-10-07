@@ -1141,5 +1141,16 @@ if(ui){const n=document.createElement('div');n.id='nxt';n.className='hit';n.setA
     n.classList.toggle('on',s.idx<s.last&&!s.anim)}catch(e){}},250)}
 })();
 </script>
+<style id="stamp9">#startStamp,#startStamp2{position:absolute;z-index:6;padding:14px 28px 12px;border:2.5px solid var(--blood);color:var(--blood);text-align:center;font:700 30px var(--mono);letter-spacing:.3em;text-transform:uppercase;line-height:1.2;mix-blend-mode:multiply;pointer-events:none;opacity:0;transition:opacity .5s;white-space:nowrap}
+#startStamp::before,#startStamp2::before{content:"";position:absolute;inset:5px;border:1px solid var(--blood);opacity:.75}
+#startStamp{left:50%;top:490px;transform:translateX(-50%) rotate(-4deg)}
+#startStamp2{left:50%;top:620px;width:150px;height:150px;margin-left:60px;padding:0;border-radius:50%;display:grid;place-items:center;transform:rotate(8deg);font-size:15px;letter-spacing:.3em;line-height:1.1}
+#startStamp2::before{border-radius:50%;inset:8px}
+#startStamp2 b{display:block;font:700 64px var(--prose);letter-spacing:0;margin:0}
+#startStamp2{border-color:#3d5a6b;color:#3d5a6b}
+#startStamp2::before{border-color:#3d5a6b}
+#startStamp.on,#startStamp2.on{opacity:.92}
+#intro .mast{visibility:hidden}</style><script>(function(){const st=document.getElementById('stage');if(!st)return;const a=document.createElement('div');a.id='startStamp';a.textContent='Temporary Custody';const b=document.createElement('div');b.id='startStamp2';b.innerHTML='<b>10</b>';st.appendChild(a);st.appendChild(b);
+setInterval(()=>{try{const s=window.__ix.state(),on=s.idx===0&&!s.anim;a.classList.toggle('on',on);b.classList.toggle('on',on)}catch(e){}},60)})();</script>
 </body>
 </html>
