@@ -928,5 +928,198 @@ function run(){
 try{run()}catch(e){console.log('elstd',e)}
 window.addEventListener('load',function(){try{run()}catch(e){}});
 })();
+</script><style id="plkcss">#plk{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .6s,visibility 0s .6s}
+#plk.on{opacity:1;visibility:visible;transition:opacity .6s}
+#plk canvas{position:absolute;left:0;top:0}
+#plkSign{position:absolute;left:50%;top:50%;width:min(300px,66vw);height:62px;margin:-31px 0 0 calc(min(300px,66vw)/-2);box-sizing:border-box;padding:0;border:2.5px solid #161616;border-radius:2px;
+ background-color:#f2ecdb;box-shadow:0 10px 0 #161616,0 11px 0 #161616,inset 0 0 0 4px #f2ecdb,inset 0 0 0 5px rgba(22,22,22,.55);text-shadow:0 1px 0 rgba(255,255,255,.7);color:#161616;font:400 15px/1 var(--mono,ui-monospace,Menlo,monospace);letter-spacing:.28em;text-indent:.28em;text-transform:uppercase;cursor:pointer;pointer-events:auto;will-change:transform;-webkit-tap-highlight-color:transparent}
+#plkSign::before,#plkSign::after{content:"";position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:#161616}
+#plkSign::before{left:12px}#plkSign::after{right:12px}
+#plkSign:hover,#plkSign:focus-visible{filter:brightness(1.05);outline:0}
+#plkSign:focus-visible{outline:1px solid #161616;outline-offset:6px}
+body.plk #hint{display:none!important}
+@media (max-width:520px){#plkSign{font-size:13px;letter-spacing:.2em;text-indent:.2em}}
+</style><script id="plkjs">(function () {
+  if (window.__plk) return; window.__plk = 1;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const VERB = matchMedia('(hover: hover)').matches ? 'Click' : 'Tap';
+  const root = document.createElement('div'); root.id = 'plk';
+  root.innerHTML = '<canvas></canvas><button id="plkSign" type="button">' + VERB + ' to begin</button>';
+  document.body.appendChild(root);
+  const cv = root.firstChild, g = cv.getContext('2d'), sign = document.getElementById('plkSign');
+  let W = 0, H = 0, dpr = 1, sc = 1, strokes = [], planks = [], wakes = [];
+  let seed = 11; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const ptr = { x: -999, y: -999, seen: 0, lx: -999, ly: -999 };
+  const SG = { x: 0, y: 0, vx: 0, vy: 0, a: 0, va: 0, w: 300, h: 62 };
+
+  function build() {
+    dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    sc = Math.max(.62, Math.min(1.25, Math.min(W, H * 1.35) / 900));
+    seed = 11; strokes = [];
+    const rs = 7.4 * sc;
+    for (let y = rs * .5; y < H + rs; y += rs) {
+      let x = -rnd() * 90; const near = y / H;
+      while (x < W) {
+        const len = (14 + rnd() * (50 + 90 * rnd())) * sc * (.75 + near * .7), gap = (8 + rnd() * 64) * sc;
+        strokes.push({ x, y: y + (rnd() - .5) * 2.4, l: len, c: rnd() < .55 ? 1 : 0, k: rnd() < .2 ? 1 : 0, p: rnd() * 6.28 });
+        x += len + gap;
+      }
+    }
+    const n = 0;
+    planks = []; const cx = W / 2, cy = H / 2;
+    for (let i = 0, tries = 0; i < n && tries < 400; tries++) {
+      const y = H * (.06 + rnd() * .78), s = .34 + .66 * Math.pow(y / H, 1.15), x = rnd() * W;
+      const len = (200 + rnd() * 130) * sc, wid = (36 + rnd() * 16) * sc;
+      if (Math.abs(x - cx) < (190 * sc + len * s * .5) && Math.abs(y - cy) < 90 * sc + wid * s) continue;
+      planks.push({ x, y, s, len, wid, ang: (rnd() - .5) * .5, base: 0, vx: 0, vy: 0, va: 0, ph: rnd() * 6.28, kind: rnd() < .35 ? 1 : 0, nails: rnd() < .6, sk: .25 + rnd() * .3, knot: rnd(), gr: 6 + Math.floor(rnd() * 3), lw: 0 });
+      planks[planks.length - 1].base = planks[planks.length - 1].ang; i++;
+    }
+    planks.sort((a, b) => a.y - b.y);
+    SG.w = sign.offsetWidth || 300; SG.h = sign.offsetHeight || 62; makeTex();
+  }
+
+  let tex = null;
+  function makeTex() {
+    tex = null; seed = 5;
+    // sign face: engraved wood grain
+    const sw = Math.round(SG.w), sh = Math.round(SG.h), c = document.createElement('canvas'); c.width = sw * 2; c.height = sh * 2; const f = c.getContext('2d'); f.scale(2, 2);
+    f.fillStyle = '#f2ecdb'; f.fillRect(0, 0, sw, sh); seed = 21;
+    for (let k = 0; k < 15; k++) { const y0 = rnd() * sh, a = 1 + rnd() * 2.5, fr = .01 + rnd() * .02, ph = rnd() * 6; f.strokeStyle = 'rgba(60,44,30,' + (.14 + rnd() * .3) + ')'; f.lineWidth = .5 + rnd() * .8; f.beginPath(); for (let x = 0; x <= sw; x += 4) { const y = y0 + Math.sin(x * fr + ph) * a; x ? f.lineTo(x, y) : f.moveTo(x, y); } f.stroke(); }
+    const kx = sw * (rnd() < .5 ? .1 + rnd() * .06 : .84 + rnd() * .06), ky = sh * (.3 + rnd() * .4); f.strokeStyle = 'rgba(60,44,30,.4)'; for (let r = 1; r <= 4; r++) { f.beginPath(); f.ellipse(kx, ky, r * 5, r * 2.2, 0, 0, 7); f.stroke(); }
+    for (let i = 0; i < 700; i++) { f.fillStyle = 'rgba(40,30,20,' + rnd() * .22 + ')'; f.fillRect(rnd() * sw, rnd() * sh, 1, 1); }
+    f.strokeStyle = 'rgba(30,24,20,.5)'; f.lineWidth = .6; for (let x = 0; x < sw; x += 4) { f.beginPath(); f.moveTo(x, sh); f.lineTo(x + 5, sh - 9); f.stroke(); }
+    sign.style.backgroundImage = 'url(' + c.toDataURL() + ')'; sign.style.backgroundSize = '100% 100%';
+  }
+  function addWake(x, y, t, A) { wakes.push({ x, y, b: t, A }); if (wakes.length > 80) wakes.shift(); }
+  function disp(x, y, t, p) {
+    let d = Math.sin(x * .011 * (1 / sc) + t * .9 + y * .05 + p) * 1.5 * sc + Math.sin(x * .027 / sc - t * 1.3 + p) * .7 * sc;
+    const R = 150 * sc, R2 = R * R, sg2 = 2 * (R * .5) * (R * .5);
+    for (let i = 0; i < wakes.length; i++) {
+      const w = wakes[i], dx = x - w.x, dy = y - w.y, d2 = dx * dx + dy * dy;
+      if (d2 > R2) continue;
+      const age = t - w.b, life = 1 - age / 2.4; if (life <= 0) continue;
+      d += w.A * life * Math.exp(-d2 / sg2) * Math.sin(Math.sqrt(d2) / (13 * sc) - age * 6) * 7 * sc;
+    }
+    return d;
+  }
+
+  const STY = [['rgba(88,84,170,.42)', .8], ['rgba(88,84,170,.55)', 1.5], ['rgba(52,52,70,.34)', .8], ['rgba(40,40,56,.46)', 1.4]];
+  function drawWater(t) {
+    const paths = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
+    for (let i = 0; i < strokes.length; i++) {
+      const s = strokes[i], x1 = s.x + s.l; if (x1 < 0 || s.x > W) continue;
+      const d0 = disp(s.x, s.y, t, s.p), dm = disp(s.x + s.l / 2, s.y, t, s.p), d1 = disp(x1, s.y, t, s.p);
+      const P = paths[(1 - s.c) * 2 + s.k];
+      P.moveTo(s.x, s.y + d0); P.quadraticCurveTo(s.x + s.l / 2, s.y + 2 * dm - (d0 + d1) / 2, x1, s.y + d1);
+    }
+    g.lineCap = 'round';
+    for (let k = 0; k < 4; k++) { g.strokeStyle = STY[k][0]; g.lineWidth = STY[k][1] * sc; g.stroke(paths[k]); }
+  }
+
+  function reflect(cx, cy, hw, t, s, n, col) {
+    g.strokeStyle = col; g.lineWidth = Math.max(.9, 1.5 * s);
+    for (let k = 0; k < n; k++) {
+      const yy = cy + k * 4.6 * s, w = hw * (1 - k * .13), o = Math.sin(t * 1.6 + k * 1.3 + cx * .01) * 5 * s;
+      g.beginPath(); g.moveTo(cx - w + o, yy); g.lineTo(cx + w + o, yy); g.stroke();
+    }
+  }
+
+  function drawPlank(p, t) {
+    const s = p.s, L = p.len * s, Wd = p.wid * s * .62, T = 9 * s * sc, sk = Wd * p.sk;
+    const by = Math.sin(t * 1.1 + p.ph) * 2.6 * s * sc, ba = Math.sin(t * .8 + p.ph) * .03;
+    const x = p.x, y = p.y + by;
+    reflect(x, y + Wd / 2 + T + 4 * s, L * .42, t, s, 4, 'rgba(88,84,170,.55)');
+    g.save(); g.translate(x, y); g.rotate(p.ang + ba);
+    const lw = Math.max(1, 1.7 * s);
+    const A = [-L / 2 + sk, -Wd / 2], B = [L / 2, -Wd / 2], C = [L / 2 - sk, Wd / 2], D = [-L / 2, Wd / 2];
+    let top = [A, B, C, D];
+    if (p.kind) { const j = Wd; top = [A, [L / 2 - j * .2, -Wd / 2], [L / 2 - j * .5, -Wd * .18], [L / 2 - j * .05, Wd * .05], [L / 2 - sk - j * .5, Wd * .32], [L / 2 - sk - j * .1, Wd / 2], D]; }
+    // front edge (thickness)
+    g.fillStyle = '#242323'; g.beginPath(); g.moveTo(D[0], D[1]); const rb = top[top.length - 2];
+    g.lineTo(rb[0], rb[1]); g.lineTo(rb[0], rb[1] + T); g.lineTo(D[0], D[1] + T); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(246,242,230,.5)'; g.lineWidth = Math.max(.6, .8 * s);
+    for (let k = 0; k < 5; k++) { const yy = D[1] + T * (k + 1) / 6; g.beginPath(); g.moveTo(D[0] + 4 * s, yy); g.lineTo(rb[0] - 4 * s, yy); g.stroke(); }
+    // top face
+    g.fillStyle = '#f4efe2'; g.strokeStyle = '#161616'; g.lineWidth = lw; g.lineJoin = 'round';
+    g.beginPath(); top.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.closePath(); g.fill(); g.stroke();
+    // grain
+    g.save(); g.beginPath(); top.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.closePath(); g.clip();
+    g.strokeStyle = 'rgba(40,30,22,.62)'; g.lineWidth = Math.max(.6, .85 * s);
+    for (let k = 1; k <= p.gr; k++) {
+      const yy = -Wd / 2 + Wd * k / (p.gr + 1), ph = k * 1.7 + p.ph; g.beginPath();
+      for (let i = 0; i <= 14; i++) { const xx = -L / 2 + L * i / 14, wy = yy + Math.sin(i * .9 + ph) * Wd * .035; i ? g.lineTo(xx, wy) : g.moveTo(xx, wy); }
+      g.setLineDash(k % 3 === 0 ? [L * .22, L * .05] : k % 2 ? [L * .6, L * .04] : []); g.stroke(); g.setLineDash([]);
+    }
+    // knot
+    const kx = -L * .25 + p.knot * L * .5, ky = (p.knot - .5) * Wd * .5;
+    for (let r = 1; r <= 3; r++) { g.beginPath(); g.ellipse(kx, ky, r * 3.4 * s * 1.5, r * 1.6 * s * 1.3, 0, 0, 7); g.stroke(); }
+    // engraved shading toward the front edge
+    g.strokeStyle = 'rgba(30,24,20,.55)'; g.lineWidth = Math.max(.6, .8 * s);
+    for (let xx = -L / 2; xx < L / 2; xx += 5.5 * s) { g.beginPath(); g.moveTo(xx, Wd / 2); g.lineTo(xx + Wd * .22, Wd / 2 - Wd * .34 * (.6 + .4 * Math.sin(xx * .05 + p.ph))); g.stroke(); }
+    g.restore();
+    if (p.nails) { g.fillStyle = '#161616'; [[-L / 2 + sk + 12 * s, 0], [L / 2 - sk - 14 * s - (p.kind ? Wd * .6 : 0), 0]].forEach((q) => { g.beginPath(); g.arc(q[0], q[1], Math.max(1.4, 2.2 * s), 0, 7); g.fill(); }); }
+    g.restore();
+  }
+
+  let last = 0, on = false, vel = 0;
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const t = now / 1000, dt = Math.min(.05, last ? t - last : .016); last = t;
+    if (!on) return;
+    const px = (t - ptr.seen < 4) ? ptr.x : -999, py = ptr.y, cx = W / 2, cy = H / 2;
+    // planks
+    for (const p of planks) {
+      const drift = -7 * p.s * sc;
+      p.vx += (drift - p.vx) * .7 * dt; p.vy += (0 - p.vy) * .9 * dt;
+      p.va += (p.base - p.ang) * .9 * dt; p.va *= (1 - 1.3 * dt);
+      const dx = p.x - px, dy = (p.y - py) * 1.5, d = Math.hypot(dx, dy), R = 150 * sc * (.55 + p.s * .6) + p.len * p.s * .25;
+      if (d < R && d > 1) { const f = Math.pow(1 - d / R, 2) * 1100 * sc; p.vx += dx / d * f * dt; p.vy += dy / d * f * dt * .5; p.va += (dy / d) * f * dt * .0016 * (dx > 0 ? 1 : -1); }
+      const rx = 190 * sc + p.len * p.s * .5, ry = 70 * sc + p.wid * p.s * .5, ex = (p.x - cx) / rx, ey = (p.y - cy) / ry, e2 = ex * ex + ey * ey;
+      if (e2 < 1) { const e = Math.sqrt(e2) || .01; const f = (1 - e) * 420 * sc; p.vx += ex / e * f * dt; p.vy += ey / e * f * dt * .8; }
+      p.x += p.vx * dt; p.y += p.vy * dt; p.ang += p.va * dt; p.ang = Math.max(-.75, Math.min(.75, p.ang));
+      if (p.x < -p.len) p.x = W + p.len * .5; if (p.x > W + p.len * 1.2) p.x = -p.len * .5;
+      if (p.y < H * .04) p.vy += 30 * dt; if (p.y > H * .85) p.vy -= 40 * dt;
+      const sp = Math.hypot(p.vx, p.vy); if (sp > 14 * sc && t - p.lw > .14) { p.lw = t; addWake(p.x - p.len * p.s * .1, p.y + p.wid * p.s * .3, t, .38); }
+    }
+    for (let i = 0; i < planks.length; i++) for (let j = i + 1; j < planks.length; j++) {
+      const a = planks[i], b = planks[j], dx = b.x - a.x, dy = (b.y - a.y) * 2.2, d = Math.hypot(dx, dy), m = (a.len * a.s + b.len * b.s) * .3;
+      if (d < m && d > 1) { const f = (1 - d / m) * 120; a.vx -= dx / d * f * dt; b.vx += dx / d * f * dt; a.vy -= dy / d * f * dt * .3; b.vy += dy / d * f * dt * .3; }
+    }
+    // sign
+    const sdx = (cx + SG.x) - px, sdy = (cy + SG.y - py) * 1.2, sd = Math.hypot(sdx, sdy), SR = 170 * sc + SG.w * .3;
+    SG.vx += -SG.x * 3.2 * dt; SG.vy += -SG.y * 3.2 * dt; SG.va += -SG.a * 4 * dt;
+    if (sd < SR && sd > 1) { const f = Math.pow(1 - sd / SR, 2) * 420; SG.vx += sdx / sd * f * dt; SG.vy += sdy / sd * f * dt * .5; SG.va += sdx / sd * f * dt * .0012; }
+    SG.vx *= (1 - 1.6 * dt); SG.vy *= (1 - 1.6 * dt); SG.va *= (1 - 2.2 * dt);
+    SG.x += SG.vx * dt; SG.y += SG.vy * dt; SG.a += SG.va * dt;
+    const bob = Math.sin(t * 1.15) * 3.4, tilt = Math.sin(t * .85 + 1) * .022 + SG.a;
+    sign.style.transform = 'translate(' + SG.x.toFixed(1) + 'px,' + (SG.y + bob).toFixed(1) + 'px) rotate(' + tilt.toFixed(4) + 'rad)';
+    if (Math.hypot(SG.vx, SG.vy) > 10 && t - (SG.lw || 0) > .16) { SG.lw = t; addWake(cx + SG.x, cy + SG.y + SG.h * .6, t, .45); }
+    wakes = wakes.filter((w) => t - w.b < 2.4);
+    // draw
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    drawWater(t); if (tex) g.drawImage(tex, 0, 0, W, H);
+    const sw = SG.w, sy = cy + SG.y + bob + SG.h / 2 + 18;
+    reflect(cx + SG.x, sy, sw * .42, t, 1, 5, 'rgba(88,84,170,.6)');
+    const items = planks.slice().sort((a, b) => a.y - b.y); items.forEach((p) => drawPlank(p, t));
+  }
+
+  addEventListener('pointermove', (e) => {
+    const t = performance.now() / 1000; ptr.x = e.clientX; ptr.y = e.clientY; ptr.seen = t;
+    if (Math.hypot(ptr.x - ptr.lx, ptr.y - ptr.ly) > 14 * sc) { addWake(ptr.x, ptr.y, t, 1); ptr.lx = ptr.x; ptr.ly = ptr.y; }
+  }, { passive: true });
+  addEventListener('pointerdown', (e) => { const t = performance.now() / 1000; ptr.x = e.clientX; ptr.y = e.clientY; ptr.seen = t; addWake(e.clientX, e.clientY, t, 1.4); }, { passive: true });
+  addEventListener('resize', () => { build(); if (reduce) still(); });
+
+  function poll() {
+    let want = false;
+    try { const st = window.__ix && window.__ix.state(); want = !!(st && st.idx === 0 && !st.anim && !document.getElementById('ld')); } catch (e) {}
+    if (want !== on) { on = want; root.classList.toggle('on', on); document.body.classList.toggle('plk', on); if (on && reduce) still(); }
+  }
+  function still() { wakes = []; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H); drawWater(99); if (tex) g.drawImage(tex, 0, 0, W, H); planks.slice().sort((a, b) => a.y - b.y).forEach((p) => drawPlank(p, 99)); }
+  build(); setInterval(poll, 120); poll();
+  if (!reduce) requestAnimationFrame(frame);
+  window.__plkDebug = { planks: () => planks, wake: addWake, ptr, build };
+})();
 </script></body>
 </html>
