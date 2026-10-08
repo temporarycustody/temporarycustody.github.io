@@ -1085,32 +1085,24 @@ window.addEventListener('load',function(){try{run()}catch(e){}});
 body.rs-on #hint{opacity:0!important}
 #ui{z-index:6}
 @media (prefers-reduced-motion: reduce){#rs{transition:none}}
+#rs canvas.fg{pointer-events:none}
+@media (pointer:fine){#rs{cursor:none}#rsSign{cursor:pointer}}
 </style><script id="rainstart-js">(function(){
 'use strict';
+/* Issue 1 start screen: rain only, plus a shelter (an umbrella or a folded newspaper) that follows the cursor,
+   or is dragged on a touch screen, and stops the rain that falls on it. Silent. */
+const MODE='umbrella';
 const PAPER='#efe7d2',INK='#17161a';
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const touch=matchMedia('(pointer: coarse)').matches;
 const ov=document.createElement('div');ov.id='rs';ov.setAttribute('aria-hidden','true');
-ov.innerHTML='<canvas></canvas><div class="mast"><b>Temporary Custody</b><i>Hard Rain Falling</i></div><div id="rsSign" aria-hidden="true" tabindex="-1">'+(touch?'Tap':'Click')+' to begin</div>';
+ov.innerHTML='<canvas></canvas><div class="mast"><b>Temporary Custody</b><i>Hard Rain Falling</i></div><div id="rsSign" aria-hidden="true" tabindex="-1">'+(touch?'Tap':'Click')+' to begin</div><canvas class="fg"></canvas>';
 document.body.appendChild(ov);
-const cv=ov.querySelector('canvas'),g=cv.getContext('2d'),sign=ov.querySelector('#rsSign');
-let W=0,H=0,dpr=1,sc=1,TW=0,baseY=0,gy0=0,backL=null,sprites=null,seed=5;
+const cvs=ov.querySelectorAll('canvas'),cv=cvs[0],fc=cvs[1],g=cv.getContext('2d'),f=fc.getContext('2d'),sign=ov.querySelector('#rsSign');
+let W=0,H=0,dpr=1,sc=1,gy0=0,seed=5;
 function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
 const rr=Math.random;
-
-function loadSprites(cb){let n=0;const arr=[];CL.forEach((u,i)=>{const im=new Image();im.onload=()=>{arr[i]=im;if(++n===CL.length){sprites=arr;cb()}};im.src=u})}
-function layer(w,h,items,wash,washA,top,bot){
-  const c=document.createElement('canvas');c.width=Math.ceil(w*dpr);c.height=Math.ceil(h*dpr);
-  const x=c.getContext('2d');x.scale(dpr,dpr);x.imageSmoothingQuality='high';
-  const gr=x.createLinearGradient(0,0,0,h);gr.addColorStop(0,top);gr.addColorStop(1,bot);x.fillStyle=gr;x.fillRect(0,0,w,baseY*.9);
-  items.sort((a,b)=>a.y-b.y);
-  for(const it of items){const im=sprites[it.i],dw=it.w,dh=dw*im.height/im.width;
-    for(const ox of [0,-w,w]){const X=it.x+ox;if(X+dw<0||X>w)continue;
-      x.save();x.translate(X+dw/2,it.y);x.scale(it.f?-1:1,1);x.drawImage(im,-dw/2,-dh,dw,dh);x.restore()}}
-  x.globalCompositeOperation='source-atop';x.globalAlpha=washA;x.fillStyle=wash;x.fillRect(0,0,w,h);
-  return c;
-}
-let drops=[],rings=[],sprays=[],gstrokes=[];
+let drops=[],rings=[],sprays=[],gstrokes=[],hits=[],drips=[],wet=[];
 function mk(init){
   const d=Math.pow(rr(),.8);
   const o={x:rr()*(W+160)-80,d:d,len:(26+d*46)*sc,sp:(900+d*900)*sc,wl:.10+rr()*.04};
@@ -1118,40 +1110,208 @@ function mk(init){
   o.y=init?(rr()*o.gy):-o.len-rr()*260*sc;
   return o;
 }
+/* ---- the shelter ---- */
+const S={x:0,y:0,tx:0,ty:0,vx:0,th:0,om:0,R:110,placed:false,poly:[],bb:[0,0,0,0],rim:[],edges:[]};
+function home(){S.tx=W*(W<700?.72:.76);S.ty=H*(W<700?.36:.42)+(MODE==='umbrella'?S.R*1.35:S.R*.1);if(!S.placed){S.x=S.tx;S.y=S.ty}}
 function build(){
   dpr=Math.min(1.5,devicePixelRatio||1);W=innerWidth;H=innerHeight;
-  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cv.style.width=W+'px';cv.style.height=H+'px';
+  for(const c of [cv,fc]){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);c.style.width=W+'px';c.style.height=H+'px'}
   sc=Math.max(.6,Math.min(1.3,Math.min(W,H*1.4)/900));
-  TW=Math.round(W*1.5);baseY=H*.46;gy0=H*.8;seed=5;
+  gy0=H*.8;seed=5;S.R=(MODE==='umbrella'?118:128)*sc*(W<700?1.05:1);
   const n=Math.round(Math.max(80,Math.min(110,W/13)));drops=[];
   for(let i=0;i<n;i++)drops.push(mk(true));
   gstrokes=[];const rs=7*sc;
   for(let y=gy0;y<H+rs;y+=rs){let x=-rnd()*80;while(x<W){const l=(16+rnd()*70)*sc;gstrokes.push({x:x,y:y+(rnd()-.5)*2,l:l,a:.25+.4*((y-gy0)/(H-gy0)),ph:rnd()*6.28});x+=l+(10+rnd()*60)*sc}}
+  if(!S.placed)home();
 }
-/* the start screen is silent; the study's own score begins on the first click, as in the other issues */
+function rot(px,py){const c=Math.cos(S.th),s=Math.sin(S.th);return [S.x+px*c-py*s,S.y+px*s+py*c]}
+function hull(pts){
+  pts=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  const lo=[],up=[];
+  for(const p of pts){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}
+  for(let i=pts.length-1;i>=0;i--){const p=pts[i];while(up.length>1&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p)}
+  up.pop();lo.pop();return lo.concat(up);
+}
+/* umbrella: a dome seen from a little above and to the front, eight ribs, a scalloped rim, a crook handle */
+const NR=8,PH0=.21;
+function uPt(r,ph){const R=S.R,h=R*.56,e=R*.24,L=R*1.32;
+  let rr_=r,sag=0;if(r>=.999){const s=Math.pow(Math.sin(NR/2*(ph-PH0)),2);rr_=1-.035*s;sag=.075*R*s}
+  return [R*rr_*Math.cos(ph),-L-h*(1-Math.pow(rr_,1.7))+e*rr_*Math.sin(ph)-sag]}
+function geomUmbrella(){
+  const pts=[];
+  for(let i=0;i<48;i++){const ph=i/48*6.2832;for(const r of [.25,.5,.75,.9,1])pts.push(uPt(r,ph))}
+  pts.push(uPt(0,0));
+  const hl=hull(pts);
+  // the hull's lower chain is replaced by the scalloped front rim
+  const rim=[];for(let i=0;i<=64;i++){rim.push(uPt(1,i/64*Math.PI))}
+  const top=hl.filter(p=>{const a=uPt(1,0),b=uPt(1,Math.PI);return p[1]<=Math.min(a[1],b[1])+S.R*.02});
+  top.sort((a,b)=>a[0]-b[0]);
+  const poly=rim.concat(top).map(p=>rot(p[0],p[1]));  // rim runs right to left, top left to right
+  S.poly=poly;S.rim=[];for(let k=0;k<NR;k++){const ph=PH0+k*6.2832/NR;if(Math.sin(ph)>-.05)S.rim.push(rot(...uPt(1,ph)))}
+}
+/* newspaper: a broadsheet folded once and held open over the head like a little roof, seen three-quarters on */
+const NA=-.55,NB=.5;
+function nPt(X,Y,D){const Z=-D,Yu=-Y,ca=Math.cos(NA),sa=Math.sin(NA);
+  const x=X*ca+Z*sa,z=-X*sa+Z*ca;return [x,-S.R*.38-Yu*Math.cos(NB)+z*Math.sin(NB)]}
+let PG=null;
+function geomPaper(){
+  const R=S.R,d=R*.8,w=R*.9,dr=R*.5;
+  const P={rf:nPt(0,0,-d),rb:nPt(0,0,d),lf:nPt(-w,dr,-d),lb:nPt(-w,dr,d),Rf:nPt(w,dr,-d),Rb:nPt(w,dr,d)};
+  for(const k in P)P[k]=rot(P[k][0],P[k][1]);
+  PG=P;S.poly=hull([P.rf,P.rb,P.lf,P.lb,P.Rf,P.Rb]);
+  S.edges=[[P.lf,P.lb],[P.Rf,P.Rb]];
+}
+function inPoly(x,y,p){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];
+  if(((a[1]>y)!==(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))c=!c}return c}
+function geom(){if(MODE==='umbrella')geomUmbrella();else geomPaper();
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const p of S.poly){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])}S.bb=[x0,y0,x1,y1]}
+/* page frame: an affine map from a 1000 x 650 page (y 0 at the outer edge) onto one half of the folded sheet */
+function frame_(side){const P=PG;
+  const ef=side?P.Rf:P.lf,eb=side?P.Rb:P.lb,rf=P.rf;
+  let O=ef,A=[eb[0]-ef[0],eb[1]-ef[1]];const B=[rf[0]-ef[0],rf[1]-ef[1]];
+  if(A[0]*B[1]-A[1]*B[0]<0){O=eb;A=[-A[0],-A[1]]}
+  return {O:O,A:A,B:B,set(c){c.setTransform(dpr*A[0]/1000,dpr*A[1]/1000,dpr*B[0]/650,dpr*B[1]/650,dpr*O[0],dpr*O[1])},
+    inv(x,y){const det=A[0]*B[1]-A[1]*B[0],dx=x-O[0],dy=y-O[1];return [(dx*B[1]-dy*B[0])/det*1000,(A[0]*dy-A[1]*dx)/det*650]}};
+}
+function textLines(c,x0,y0,x1,y1,gap,seedk){let s=seedk;const r=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296};
+  for(let y=y0;y<y1;y+=gap){const short=r()<.12;c.fillRect(x0,y,(x1-x0)*(short?.3+r()*.5:1),gap*.38)}}
+function drawPage(side){
+  const F=frame_(side);f.save();F.set(f);f.beginPath();f.rect(0,0,1000,650);f.clip();
+  f.fillStyle=side?'#f5efdd':'#e4dcc6';f.fillRect(0,0,1000,650);
+  f.fillStyle=INK;
+  if(side){
+    f.globalAlpha=.9;f.font='italic 700 92px Georgia,"Times New Roman",serif';f.textAlign='center';f.textBaseline='alphabetic';
+    f.fillText('Evening Edition',500,118);
+    f.fillRect(40,140,920,5);f.fillRect(40,152,920,2);
+    f.globalAlpha=.8;f.fillRect(48,178,380,34);f.fillRect(444,178,250,34);f.fillRect(710,178,240,34);
+    f.globalAlpha=.42;
+    const cols=[[48,220],[236,410],[428,600],[618,790],[808,952]];
+    cols.forEach((c,i)=>{if(i===2){f.globalAlpha=.55;for(let y=240;y<470;y+=7)f.fillRect(c[0],y,c[1]-c[0],2.6);f.globalAlpha=.42;textLines(f,c[0],490,c[1],640,13,i+7)}
+      else textLines(f,c[0],240,c[1],640,13,i+3)});
+  }else{
+    f.globalAlpha=.75;f.fillRect(48,40,300,26);f.fillRect(364,40,200,26);
+    f.globalAlpha=.42;
+    const cols=[[48,240],[260,450],[470,660],[680,952]];
+    cols.forEach((c,i)=>{if(i===3){f.globalAlpha=.5;for(let y=90;y<300;y+=7)f.fillRect(c[0],y,c[1]-c[0],2.6);f.globalAlpha=.42;textLines(f,c[0],320,c[1],620,13,i+11)}
+      else textLines(f,c[0],90,c[1],620,13,i+21)});
+  }
+  // the wet: blots where the rain has struck, which darken the sheet and do not dry while it is held up in the rain
+  f.globalAlpha=1;
+  for(const w of wet){if(w.side!==side)continue;f.fillStyle='rgba(23,22,26,'+(w.a*.55).toFixed(3)+')';f.beginPath();f.ellipse(w.x,w.y,w.r,w.r*.8,w.rot,0,6.2832);f.fill()}
+  if(!side){f.globalAlpha=.22;f.fillStyle=INK;f.fillRect(0,0,1000,650);f.globalAlpha=.25;f.strokeStyle=INK;f.lineWidth=2;
+    for(let x=-650;x<1000;x+=16){f.beginPath();f.moveTo(x,650);f.lineTo(x+650,0);f.stroke()}}
+  f.restore();f.save();F.set(f);f.globalAlpha=1;f.strokeStyle=INK;f.lineWidth=3;f.strokeRect(0,0,1000,650);f.restore();
+  f.setTransform(dpr,0,0,dpr,0,0);
+  return F;
+}
+let FR=[null,null];
+function drawPaper(){
+  // the far half first, then the near half, then the fold
+  FR[0]=drawPage(0);FR[1]=drawPage(1);
+  f.strokeStyle=INK;f.lineWidth=1.8*sc;f.lineCap='round';f.beginPath();f.moveTo(...PG.rf);f.lineTo(...PG.rb);f.stroke();
+}
+function drawUmbrella(){
+  const R=S.R,L=R*1.32;
+  // shaft and crook
+  f.lineCap='round';f.strokeStyle=INK;f.lineWidth=2.6*sc;
+  f.beginPath();f.moveTo(...rot(0,-L+R*.05));f.lineTo(...rot(0,R*.02));f.stroke();
+  f.lineWidth=5.2*sc;f.beginPath();
+  const hr=R*.11;for(let i=0;i<=20;i++){const a=i/20*Math.PI;const p=rot(-hr+hr*Math.cos(a),R*.02+hr*Math.sin(a));i?f.lineTo(...p):f.moveTo(...p)}f.stroke();
+  f.lineWidth=6*sc;f.beginPath();f.moveTo(...rot(0,R*.02));f.lineTo(...rot(0,-R*.22));f.stroke();
+  // canopy
+  f.fillStyle=INK;f.beginPath();S.poly.forEach((p,i)=>i?f.lineTo(...p):f.moveTo(...p));f.closePath();f.fill();
+  // ribs, in hairline paper colour, brighter on the side the light comes from
+  f.lineWidth=.9;
+  for(let k=0;k<NR;k++){const ph=PH0+k*6.2832/NR;const lit=Math.cos(ph)<0;
+    f.strokeStyle='rgba(239,231,210,'+(lit?.5:.22)+')';f.beginPath();
+    for(let i=0;i<=16;i++){const p=rot(...uPt(i/16*.999,ph));i?f.lineTo(...p):f.moveTo(...p)}f.stroke()}
+  // the engraved sheen: fine strokes along the near-left panels
+  f.strokeStyle='rgba(239,231,210,.18)';f.lineWidth=.8;
+  for(let j=0;j<7;j++){const r=.35+j*.08;f.beginPath();for(let i=0;i<=14;i++){const ph=Math.PI*.55+i/14*Math.PI*.42;const p=rot(...uPt(r,ph));i?f.lineTo(...p):f.moveTo(...p)}f.stroke()}
+  // rim edge and the rib tips
+  f.strokeStyle='rgba(239,231,210,.35)';f.lineWidth=1;f.beginPath();
+  for(let i=0;i<=64;i++){const p=rot(...uPt(1,i/64*Math.PI));i?f.lineTo(...p):f.moveTo(...p)}f.stroke();
+  f.fillStyle=INK;for(const p of S.rim){f.beginPath();f.arc(p[0],p[1]+1.5*sc,1.8*sc,0,6.2832);f.fill()}
+  // ferrule
+  const tp=rot(...uPt(0,0)),tq=rot(0,-L-R*.56-R*.13);f.strokeStyle=INK;f.lineWidth=2.4*sc;f.beginPath();f.moveTo(...tp);f.lineTo(...tq);f.stroke();
+}
+/* ---- pointer ---- */
+let drag=false,moved=0,downX=0,downY=0,offX=0,offY=0;
+function near(x,y){const b=S.bb,m=40*sc;return x>b[0]-m&&x<b[2]+m&&y>b[1]-m&&y<Math.max(b[3],S.y)+m}
+ov.addEventListener('pointermove',e=>{
+  if(e.pointerType==='mouse'&&!drag){S.placed=true;S.tx=e.clientX;S.ty=e.clientY;return}
+  if(drag){S.tx=e.clientX+offX;S.ty=e.clientY+offY;moved=Math.max(moved,Math.hypot(e.clientX-downX,e.clientY-downY));e.preventDefault()}
+});
+ov.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse')return;
+  if(e.target===sign)return;
+  if(near(e.clientX,e.clientY)){drag=true;moved=0;downX=e.clientX;downY=e.clientY;offX=S.tx-e.clientX;offY=S.ty-e.clientY;S.placed=true;
+    try{ov.setPointerCapture(e.pointerId)}catch(_){}}
+});
+const up=()=>{if(drag){drag=false;if(moved>8){const k=e=>{e.stopPropagation();e.preventDefault()};addEventListener('click',k,{capture:true,once:true});setTimeout(()=>removeEventListener('click',k,{capture:true}),400)}}};
+ov.addEventListener('pointerup',up);ov.addEventListener('pointercancel',up);
+ov.style.touchAction='none';
 /* ---- show/hide ---- */
 let shown=false;
 function wantShown(){const ix=window.__ix;if(!ix||!ix.state)return false;const s=ix.state();return s.idx===0&&!s.anim&&s.mode==='step'}
 function setShown(v){if(v===shown)return;shown=v;ov.classList.toggle('on',v);document.body.classList.toggle('rs-on',v)}
 /* ---- frame ---- */
-let last=0,tt=0;
+let last=0,tt=0,water=0,nHits=0;
+function moveShelter(dt){
+  const k=1-Math.exp(-dt*(drag?22:13));const nx=S.x+(S.tx-S.x)*k;
+  const v=(nx-S.x)/Math.max(dt,1e-3);S.vx+=(v-S.vx)*Math.min(1,dt*10);
+  S.x=nx;S.y+=(S.ty-S.y)*k;
+  // it leans into the way it is carried and swings back
+  const tgt=Math.max(-.32,Math.min(.32,S.vx*(MODE==='umbrella'?.00034:.00024)));
+  S.om+=((tgt-S.th)*70-S.om*10)*dt;S.th+=S.om*dt;
+}
+function hitAt(x,y,o){
+  nHits++;water+=1;
+  const n=1+(rr()<.5?1:0);
+  for(let i=0;i<n;i++){const a=-Math.PI*(.2+rr()*.6);const v=(50+rr()*90*(.4+o.d))*sc;hits.push({x:x,y:y,vx:Math.cos(a)*v*(rr()<.5?-1:1)+S.vx*.3,vy:Math.sin(a)*v,t:0})}
+  if(MODE==='paper'&&FR[0]){
+    for(const side of [1,0]){const F=FR[side];const p=F.inv(x,y);if(p[0]>-10&&p[0]<1010&&p[1]>-10&&p[1]<660){
+      wet.push({side:side,x:p[0],y:p[1],r:10+rr()*26,a:.10+rr()*.10,rot:rr()*3});if(wet.length>160)wet.shift();break}}
+  }
+}
+function spawnDrip(){
+  let p;
+  if(MODE==='umbrella'){if(!S.rim.length)return;p=S.rim[Math.floor(rr()*S.rim.length)];p=[p[0],p[1]+2*sc]}
+  else{const e=S.edges[rr()<.5?0:1];const u=rr();p=[e[0][0]+(e[1][0]-e[0][0])*u,e[0][1]+(e[1][1]-e[0][1])*u+1]}
+  drips.push({x:p[0],y:p[1],vy:40*sc,vx:S.vx*.15,gy:Math.max(p[1]+20*sc,gy0+(H-gy0)*(.05+rr()*.85)),hang:.05+rr()*.18});
+}
 function step(dt){
   tt+=dt;
+  const b=S.bb;
   for(const o of drops){
+    const px=o.x,py=o.y;
     o.y+=o.sp*dt;o.x+=o.wl*o.sp*dt;
+    // does the head pass into the shelter this frame?
+    if(o.x>b[0]-4&&px<b[2]+4&&o.y>b[1]&&py<b[3]){
+      let hit=null;for(let s=1;s<=6;s++){const q=s/6,x=px+(o.x-px)*q,y=py+(o.y-py)*q;if(inPoly(x,y,S.poly)){hit=[x,y];break}}
+      if(hit){hitAt(hit[0],hit[1],o);Object.assign(o,mk(false));continue}
+    }
     if(o.y>=o.gy){
       rings.push({x:o.x,y:o.gy,t:0,m:(10+o.d*22)*sc,w:1+o.d});
       const k=3+Math.floor(rr()*3);for(let i=0;i<k;i++){const a=-Math.PI*(.15+rr()*.7);const v=(60+rr()*140*(.4+o.d))*sc;sprays.push({x:o.x,y:o.gy,vx:Math.cos(a)*v*(rr()<.5?-1:1),vy:Math.sin(a)*v,t:0})}
       Object.assign(o,mk(false));continue}
     if(o.x>W+80)o.x=-60;
   }
+  // the water that gathers runs off the rim or the edges of the sheet
+  water=Math.min(30,water);
+  if(water>1&&rr()<dt*water*1.6){spawnDrip();water-=1.2}
+  for(let i=drips.length-1;i>=0;i--){const d=drips[i];
+    if(d.hang>0){d.hang-=dt;continue}
+    d.vy+=2600*sc*dt;d.y+=d.vy*dt;d.x+=d.vx*dt;
+    if(d.y>=d.gy){rings.push({x:d.x,y:d.gy,t:0,m:9*sc,w:1});drips.splice(i,1)}}
+  for(const w of wet)w.a=Math.max(.04,w.a-dt*.002);
 }
 function render(){
   g.setTransform(dpr,0,0,dpr,0,0);g.fillStyle=PAPER;g.fillRect(0,0,W,H);
   g.lineCap='round';g.strokeStyle=INK;g.lineWidth=1.1;
   for(const s of gstrokes){g.globalAlpha=s.a;g.beginPath();g.moveTo(s.x,s.y);g.lineTo(s.x+s.l,s.y);g.stroke()}
   g.globalAlpha=1;
-  // drops: long, hard, near-vertical streaks
   for(const o of drops){g.globalAlpha=.55+o.d*.45;g.lineWidth=1.1+o.d*1.5;g.strokeStyle=INK;
     g.beginPath();g.moveTo(o.x,o.y);g.lineTo(o.x-o.wl*o.len,o.y-o.len);g.stroke()}
   g.globalAlpha=1;g.lineWidth=1.2;
@@ -1161,7 +1321,17 @@ function render(){
   for(let i=sprays.length-1;i>=0;i--){const s=sprays[i];s.t+=.016;s.vy+=900*sc*.016;s.x+=s.vx*.016;s.y+=s.vy*.016;
     if(s.t>.28){sprays.splice(i,1);continue}g.globalAlpha=1-s.t/.28;g.beginPath();g.moveTo(s.x,s.y);g.lineTo(s.x-s.vx*.02,s.y-s.vy*.02);g.stroke()}
   g.globalAlpha=1;
-  if(!reduce){const bob=Math.sin(tt*1.3)*5*sc,rot=-1.5+Math.sin(tt*.9)*.8;sign.style.transform='translateY('+bob.toFixed(1)+'px) rotate('+rot.toFixed(2)+'deg)'}
+  // the shelter, above the title and the sign, with the splashes on it and the drips off it
+  f.setTransform(dpr,0,0,dpr,0,0);f.clearRect(0,0,W,H);f.globalAlpha=1;
+  if(MODE==='umbrella')drawUmbrella();else drawPaper();
+  f.strokeStyle=INK;f.lineCap='round';f.lineWidth=1.1;
+  for(let i=hits.length-1;i>=0;i--){const s=hits[i];s.t+=.016;s.vy+=900*sc*.016;s.x+=s.vx*.016;s.y+=s.vy*.016;
+    if(s.t>.22){hits.splice(i,1);continue}f.globalAlpha=1-s.t/.22;f.beginPath();f.moveTo(s.x,s.y);f.lineTo(s.x-s.vx*.025,s.y-s.vy*.025);f.stroke()}
+  f.lineWidth=1.6;
+  for(const d of drips){f.globalAlpha=.85;f.beginPath();if(d.hang>0){f.arc(d.x,d.y+1.5,1.6*sc,0,6.2832);f.fillStyle=INK;f.fill()}
+    else{f.moveTo(d.x,d.y);f.lineTo(d.x,d.y-Math.min(22*sc,d.vy*.012));f.stroke()}}
+  f.globalAlpha=1;
+  if(!reduce){const bob=Math.sin(tt*1.3)*5*sc,rt=-1.5+Math.sin(tt*.9)*.8;sign.style.transform='translateY('+bob.toFixed(1)+'px) rotate('+rt.toFixed(2)+'deg)'}
   else sign.style.transform='rotate(-1.5deg)';
 }
 function frame(ts){
@@ -1169,12 +1339,14 @@ function frame(ts){
   setShown(wantShown());
   if(!shown||!W){last=ts;return}
   const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;
-  if(!reduce)step(dt);
+  moveShelter(dt);geom();
+  if(!reduce)step(dt);else tt+=dt;
   render();
 }
 addEventListener('resize',(()=>{let t;return()=>{clearTimeout(t);t=setTimeout(()=>{build()},150)}})());
-build();requestAnimationFrame(frame);
-window.__rs={state:()=>({shown:shown,drops:drops.length,sprites:0})};
+build();geom();requestAnimationFrame(frame);
+window.__rs={state:()=>({shown:shown,drops:drops.length,mode:MODE,hits:nHits,drips:drips.length,wet:wet.length,x:Math.round(S.x),y:Math.round(S.y),bb:S.bb.map(Math.round)}),
+  move:(x,y)=>{S.placed=true;S.tx=x;S.ty=y}};
 })();
 </script></body>
 </html>
