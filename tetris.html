@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Globule Tetris</title>
+<style>
+html,body{margin:0;height:100%;background:#0b0b0b;color:#e9e9e9;overflow:hidden;overscroll-behavior:none;font-family:Inter,'Helvetica Neue',Arial,sans-serif}
+canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none}
+.lab{position:fixed;font-size:clamp(10px,.95vw,12px);letter-spacing:.3em;text-transform:uppercase;opacity:.72;pointer-events:none;white-space:nowrap}
+.val{position:fixed;font-size:clamp(18px,2vw,26px);letter-spacing:.06em;font-variant-numeric:tabular-nums;pointer-events:none}
+.lk{position:fixed;z-index:3;background:none;border:0;padding:6px 4px;color:#e9e9e9;font:500 clamp(10px,.95vw,12px)/1 Inter,'Helvetica Neue',Arial,sans-serif;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;opacity:.85}
+.lk::after{content:"";position:absolute;left:4px;right:calc(4px + .3em);bottom:1px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .35s}
+.lk:hover::after,.lk:focus-visible::after{transform:scaleX(1)}
+.lk:focus{outline:none}
+#msg{position:fixed;left:0;right:0;text-align:center;pointer-events:none;font-size:clamp(11px,1.1vw,13px);letter-spacing:.3em;text-transform:uppercase;opacity:0;transition:opacity .6s}
+#msg.on{opacity:.9}
+#pad{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));display:none;justify-content:center;gap:10px;z-index:3}
+#pad button{width:56px;height:56px;border-radius:50%;border:1px solid #333;background:#141414;color:#e9e9e9;font-size:20px;touch-action:none;-webkit-user-select:none;user-select:none}
+#pad button:active{background:#222}
+body.touch #pad{display:flex}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="Globule Tetris. Arrow keys move and rotate, space drops, P pauses. Click or tap the falling piece to turn it; sometimes a globule comes away."></canvas>
+<div class="lab" id="lNext">Next</div>
+<div class="lab" id="lScore">Score</div><div class="val" id="vScore">0</div>
+<div class="lab" id="lLines">Lines</div><div class="val" id="vLines">0</div>
+<div class="lab" id="lLevel">Level</div><div class="val" id="vLevel">1</div>
+<div id="msg"></div>
+<button id="again" class="lk" type="button">Restart</button>
+<button id="snd" class="lk" type="button" aria-pressed="false">Sound on</button>
+<div id="pad" aria-hidden="true"><button data-k="L">◀</button><button data-k="R">⟲</button><button data-k="D">▼</button><button data-k="H">⤓</button><button data-k="Rt">▶</button></div>
+<script>
+(function(){
+'use strict';
+/* Tetris in the night acid index's own print: every block is a globule, and the blocks of one piece run together into a single
+   gummy shape, lit from the upper left, sugared, with a dark rim, in the cell grid. Each kind of piece has one of the index's
+   colour schemes. The pieces fall, move, turn, lock and clear lines as in Tetris. Clicking or tapping the falling piece turns
+   it; now and then the globule clicked comes away in crumbs and the piece goes on smaller (a square becomes three, and so on).
+   The cleared rows crumble. Sound is made in the page, as on the index, and starts with the first key, click or tap. */
+const cv=document.getElementById('cv'),cx=cv.getContext('2d');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,touch=matchMedia('(pointer: coarse)').matches;
+if(touch)document.body.classList.add('touch');
+const BG='#0b0b0b',WELL='#121212';
+// the index's schemes, highlight to rim: the letters' acid green, then the pool's
+const PAL=['#eaff00','#b7f500','#57e389','#26a69a','#1e5f74','#173f5c'];
+const POOL=[['#fff3b0','#ffb347','#ff6f61','#e0457b','#8e3fa8','#3b2a78'],['#e8fffb','#7ff0e0','#3fb7ff','#4b6bff','#5a3fd1','#2a1f78'],
+  ['#f6ffc2','#c6f36b','#ff8fb1','#e33b6d','#9c1f4f','#4a0f2b'],['#f8dcae','#eca85a','#e45f8c','#c63ca6','#a77cf5','#5560ee'],
+  ['#ffe9c9','#ffb066','#ff7a3d','#d94f4f','#2f8f9d','#1b4f72'],['#fff0e6','#ffc9b5','#f49ac1','#b48ef0','#6c7bd9','#2e3a8c'],
+  ['#ffffff','#cfefff','#9ad0ff','#c39bff','#ff6fb5','#8a1f5a'],['#fffbe0','#ffe07a','#9be36b','#2fbf8f','#1f7a8c','#173a5e'],
+  ['#ffeef6','#ffb3c7','#ff8a5c','#d9643a','#8c3b8f','#3a1f5c']];
+const GHOST=['#3a3a3a','#333','#2c2c2c','#262626','#202020','#1a1a1a'];
+// I O T S Z J L, each with its scheme
+const SHAPES={I:[[0,1],[1,1],[2,1],[3,1]],O:[[1,0],[2,0],[1,1],[2,1]],T:[[1,0],[0,1],[1,1],[2,1]],S:[[1,0],[2,0],[0,1],[1,1]],
+  Z:[[0,0],[1,0],[1,1],[2,1]],J:[[0,0],[0,1],[1,1],[2,1]],L:[[2,0],[0,1],[1,1],[2,1]]};
+const PIV={I:[1.5,1.5],O:[1.5,.5],T:[1,1],S:[1,1],Z:[1,1],J:[1,1],L:[1,1]};
+const SCHEME={I:PAL,O:POOL[0],T:POOL[5],S:POOL[7],Z:POOL[2],J:POOL[1],L:POOL[4]};
+const KINDS=Object.keys(SHAPES);
+const COLS=10,ROWS=20,HID=2;
+const LX=-.5,LY=-.62,LZ=.6,LN=Math.hypot(LX,LY,LZ);
+const hs=(i,j)=>{const s=Math.sin(i*127.1+j*311.7)*43758.5453;return s-Math.floor(s)};
+// ---------------------------------------------------------------- layout
+let W=0,H=0,DPR=1,U=30,CELL=5,BX=0,BY=0,NX=0,NY=0;
+function layout(){W=innerWidth;H=innerHeight;DPR=Math.min(2,devicePixelRatio||1);cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  const narrow=W<760;const top=narrow?62:28,padB=narrow?(touch?100:44):28;
+  const availH=H-top-padB,availW=narrow?W-24:W*.5;
+  U=Math.max(14,Math.floor(Math.min(availH/ROWS,availW/COLS)));CELL=Math.max(3,Math.round(U/6));U=CELL*Math.max(3,Math.floor(U/CELL));
+  BX=Math.round((W-COLS*U)/2/CELL)*CELL;BY=Math.round((narrow?top:(H-ROWS*U)/2)/CELL)*CELL;
+  const put=(id,x,y)=>{const e=document.getElementById(id);e.style.left=x+'px';e.style.top=y+'px'};
+  const ag=document.getElementById('again'),sb=document.getElementById('snd');
+  for(const id of ['vScore','vLines','vLevel'])document.getElementById(id).style.fontSize=narrow?'16px':'';
+  if(!narrow){const side=BX+COLS*U+Math.max(24,U*.9);NX=side;NY=BY+U*.9;
+    put('lNext',side,BY);put('lScore',side,BY+U*5.2);put('vScore',side,BY+U*5.2+18);put('lLines',side,BY+U*7.4);put('vLines',side,BY+U*7.4+18);
+    put('lLevel',side,BY+U*9.6);put('vLevel',side,BY+U*9.6+18);document.getElementById('lNext').style.display='';
+    put('again',BX-110,BY);put('snd',BX-110,BY+ROWS*U-20)}
+  else{// on a narrow screen the score runs along the top, the next piece at the top right, the links under the well
+    const x0=BX,y0=10;put('lScore',x0,y0);put('vScore',x0,y0+16);put('lLines',x0+96,y0);put('vLines',x0+96,y0+16);put('lLevel',x0+170,y0);put('vLevel',x0+170,y0+16);
+    document.getElementById('lNext').style.display='none';NX=BX+COLS*U-U*2.4;NY=8;
+    put('snd',BX-4,BY+ROWS*U+6);ag.style.left=(BX+COLS*U-ag.offsetWidth+4)+'px';ag.style.top=(BY+ROWS*U+6)+'px'}
+  const m=document.getElementById('msg');m.style.top=(BY+ROWS*U*.42)+'px'}
+// ---------------------------------------------------------------- the print: globules run together, lit and sugared, in cells
+function smin(a,b,k){const h=Math.max(k-Math.abs(a-b),0)/k;return Math.min(a,b)-h*h*k*.25}
+function print(P,pal,k,R0,fade){if(!P.length)return;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const p of P){x0=Math.min(x0,p[0]-p[2]);x1=Math.max(x1,p[0]+p[2]);y0=Math.min(y0,p[1]-p[2]);y1=Math.max(y1,p[1]+p[2])}
+  const F=(x,y)=>{let d=1e9;for(const p of P){const e=Math.hypot(x-p[0],y-p[1])-p[2];d=d>1e8?e:smin(d,e,k)}return d};
+  const gap=Math.max(1,Math.round(CELL*.16)),h=CELL*.6,i0=Math.floor((x0-CELL)/CELL),i1=Math.ceil((x1+CELL)/CELL),j0=Math.floor((y0-CELL)/CELL),j1=Math.ceil((y1+CELL)/CELL);
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x=(i+.5)*CELL,y=(j+.5)*CELL,d=F(x,y);if(d>CELL*.5)continue;
+    const gx=F(x+h,y)-F(x-h,y),gy=F(x,y+h)-F(x,y-h),gl=Math.hypot(gx,gy)||1;
+    const depth=Math.max(0,Math.min(1,-d/(R0*.85))),q=1-depth,nx=gx/gl*q,ny=gy/gl*q,nz=Math.sqrt(Math.max(0,1-q*q));
+    const dif=(nx*LX+ny*LY+nz*LZ)/LN,spec=Math.pow(Math.max(0,dif),18);
+    let kk=spec>.55?0:dif>.78?1:dif>.58?2:dif>.38?3:dif>.18?4:5;
+    if(kk>0&&hs(i,j)<.035&&depth>.25)kk=0;if(q>.97)kk=Math.max(kk,4);if(kk===5&&q<.97)kk=4;
+    const cov=Math.min(1,Math.max(0,.5-d/CELL));let s=(CELL-gap)*Math.sqrt(cov);if(fade<1)s*=Math.max(0,Math.min(1,(fade-hs(i+7,j+3)*.75)/.25));if(s<.8)continue;
+    cx.fillStyle=pal[kk];cx.fillRect((i*CELL+(CELL-s)/2)*DPR,(j*CELL+(CELL-s)/2)*DPR,s*DPR,s*DPR)}}
+// ---------------------------------------------------------------- the game
+let board,piece,nextKind,bag=[],score=0,lines=0,level=1,over=false,paused=false,started=false,uid=1;
+let dropT=0,lockT=0,lockMoves=0,crumbs=[],clearing=null,t=0;
+function newBoard(){board=[];for(let r=0;r<ROWS+HID;r++)board.push(new Array(COLS).fill(null))}
+function draw7(){if(!bag.length){bag=KINDS.slice();for(let i=bag.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[bag[i],bag[j]]=[bag[j],bag[i]]}}return bag.pop()}
+function spawn(){const k=nextKind||draw7();nextKind=draw7();
+  piece={kind:k,id:uid++,pal:SCHEME[k],cells:SHAPES[k].map(c=>c.slice()),piv:PIV[k].slice(),x:3,y:0,born:t};
+  if(k==='I')piece.y=-1;
+  if(collide(piece.cells,piece.x,piece.y)){over=true;say('Game over',true);snd.over();}
+  lockT=0;lockMoves=0}
+function collide(cells,x,y){for(const [cx_,cy_] of cells){const c=cx_+x,r=cy_+y+HID;if(c<0||c>=COLS||r>=ROWS+HID)return true;if(r>=0&&board[r][c])return true}return false}
+function move(dx,dy){if(!piece||over||paused||clearing)return false;if(collide(piece.cells,piece.x+dx,piece.y+dy))return false;piece.x+=dx;piece.y+=dy;
+  if(dx&&lockT>0&&lockMoves<15){lockT=0;lockMoves++}return true}
+function rotate(dir){if(!piece||over||paused||clearing||piece.kind==='O'&&piece.cells.length===4)return false;
+  const [px,py]=piece.piv;const nc=piece.cells.map(([x,y])=>{const dx=x-px,dy=y-py;return dir>0?[Math.round(px-dy),Math.round(py+dx)]:[Math.round(px+dy),Math.round(py-dx)]});
+  for(const [kx,ky] of [[0,0],[-1,0],[1,0],[0,-1],[-2,0],[2,0],[0,1]])if(!collide(nc,piece.x+kx,piece.y+ky)){piece.cells=nc;piece.x+=kx;piece.y+=ky;if(lockT>0&&lockMoves<15){lockT=0;lockMoves++}snd.turn();return true}
+  return false}
+function ghostY(){let y=piece.y;while(!collide(piece.cells,piece.x,y+1))y++;return y}
+function hard(){if(!piece||over||paused||clearing)return;const g=ghostY();score+=2*(g-piece.y);piece.y=g;snd.thud();lock()}
+function lock(){for(const [cx_,cy_] of piece.cells){const r=cy_+piece.y+HID,c=cx_+piece.x;if(r>=0)board[r][c]={id:piece.id,pal:piece.pal,dy:0}}
+  snd.lock();const full=[];for(let r=0;r<ROWS+HID;r++)if(board[r].every(Boolean))full.push(r);
+  piece=null;
+  if(full.length){clearing={rows:full,t:0};for(const r of full)for(let c=0;c<COLS;c++){const b=board[r][c];crumbleAt(BX+(c+.5)*U,BY+(r-HID+.5)*U,U*.47,b.pal,6)}
+    snd.clear(full.length);score+=[0,100,300,500,800][full.length]*level;lines+=full.length;level=1+Math.floor(lines/10);ui()}
+  else{if(board[HID-1].some(Boolean)){over=true;say('Game over',true);snd.over();return}spawn()}
+  ui()}
+function finishClear(){const rows=clearing.rows;clearing=null;
+  // the rows above come down, falling the last few cells rather than jumping
+  const keep=board.filter((_,r)=>!rows.includes(r));const add=rows.length;newBoard();
+  for(let i=0;i<keep.length;i++){board[i+add]=keep[i];for(const b of board[i+add])if(b){const fell=rows.filter(r=>r>i).length;b.dy-=fell*U}}
+  spawn()}
+function crumbleAt(x,y,r,pal,n){for(let k=0;k<n;k++){const a=k/n*6.283+Math.random()*.6,sp=r*(2.2+Math.random()*2.4);crumbs.push({x:x+Math.cos(a)*r*.35,y:y+Math.sin(a)*r*.35,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r0:r*(.28+Math.random()*.22),life:1,span:.6+Math.random()*.5,c:pal[1+(Math.random()*3|0)]})}}
+// clicking the falling piece turns it; sometimes the globule clicked comes away, and the piece goes on without it
+function clickPiece(x,y){if(!piece||over||paused||clearing)return false;const c=Math.floor((x-BX)/U),r=Math.floor((y-BY)/U)-piece.y;
+  const idx=piece.cells.findIndex(([a,b])=>a+piece.x===c&&b===r);if(idx<0)return false;
+  if(piece.cells.length>1&&Math.random()<.45){const [a,b]=piece.cells[idx];crumbleAt(BX+(a+piece.x+.5)*U,BY+(b+piece.y+.5)*U,U*.47,piece.pal,9);piece.cells.splice(idx,1);snd.crumble();
+    if(piece.kind==='O'&&piece.cells.length===3)piece.piv=[1.5,.5]}
+  if(!rotate(1))snd.turn();return true}
+// ---------------------------------------------------------------- input
+const keys={};let das=null;
+function act(k){snd.wake();if(!started){started=true;say('')}
+  if(over){if(k==='H'||k==='enter')restart();return}
+  if(k==='P'){paused=!paused;say(paused?'Paused':'');return}if(paused)return;
+  if(k==='L')move(-1,0)&&snd.step();else if(k==='Rt')move(1,0)&&snd.step();else if(k==='D'){if(move(0,1)){score+=1;dropT=0;ui()}}
+  else if(k==='R')rotate(1);else if(k==='CCW')rotate(-1);else if(k==='H')hard()}
+const KEYMAP={ArrowLeft:'L',ArrowRight:'Rt',ArrowDown:'D',ArrowUp:'R',KeyX:'R',KeyZ:'CCW',Space:'H',KeyP:'P',Escape:'P',Enter:'enter',KeyA:'L',KeyD:'Rt',KeyS:'D',KeyW:'R'};
+addEventListener('keydown',e=>{const k=KEYMAP[e.code];if(!k)return;e.preventDefault();if(e.repeat&&(k==='L'||k==='Rt'||k==='D'))return;act(k);
+  if(k==='L'||k==='Rt'||k==='D'){clearTimeout(das&&das.t);clearInterval(das&&das.i);const kk=k;das={k:kk,t:setTimeout(()=>{das.i=setInterval(()=>act(kk),kk==='D'?35:48)},kk==='D'?60:150)}}});
+addEventListener('keyup',e=>{const k=KEYMAP[e.code];if(das&&das.k===k){clearTimeout(das.t);clearInterval(das.i);das=null}});
+cv.addEventListener('pointerdown',e=>{snd.wake();if(!started){started=true;say('')}if(over){restart();return}clickPiece(e.clientX,e.clientY)});
+for(const b of document.querySelectorAll('#pad button')){const k=b.dataset.k;let tm=null,iv=null;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();act(k);if(k==='L'||k==='Rt'||k==='D')tm=setTimeout(()=>{iv=setInterval(()=>act(k),k==='D'?35:55)},170)});
+  const stop=()=>{clearTimeout(tm);clearInterval(iv)};b.addEventListener('pointerup',stop);b.addEventListener('pointercancel',stop);b.addEventListener('pointerleave',stop)}
+document.getElementById('again').addEventListener('click',e=>{e.stopPropagation();snd.wake();restart()});
+const sndB=document.getElementById('snd');sndB.addEventListener('click',e=>{e.stopPropagation();snd.wake();snd.toggle()});
+// ---------------------------------------------------------------- the frame
+function ui(){document.getElementById('vScore').textContent=score;document.getElementById('vLines').textContent=lines;document.getElementById('vLevel').textContent=level}
+function say(s,stay){const m=document.getElementById('msg');m.textContent=s;m.classList.toggle('on',!!s)}
+function restart(){newBoard();bag=[];nextKind=null;score=0;lines=0;level=1;over=false;paused=false;crumbs=[];clearing=null;dropT=0;spawn();ui();say('');snd.reset()}
+function interval(){return Math.max(70,820*Math.pow(.84,level-1))}
+let last=0;
+function frame(ts){requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;t+=dt;
+  if(started&&!over&&!paused){
+    if(clearing){clearing.t+=dt;if(clearing.t>.38)finishClear()}
+    else if(piece){dropT+=dt*1000;const grounded=collide(piece.cells,piece.x,piece.y+1);
+      if(grounded){lockT+=dt*1000;if(lockT>480)lock()}
+      else if(dropT>=interval()){dropT=0;move(0,1)}}}
+  for(let r=0;r<ROWS+HID;r++)for(const b of board[r])if(b&&b.dy<0)b.dy=Math.min(0,b.dy+dt*U*16);
+  for(const c of crumbs){c.life-=dt/c.span;c.vx*=Math.pow(.25,dt);c.vy*=Math.pow(.25,dt);c.vy+=U*3*dt;c.x+=c.vx*dt;c.y+=c.vy*dt}
+  crumbs=crumbs.filter(c=>c.life>0);
+  render()}
+function render(){cx.setTransform(1,0,0,1,0,0);cx.fillStyle=BG;cx.fillRect(0,0,cv.width,cv.height);
+  // the well: its cells printed faintly, so the grid of the index shows through
+  const gap=Math.max(1,Math.round(CELL*.16));cx.fillStyle=WELL;
+  for(let j=BY/CELL;j<(BY+ROWS*U)/CELL;j++)for(let i=BX/CELL;i<(BX+COLS*U)/CELL;i++)cx.fillRect(i*CELL*DPR,j*CELL*DPR,(CELL-gap)*DPR,(CELL-gap)*DPR);
+  const R=U*.5,k=U*.55,wob=(id,c,r)=>reduce?1:1+.035*Math.sin(t*2.6+id*1.7+c*.9+r*1.3);
+  // the locked pieces: each piece's surviving globules still run together
+  const groups=new Map();
+  for(let r=HID;r<ROWS+HID;r++)for(let c=0;c<COLS;c++){const b=board[r][c];if(!b)continue;if(clearing&&clearing.rows.includes(r))continue;
+    let g=groups.get(b.id);if(!g){g={pal:b.pal,P:[]};groups.set(b.id,g)}g.P.push([BX+(c+.5)*U,BY+(r-HID+.5)*U+b.dy,R*.97*wob(b.id,c,r)])}
+  for(const g of groups.values())print(g.P,g.pal,k,R,1);
+  if(piece&&!over){// the ghost, where it will land, in the dark of the rim
+    const gy=ghostY();if(gy>piece.y)print(piece.cells.map(([a,b])=>[BX+(a+piece.x+.5)*U,BY+(b+gy+.5)*U,R*.9]).filter(p=>p[1]>BY),GHOST,k,R,1);
+    const pop=Math.min(1,(t-piece.born)*4);
+    print(piece.cells.map(([a,b])=>[BX+(a+piece.x+.5)*U,BY+(b+piece.y+.5)*U,R*.97*wob(piece.id,a,b)*(.6+.4*pop)]).filter(p=>p[1]>BY-R*.5),piece.pal,k,R,1)}
+  // the next piece
+  if(nextKind){const sc=W<760?.5:.8,ux=U*sc,cells=SHAPES[nextKind];const minx=Math.min(...cells.map(c=>c[0])),maxx=Math.max(...cells.map(c=>c[0]));
+    const ox=NX+((W<760?2.4:4)*U-(maxx-minx+1)*ux)/2-minx*ux;
+    print(cells.map(([a,b])=>[ox+(a+.5)*ux,NY+(b+.5)*ux,ux*.47]),SCHEME[nextKind],ux*.42,ux*.5,1)}
+  for(const c of crumbs){const r=c.r0*Math.pow(Math.max(0,c.life),.7);if(r<CELL*.3)continue;const s=Math.max(1,Math.round(r/CELL))*CELL-gap;
+    const i=Math.floor(c.x/CELL),j=Math.floor(c.y/CELL);cx.fillStyle=c.c;cx.fillRect(i*CELL*DPR,j*CELL*DPR,s*DPR,s*DPR)}}
+// ---------------------------------------------------------------- sound, made here as on the index; nothing until the first key or tap
+const snd=(()=>{let C=null,M=null,on=true,dly=null;
+  function env(g,t0,a,pk,dec){g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(pk,t0+a);g.gain.setTargetAtTime(0,t0+a,dec)}
+  function tone(type,f0,f1,vol,len,at){if(!C)return;const t0=C.currentTime+(at||0),o=C.createOscillator(),g=C.createGain();o.type=type;o.frequency.setValueAtTime(f0,t0);if(f1)o.frequency.exponentialRampToValueAtTime(f1,t0+len);
+    env(g,t0,.004,vol,len*.35);o.connect(g);g.connect(M);g.connect(dly);o.start(t0);o.stop(t0+len*4+.1)}
+  const ok=()=>C&&on;
+  function blip(){setTimeout(()=>{if(ok()&&started&&!paused&&!over){const P=[523.25,587.33,659.25,783.99,880,1046.5],f=P[Math.random()*P.length|0],r=Math.random();
+      if(r<.4)tone('triangle',f,0,.05,.09);else if(r<.75)tone('sine',f,f*.55,.05,.2);else{tone('triangle',f,0,.045,.07);tone('triangle',P[Math.random()*P.length|0],0,.04,.09,.12)}}blip()},3200+Math.random()*6000)}
+  const NOTE=[523.25,587.33,659.25,783.99,880,1046.5,1174.66,1318.51];
+  return{wake(){if(!C){try{C=new (window.AudioContext||window.webkitAudioContext)();M=C.createGain();M.gain.value=1.2;M.connect(C.destination);
+      dly=C.createDelay(1);dly.delayTime.value=.19;const fb=C.createGain();fb.gain.value=.25;const lp=C.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1600;
+      dly.connect(lp);lp.connect(fb);fb.connect(dly);const wet=C.createGain();wet.gain.value=.3;lp.connect(wet);wet.connect(M);blip()}catch(e){}}else if(C.state==='suspended')C.resume()},
+    step(){if(ok())tone('sine',420,300,.025,.04)},
+    turn(){if(ok())tone('triangle',660+Math.random()*60,880,.04,.06)},
+    lock(){if(ok()){tone('sine',300,70,.22,.16)}},
+    thud(){if(ok())tone('sine',220,60,.18,.12)},
+    crumble(){if(!ok())return;const n=6+(Math.random()*4|0);for(let i=0;i<n;i++)tone('sine',900+Math.random()*900,0,.045,.05,i*.035+Math.random()*.04)},
+    clear(n){if(!ok())return;for(let i=0;i<n*3+2;i++)tone('sine',NOTE[i%NOTE.length]*(i>=NOTE.length?2:1),0,.08,.18,i*.07);this.crumble()},
+    over(){if(ok()){tone('sine',520,260,.12,.4);tone('sine',390,150,.1,.6,.25)}},
+    reset(){if(ok()){tone('sine',520,0,.08,.2);tone('sine',780,0,.06,.2,.08)}},
+    toggle(){on=!on;if(C)M.gain.setTargetAtTime(on?1.2:0,C.currentTime,.08);sndB.textContent=on?'Sound on':'Sound off';sndB.setAttribute('aria-pressed',String(!on))},
+    halt(){if(C){try{C.close()}catch(e){}C=null}}}})();
+addEventListener('pagehide',()=>snd.halt());
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!over&&!paused){paused=true;say('Paused')}});
+addEventListener('resize',(()=>{let tm;return()=>{clearTimeout(tm);tm=setTimeout(layout,150)}})());
+layout();newBoard();spawn();ui();say(touch?'Tap to begin':'Press any arrow key to begin');requestAnimationFrame(frame);
+window.__gt={state:()=>({over,paused,started,score,lines,level,piece:piece&&{kind:piece.kind,n:piece.cells.length,x:piece.x,y:piece.y},filled:board.flat().filter(Boolean).length}),
+  act,board:()=>board,piece:()=>piece,U:()=>[BX,BY,U],
+  fillRows(n){for(let r=ROWS+HID-n;r<ROWS+HID;r++)for(let c=0;c<COLS;c++)if(c!==0)board[r][c]={id:999+r,pal:POOL[3],dy:0}}};
+})();
+</script>
+</body>
+</html>
