@@ -807,7 +807,7 @@ function stepView(){VP=0}function drawView(){}function openIssue(){}
 // ---- light on the sky: a WebGL pass over the drawn sky and the issue markers. Bright stars bloom, fine grain and a slight
 // vignette sit over everything; in the fuller candidates a faint band of light crosses the sky and a low mist lies along the
 // bottom and parts around the pointer. Where WebGL is missing the sky is left as it is drawn.
-const FX='C';
+const FX='C',AUR=+'03'.replace(/\D/g,'')||0;
 const FXP={glow:1,band:FX>='B'?1:0,fog:FX>='C'?1:0};
 let fxc=null,gl=null,fxOK=false,fxFail=false,PR={},FB={},TX={},fxW=0,fxH=0,ptr={x:.5,y:.5,z:0},fxT0=performance.now();
 addEventListener('pointermove',e=>{ptr.x=e.clientX/innerWidth;ptr.y=1-e.clientY/innerHeight;ptr.z=Math.min(1,ptr.z+.08)},{passive:true});
@@ -815,13 +815,13 @@ const VS='attribute vec2 a;varying vec2 v;void main(){v=a*.5+.5;gl_Position=vec4
 const NOISE='float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<5;i++){s+=a*n(p);p=p*2.03+1.7;a*=.5;}return s;}';
 const FS_BRIGHT='precision mediump float;varying vec2 v;uniform sampler2D s,m;uniform float MO;void main(){vec3 c=texture2D(s,v).rgb;vec4 k=texture2D(m,v)*MO;c=c*(1.-k.a)+k.rgb;float l=max(c.r,max(c.g,c.b));gl_FragColor=vec4(c*smoothstep(.42,1.,l),1.);}';
 const FS_BLUR='precision mediump float;varying vec2 v;uniform sampler2D s;uniform vec2 d;void main(){vec3 c=texture2D(s,v).rgb*.227;c+=(texture2D(s,v+d*1.384).rgb+texture2D(s,v-d*1.384).rgb)*.316;c+=(texture2D(s,v+d*3.230).rgb+texture2D(s,v-d*3.230).rgb)*.070;gl_FragColor=vec4(c,1.);}';
-const FS_COMP='precision highp float;varying vec2 v;uniform sampler2D s,m,b;uniform vec2 R;uniform float T,G,B,F,RM,MO;uniform vec3 P;'+NOISE+
+const FS_COMP='precision highp float;varying vec2 v;uniform sampler2D s,m,b;uniform vec2 R;uniform float T,G,B,F,RM,MO,AU;uniform vec3 P;'+NOISE+
  'void main(){vec3 c=texture2D(s,v).rgb;vec4 k=texture2D(m,v)*MO;c=c*(1.-k.a)+k.rgb;c+=texture2D(b,v).rgb*G*2.4;float A=R.x/R.y;vec2 p=v*vec2(A,1.);'+
  'if(B>0.){vec2 o=vec2(.62*A,.62);vec2 dir=normalize(vec2(1.,-.62));vec2 q=p-o;float dd=q.x*dir.y-q.y*dir.x;float n1=fbm(p*2.6+vec2(T*.003,T*.001));float n2=fbm(p*8.-vec2(T*.004,0.));'+
  'float band=exp(-dd*dd/.05)*(.45+.7*n1)*(.65+.55*n2);c+=B*band*vec3(.11,.115,.14)+B*band*smoothstep(.6,.85,n2)*vec3(.05,.03,.06);c-=B*band*smoothstep(.55,.75,fbm(p*5.+3.))*.06;}'+
  'if(F>0.){float f=fbm(p*vec2(1.6,4.2)+vec2(T*.018,0.))*.7+fbm(p*vec2(4.,9.)-vec2(T*.026,0.))*.3;float hgt=smoothstep(.34,0.,v.y-.04*sin(p.x*3.+T*.05));float a=hgt*(.3+.7*f);'+
  'vec2 dq=(v-P.xy)*vec2(A,1.);a*=1.-.85*P.z*exp(-dot(dq,dq)/.03);c=mix(c,vec3(.16,.17,.2),clamp(a*F*.8,0.,1.));}'+
- 'vec2 q2=v-.5;c*=1.-.42*dot(q2,q2);float gr=h(v*R+(RM>.5?0.:fract(T*7.31))*vec2(113.,71.))-.5;c+=gr*.026;gl_FragColor=vec4(max(c,0.),1.);}';
+ 'if(AU>0.){float y=v.y;float x=p.x;'+'if(AU<1.5){float g=smoothstep(.24,0.,y)*(.55+.45*fbm(vec2(x*1.1+T*.012,T*.02)));g*=.75+.25*sin(x*1.7+T*.04);c+=vec3(.08,.40,.28)*g*.75;}'+'else if(AU<2.5){float h=.13+.09*fbm(vec2(x*.7+T*.008,1.3))+.03*sin(x*2.+T*.03);float w=fbm(vec2(x*1.6,T*.015))*5.;float r=n(vec2(x*34.+w,y*1.2+T*.02));r=.35+.9*r*r;'+'float g=smoothstep(h,h*.15,y)*smoothstep(-.02,.05,y+.02)*r;vec3 col=mix(vec3(.12,.52,.36),vec3(.34,.20,.46),clamp(y/h,0.,1.));c+=col*g*.62;}'+'else{float g=smoothstep(.2,0.,y)*(.5+.5*fbm(vec2(x*1.3-T*.01,T*.018)));float r=n(vec2(x*22.+fbm(vec2(x,T*.01))*4.,y));g*=.8+.35*r;'+'vec3 col=mix(vec3(.10,.44,.32),vec3(.30,.20,.48),.5+.5*sin(x*.8+T*.025));c+=col*g*.58;}}'+'vec2 q2=v-.5;c*=1.-.42*dot(q2,q2);float gr=h(v*R+(RM>.5?0.:fract(T*7.31))*vec2(113.,71.))-.5;c+=gr*.026;gl_FragColor=vec4(max(c,0.),1.);}';
 function fxProg(fs){const sh=(t,src)=>{const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o};
   const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(p,0,'a');gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('link');p.u={};return p}
 function U(p,n){return p.u[n]!==undefined?p.u[n]:(p.u[n]=gl.getUniformLocation(p,n))}
@@ -847,7 +847,7 @@ function fxFrame(ov){if(fxFail)return;const skyCv=ov.querySelector('.sky canvas:
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,w,h);gl.useProgram(PR.co);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,FB.a.t);
     gl.uniform1i(U(PR.co,'s'),0);gl.uniform1i(U(PR.co,'m'),1);gl.uniform1i(U(PR.co,'b'),2);gl.uniform2f(U(PR.co,'R'),w,h);
     const T=(performance.now()-fxT0)/1000;ptr.z*=.985;gl.uniform1f(U(PR.co,'T'),reduce?0:T);gl.uniform1f(U(PR.co,'RM'),reduce?1:0);
-    gl.uniform1f(U(PR.co,'MO'),MO);gl.uniform1f(U(PR.co,'G'),FXP.glow);gl.uniform1f(U(PR.co,'B'),FXP.band);gl.uniform1f(U(PR.co,'F'),FXP.fog);gl.uniform3f(U(PR.co,'P'),ptr.x,ptr.y,ptr.z);
+    gl.uniform1f(U(PR.co,'MO'),MO);gl.uniform1f(U(PR.co,'G'),FXP.glow);gl.uniform1f(U(PR.co,'AU'),AUR);gl.uniform1f(U(PR.co,'B'),FXP.band);gl.uniform1f(U(PR.co,'F'),FXP.fog);gl.uniform3f(U(PR.co,'P'),ptr.x,ptr.y,ptr.z);
     gl.drawArrays(gl.TRIANGLES,0,3);
     fxOK=true;if(skyCv.style.opacity!=='0')skyCv.style.opacity='0';if(cv)cv.style.opacity=layer&&layer.style.display!=='none'?'0':''}
   catch(e){window.__fxErr=String(e);console.warn('sky light unavailable',e);fxFail=true;if(fxc)fxc.remove();skyCv.style.opacity='';if(cv)cv.style.opacity=''}}
