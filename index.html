@@ -708,7 +708,7 @@ ISS.forEach(it=>{seed=it.n*977+13;const k=it.e.length;it.k=k;if(k===1){it.sh=[[0
   const cx=pts.reduce((s,p)=>s+p[0],0)/k,cy=pts.reduce((s,p)=>s+p[1],0)/k;it.sh=pts.map(p=>[p[0]-cx,p[1]-cy]);it.mag=pts.map(()=>.75+rnd()*.5);it.ph=rnd()*6.28});
 let FADE=1,VP=0,layer=null,cv=null,g=null,W=0,H=0,DPR=1,S=24,hov=null,hovStar=null,placed=false,lastKey='',btn={},sbtn={},cap=null;
 function ncss(){if(!document.getElementById('tcnight-css')&&document.head){const st=document.createElement('style');st.id='tcnight-css';st.textContent=NCSS+SELCSS+(typeof VCSS!=='undefined'?VCSS:'');document.head.appendChild(st)}}
-const SELCSS=`body.tcnight #tchome [style*="rgb(220, 218, 211)"]{background:#111!important;border-color:rgba(233,230,220,.3)!important;box-shadow:12px 14px 0 rgba(233,230,220,.07)!important}
+const SELCSS=`body.tcnight #tchome [style*="rgb(220, 218, 211)"]{cursor:pointer;background:#111!important;border-color:rgba(233,230,220,.3)!important;box-shadow:12px 14px 0 rgba(233,230,220,.07)!important}
 body.tcnight #tchome span[style*="rgb(106, 105, 98)"]{color:#c9c6bc!important;border-color:rgba(233,230,220,.3)!important;background:rgba(233,230,220,.05)!important}
 body.tcnight #tchome span[style*="rgb(46, 74, 99)"]{color:#a9c2dc!important;border-color:rgba(169,194,220,.4)!important;background:rgba(169,194,220,.07)!important}
 body.tcnight #tchome span[style*="rgb(184, 16, 44)"]{color:#ee4a64!important;border-color:rgba(238,74,100,.5)!important;background:rgba(238,74,100,.07)!important}
@@ -804,6 +804,16 @@ function draw(now){const de=document.documentElement;if(de.dataset.tcsel&&de.dat
 let night=null;function sky(on){if(on===night)return;night=on;document.body.classList.toggle('tcnight',on);document.documentElement.classList.toggle('tcnight',on);if(window.__tcSky)window.__tcSky(on);if(on&&window.__tcldDone)document.body.classList.add('tcreveal')}
 setTimeout(()=>{if(!document.getElementById('tcld')||window.__tcldDone)document.body.classList.add('tcreveal')},14000);
 function stepView(){VP=0}function drawView(){}function openIssue(){}
+// On an issue page in the sky: the study titles and the cover open the reading; a click anywhere else that is not a
+// control returns to the issues in the sky.
+const READ={1:'issue001.html',2:'issue002.html',3:'issue003-1.html',4:'issue004-1.html',5:'issue005-1.html',6:'issue006-1.html',7:'issue007-1.html',8:'issue008.html',9:'issue009-1.html',10:'issue010-1.html'};
+if(MODE==='C')document.addEventListener('click',e=>{const home=document.getElementById('tchome');if(!home||document.getElementById('tccloud')||!home.contains(e.target))return;
+  if(e.target.closest('[role="dialog"]'))return;
+  const img=home.querySelector('img[alt$=" cover"]'),box=img&&img.parentElement;
+  if(box&&box.contains(e.target)){const n=+(img.alt.match(/\d+/)||[0])[0];if(READ[n]){e.preventDefault();e.stopPropagation();location.href=READ[n]}return}
+  if(e.target.closest('a,button,input,select,textarea'))return;
+  const hb=[...home.querySelectorAll('button')].find(b=>/Home/.test(b.textContent));if(hb){e.preventDefault();e.stopPropagation();hb.click()}},true);
+
 window.__tcSel={state:()=>ISS.map(it=>({n:it.n,x:Math.round(it.x),y:Math.round(it.y),k:it.k}))};
 requestAnimationFrame(draw)})();
 </script></body>
