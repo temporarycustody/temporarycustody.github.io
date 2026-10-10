@@ -700,15 +700,22 @@ const ISS=[
  {n:10,sub:'Iliad · Odyssey',e:[['Recognition Beyond the Norms','issue010-1.html'],['What Homecoming Requires','issue010-2.html'],['What the Excluded Position Knows','issue010-3.html']]}];
 // the single bodies, each its own colour from highlight to shadow
 const BODY={1:['#e3ecf6','#9fb3c8','#4c5f78'],2:['#fbe9c4','#d9a95e','#7a5226'],4:['#f4f2ee','#bdb8b0','#5d5a55'],8:['#e2f3f1','#7fb5b3','#2d5960']};
-const RED='#ee4a64',INK='#e9e6dc',reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MODE='C';const RED='#ee4a64',INK='#e9e6dc',reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let seed=1;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
 // each constellation keeps one shape: offsets in units of S, stars in reading order
 ISS.forEach(it=>{seed=it.n*977+13;const k=it.e.length;it.k=k;if(k===1){it.sh=[[0,0]];return}
   const a0=rnd()*6.283;const pts=[[0,0]];let a=a0;for(let i=1;i<k;i++){a+=(rnd()-.5)*1.6;const d=.9+rnd()*.5,p=pts[i-1];pts.push([p[0]+Math.cos(a)*d,p[1]+Math.sin(a)*d])}
   const cx=pts.reduce((s,p)=>s+p[0],0)/k,cy=pts.reduce((s,p)=>s+p[1],0)/k;it.sh=pts.map(p=>[p[0]-cx,p[1]-cy]);it.mag=pts.map(()=>.75+rnd()*.5);it.ph=rnd()*6.28});
-let layer=null,cv=null,g=null,W=0,H=0,DPR=1,S=24,hov=null,hovStar=null,placed=false,lastKey='',btn={},sbtn={},cap=null;
-function ncss(){if(!document.getElementById('tcnight-css')&&document.head){const st=document.createElement('style');st.id='tcnight-css';st.textContent=NCSS+SELCSS;document.head.appendChild(st)}}
-const SELCSS=`
+let FADE=1,VP=0,layer=null,cv=null,g=null,W=0,H=0,DPR=1,S=24,hov=null,hovStar=null,placed=false,lastKey='',btn={},sbtn={},cap=null;
+function ncss(){if(!document.getElementById('tcnight-css')&&document.head){const st=document.createElement('style');st.id='tcnight-css';st.textContent=NCSS+SELCSS+(typeof VCSS!=='undefined'?VCSS:'');document.head.appendChild(st)}}
+const SELCSS=`body.tcnight #tchome [style*="rgb(220, 218, 211)"]{background:#111!important;border-color:rgba(233,230,220,.3)!important;box-shadow:12px 14px 0 rgba(233,230,220,.07)!important}
+body.tcnight #tchome span[style*="rgb(106, 105, 98)"]{color:#c9c6bc!important;border-color:rgba(233,230,220,.3)!important;background:rgba(233,230,220,.05)!important}
+body.tcnight #tchome span[style*="rgb(46, 74, 99)"]{color:#a9c2dc!important;border-color:rgba(169,194,220,.4)!important;background:rgba(169,194,220,.07)!important}
+body.tcnight #tchome span[style*="rgb(184, 16, 44)"]{color:#ee4a64!important;border-color:rgba(238,74,100,.5)!important;background:rgba(238,74,100,.07)!important}
+body.tcnight #tchome a[style*="rgb(17, 17, 17)"][style*="TeX Gyre"]{color:#e9e6dc!important}
+body.tcnight #tchome a[style*="background: rgb(17, 17, 17)"]{background:#e9e6dc!important;color:#05060a!important}
+body.tcnight #tchome [style*="color: rgb(154, 152, 143)"]{color:#8d8b84!important}
+
 #tcskysel{position:fixed;inset:0;pointer-events:none;z-index:1}
 #tcskysel canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #tcskysel .mk{all:unset;position:absolute;box-sizing:border-box;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent}
@@ -758,7 +765,7 @@ function build(host){layer=document.createElement('div');layer.id='tcskysel';cv=
   cap=document.createElement('div');cap.className='cap';layer.appendChild(cap);btn={};sbtn={};
   for(const it of ISS){const b=document.createElement('button');b.type='button';b.className='mk';b.setAttribute('aria-label','Issue '+it.n+': '+it.sub);
     b.addEventListener('mouseenter',()=>{hov=it.n});b.addEventListener('mouseleave',()=>{if(hov===it.n)hov=null});b.addEventListener('focus',()=>{hov=it.n});b.addEventListener('blur',()=>{if(hov===it.n)hov=null});
-    b.addEventListener('click',e=>{const t=document.querySelector('#tcissuebtns button[aria-label="Start at issue '+it.n+'"]');if(t)t.click()});
+    b.addEventListener('click',e=>{if(MODE==='A'||MODE==='B'){openIssue(it.n);return}const t=document.querySelector('#tcissuebtns button[aria-label="Start at issue '+it.n+'"]');if(t)t.click()});
     const nm=document.createElement('span');nm.className='num';nm.textContent=it.n;it.nm=nm;layer.appendChild(nm);layer.appendChild(b);btn[it.n]=b;
     if(it.k>1)it.e.forEach(([title,href],j)=>{const a=document.createElement('a');a.className='st';a.href=href;a.setAttribute('aria-label','Issue '+it.n+', study '+(j+1)+': '+title);
       a.addEventListener('mouseenter',()=>{hov=it.n;hovStar=[it.n,j]});a.addEventListener('mouseleave',()=>{hovStar=null;if(hov===it.n)hov=null});
@@ -769,32 +776,34 @@ function place(){for(const it of ISS){const b=btn[it.n];const x0=Math.min(it.bx[
     b.style.left=x0+'px';b.style.top=(it.bx[1])+'px';b.style.width=(x1-x0)+'px';b.style.height=(it.bx[3]-it.bx[1])+'px';
     it.nm.style.left=(it.side>0?it.nx:it.nx-it.nm.offsetWidth)+'px';it.nm.style.top=(it.ny-9)+'px';
     if(it.k>1)it.stars.forEach((p,j)=>{const a=sbtn[it.n+'_'+j];a.style.left=p[0]+'px';a.style.top=p[1]+'px'})}}
-function star(x,y,r,a,warm){const gr=g.createRadialGradient(x,y,0,x,y,r*6);const c=warm?'255,236,214':'236,240,255';
+function star(x,y,r,a,warm){a*=FADE;const gr=g.createRadialGradient(x,y,0,x,y,r*6);const c=warm?'255,236,214':'236,240,255';
   gr.addColorStop(0,`rgba(255,255,255,${a})`);gr.addColorStop(.12,`rgba(${c},${a*.9})`);gr.addColorStop(.3,`rgba(${c},${a*.22})`);gr.addColorStop(1,`rgba(${c},0)`);
   g.fillStyle=gr;g.beginPath();g.arc(x,y,r*6,0,6.283);g.fill()}
-function body(x,y,r,pal,a){g.globalAlpha=a;const gl=g.createRadialGradient(x,y,r,x,y,r*3.2);gl.addColorStop(0,'rgba(233,230,220,.16)');gl.addColorStop(1,'rgba(233,230,220,0)');g.fillStyle=gl;g.beginPath();g.arc(x,y,r*3.2,0,6.283);g.fill();
+function body(x,y,r,pal,a){g.globalAlpha=a*FADE;const gl=g.createRadialGradient(x,y,r,x,y,r*3.2);gl.addColorStop(0,'rgba(233,230,220,.16)');gl.addColorStop(1,'rgba(233,230,220,0)');g.fillStyle=gl;g.beginPath();g.arc(x,y,r*3.2,0,6.283);g.fill();
   const gr=g.createRadialGradient(x-r*.45,y-r*.45,r*.1,x,y,r*1.05);gr.addColorStop(0,pal[0]);gr.addColorStop(.45,pal[1]);gr.addColorStop(1,pal[2]);g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,6.283);g.fill();g.globalAlpha=1}
 let t0=performance.now();
-function draw(now){const de=document.documentElement;if(de.dataset.tcsel&&de.dataset.tcsel!==TOK){if(layer)layer.remove();return}if(!de.dataset.tcsel)de.dataset.tcsel=TOK;requestAnimationFrame(draw);ncss();const home=document.getElementById('tchome'),c=document.getElementById('tccloud');sky(!!c);
+function draw(now){const de=document.documentElement;if(de.dataset.tcsel&&de.dataset.tcsel!==TOK){if(layer)layer.remove();return}if(!de.dataset.tcsel)de.dataset.tcsel=TOK;requestAnimationFrame(draw);ncss();const home=document.getElementById('tchome'),c=document.getElementById('tccloud');sky(MODE==='C'?!!home:!!c);
   if(layer)layer.style.display=c?'':'none';if(!c||!home||document.hidden)return;if(!layer||!layer.isConnected)build(document.body);
   const key=innerWidth+'x'+innerHeight+':'+(window.__tcOrion?window.__tcOrion.W+'x'+window.__tcOrion.H:'-')+':'+Math.round(c.getBoundingClientRect().bottom);
   if(key!==lastKey){lastKey=key;layout();place()}
   DPR=Math.min(2,devicePixelRatio||1);if(cv.width!==Math.round(W*DPR)||cv.height!==Math.round(H*DPR)){cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR)}
   g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,W,H);const t=(now-t0)/1000;
-  for(const it of ISS){const on=hov===it.n,dim=hov&&!on;
+  stepView(now);g.globalAlpha=1;FADE=1-VP;if(VP>0)drawView();FADE=1-VP;
+  for(const it of ISS){if(VP>.98)break;const on=hov===it.n,dim=hov&&!on;
     if(it.k===1){const r=S*(it.n===8?.42:it.n===2?.39:.36);body(it.x,it.y,r*(on?1.18:1),BODY[it.n],dim?.55:1);
-      if(on){g.strokeStyle=RED;g.globalAlpha=.7;g.lineWidth=1;g.beginPath();g.arc(it.x,it.y,r*2.3,0,6.283);g.stroke();g.globalAlpha=1}}
-    else{g.lineWidth=on?1.3:1;g.strokeStyle=on?RED:'rgba(233,230,220,1)';g.globalAlpha=on?.9:dim?.14:.4;g.beginPath();it.stars.forEach((p,j)=>j?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();g.globalAlpha=1;
+      if(on){g.strokeStyle=RED;g.globalAlpha=.7*FADE;g.lineWidth=1;g.beginPath();g.arc(it.x,it.y,r*2.3,0,6.283);g.stroke();g.globalAlpha=1}}
+    else{g.lineWidth=on?1.3:1;g.strokeStyle=on?RED:'rgba(233,230,220,1)';g.globalAlpha=(on?.9:dim?.14:.4)*FADE;g.beginPath();it.stars.forEach((p,j)=>j?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();g.globalAlpha=1;
       g.globalCompositeOperation='lighter';it.stars.forEach((p,j)=>{const tw=reduce?1:.85+.15*Math.sin(t*1.3+it.ph+j*2.1);const hs=hovStar&&hovStar[0]===it.n&&hovStar[1]===j;
         star(p[0],p[1],S*.11*it.mag[j]*(hs?1.5:on?1.2:1),(dim?.5:1)*tw,j===0)});g.globalCompositeOperation='source-over';
       if(on)it.stars.forEach((p,j)=>{if(hovStar&&hovStar[0]===it.n&&hovStar[1]===j){g.strokeStyle=RED;g.globalAlpha=.8;g.beginPath();g.arc(p[0],p[1],S*.5,0,6.283);g.stroke();g.globalAlpha=1}})}
-    it.nm.classList.toggle('on',on);it.nm.style.opacity=dim?'.45':'1'}
+    it.nm.classList.toggle('on',on);it.nm.style.opacity=(dim?.45:1)*(1-VP)+''}
   // the caption: the issue's subjects, or the title of the study under the pointer
-  const it=hov?ISS[hov-1]:null;if(it){cap.innerHTML=hovStar?'<b>Issue '+it.n+' · study '+(hovStar[1]+1)+'</b>'+it.e[hovStar[1]][0]:'<b>Issue '+it.n+'</b>'+it.sub;
+  const it=hov&&VP<.05?ISS[hov-1]:null;if(it){cap.innerHTML=hovStar?'<b>Issue '+it.n+' · study '+(hovStar[1]+1)+'</b>'+it.e[hovStar[1]][0]:'<b>Issue '+it.n+'</b>'+it.sub;
     const w=cap.offsetWidth;let x=it.side>0?it.bx[0]:it.bx[2]-w;x=Math.max(10,Math.min(W-w-10,x));let y=it.bx[3]+8;if(y+44>H-64)y=it.bx[1]-52;cap.style.left=x+'px';cap.style.top=y+'px';cap.classList.add('on')}
   else cap.classList.remove('on')}
 let night=null;function sky(on){if(on===night)return;night=on;document.body.classList.toggle('tcnight',on);document.documentElement.classList.toggle('tcnight',on);if(window.__tcSky)window.__tcSky(on);if(on&&window.__tcldDone)document.body.classList.add('tcreveal')}
 setTimeout(()=>{if(!document.getElementById('tcld')||window.__tcldDone)document.body.classList.add('tcreveal')},14000);
+function stepView(){VP=0}function drawView(){}function openIssue(){}
 window.__tcSel={state:()=>ISS.map(it=>({n:it.n,x:Math.round(it.x),y:Math.round(it.y),k:it.k}))};
 requestAnimationFrame(draw)})();
 </script></body>
