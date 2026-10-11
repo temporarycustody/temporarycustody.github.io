@@ -687,6 +687,15 @@ const TOK=Math.random().toString(36).slice(2);document.documentElement.dataset.t
    by faint lines. The issue number sits beside it. The number (or the body) opens the issue; a star of a constellation opens
    its own study. Markers are placed clear of Orion's stars and of the title, and laid out again whenever the window changes. */
 const NCSS="\nhtml.tcnight{background:#05060a!important}\nhtml.tcnight body{background:transparent!important}\nbody.tcnight #tchome{background:transparent!important;color:#e9e6dc!important;text-shadow:0 0 8px #05060a,0 0 3px #05060a;transition:opacity 1.8s ease .25s}\nbody.tcnight:not(.tcreveal) #tchome{opacity:0}\nbody.tcnight #tchome [style*=\"color:#111111\"],body.tcnight #tchome [style*=\"color: rgb(17, 17, 17)\"]{color:#e9e6dc!important}\nbody.tcnight #tchome [style*=\"color:#6a6962\"],body.tcnight #tchome [style*=\"color: rgb(106, 105, 98)\"]{color:#a9a69c!important}\nbody.tcnight #tchome [style*=\"color:#2f2e2a\"],body.tcnight #tchome [style*=\"color: rgb(47, 46, 42)\"]{color:#c9c6bc!important}\nbody.tcnight #tchome a[href]:hover{color:#f7f5ee!important}\nbody.tcnight #tchome [style*=\"background:#e0ded6\"],body.tcnight #tchome [style*=\"background: rgb(224, 222, 214)\"]{background:rgba(233,230,220,.16)!important}\nbody.tcnight #tccloud{transition:opacity 2.4s ease .5s}\nbody.tcnight:not(.tcreveal) #tccloud{opacity:0}\n";
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnocontents';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnocontents'))(document.head||document.documentElement).appendChild(st)}).observe(document.documentElement,{childList:true,subtree:true})})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnocontents';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnocontents'))(document.head||document.documentElement).appendChild(st)}).observe(document.documentElement,{childList:true,subtree:true})})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnocontents';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnocontents'))(document.head||document.documentElement).appendChild(st)}).observe(document.documentElement,{childList:true,subtree:true})})();
 const ISS=[
  {n:1,sub:'Hard Rain Falling',e:[['The Indians Buried Her','issue001.html']]},
  {n:2,sub:'The Plains',e:[['The Darkness in the Chamber','issue002.html']]},
@@ -772,7 +781,8 @@ function build(host){layer=document.createElement('div');layer.id='tcskysel';cv=
   cap=document.createElement('div');cap.className='cap';layer.appendChild(cap);btn={};sbtn={};
   for(const it of ISS){const b=document.createElement('button');b.type='button';b.className='mk';b.setAttribute('aria-label','Issue '+it.n+': '+it.sub);
     b.addEventListener('mouseenter',()=>{hov=it.n});b.addEventListener('mouseleave',()=>{if(hov===it.n)hov=null});b.addEventListener('focus',()=>{hov=it.n});b.addEventListener('blur',()=>{if(hov===it.n)hov=null});
-    b.addEventListener('click',e=>{if(MODE==='A'||MODE==='B'){openIssue(it.n);return}const t=document.querySelector('#tcissuebtns button[aria-label="Start at issue '+it.n+'"]');if(t)t.click()});
+    // no contents page any more: a marker goes straight to its (first) study, by the zoom where there is a planet
+    b.addEventListener('click',e=>{e.stopPropagation();const first=(it.e[0]||[])[1];if(!first)return;if(!planetGo(first,e))location.href=first});
     const nm=document.createElement('span');nm.className='num';nm.textContent=it.n;it.nm=nm;layer.appendChild(nm);layer.appendChild(b);btn[it.n]=b;
     if(it.k>1)it.e.forEach(([title,href],j)=>{const a=document.createElement('a');a.className='st';a.href=href;a.setAttribute('aria-label','Issue '+it.n+', study '+(j+1)+': '+title);
       a.addEventListener('mouseenter',()=>{hov=it.n;hovStar=[it.n,j]});a.addEventListener('mouseleave',()=>{hovStar=null;if(hov===it.n)hov=null});
@@ -818,7 +828,7 @@ function draw(now){const de=document.documentElement;if(de.dataset.tcsel&&de.dat
     if(mlab){mlab.classList.toggle('on',on);mlab.style.opacity=(dim?.45:1)*(1-VP)+''}}
   if(hov==='M'&&VP<.05){cap.innerHTML='<b>The method</b>Anatomy of a Pressing';const w=cap.offsetWidth;let cx=Math.max(10,Math.min(W-w-10,METH.x-w/2));cap.style.left=cx+'px';cap.style.top=(METH.y+S*1.4)+'px';cap.classList.add('on')}
   // the caption: the issue's subjects, or the title of the study under the pointer
-  const it=hov&&hov!=='M'&&VP<.05?ISS[hov-1]:null;if(hov==='M'){}else if(it){cap.innerHTML=hovStar?'<b>Issue '+it.n+' · study '+(hovStar[1]+1)+'</b>'+it.e[hovStar[1]][0]:'<b>Issue '+it.n+'</b>'+it.sub;
+  const it=hov&&hov!=='M'&&VP<.05?ISS[hov-1]:null;if(hov==='M'){}else if(it){cap.innerHTML=hovStar?'<b>Issue '+it.n+' · study '+(hovStar[1]+1)+'</b>'+it.e[hovStar[1]][0]:'<b>Issue '+it.n+'</b>'+it.sub+(it.e[0]&&it.e[0][1]?'':' · coming soon');
     const w=cap.offsetWidth;let x=it.side>0?it.bx[0]:it.bx[2]-w;x=Math.max(10,Math.min(W-w-10,x));let y=it.bx[3]+8;if(y+44>H-64)y=it.bx[1]-52;cap.style.left=x+'px';cap.style.top=y+'px';cap.classList.add('on')}
   else cap.classList.remove('on')}
 let night=null;function sky(on){if(on===night)return;night=on;document.body.classList.toggle('tcnight',on);document.documentElement.classList.toggle('tcnight',on);if(window.__tcSky)window.__tcSky(on);if(on&&window.__tcldDone)document.body.classList.add('tcreveal')}
@@ -966,5 +976,125 @@ window.__tcMethod={open:()=>{if(mine())openMethod()},close:closeMethod};
 
 window.__tcSel={state:()=>ISS.map(it=>({n:it.n,x:Math.round(it.x),y:Math.round(it.y),k:it.k}))};
 requestAnimationFrame(draw)})();
+
+/* The site opens on a glass orb holding the starfield. A click (or Enter) breaks it, the stars scatter, and the index
+   underneath carries on as usual. ORB picks how it breaks:
+   A  shatter: the glass cracks into shards that fly out with the stars
+   B  release: the glass thins and pops like a bubble; the stars drift out to their places in the sky
+   C  burst: the orb draws in, then the stars stream outward in long trails
+   Shown once per visit, and never when arriving with a hash (#issues and the like). */
+(function(){
+if(window.__tcOrb)return;window.__tcOrb=1;
+const ORB='B';
+if(location.hash)return;try{if(sessionStorage.getItem('tcOrb'))return}catch(_){}
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ov=document.createElement('div');ov.id='tcorb';ov.setAttribute('role','button');ov.setAttribute('tabindex','0');ov.setAttribute('aria-label','Temporary Custody. Open.');
+ov.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#000;cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent';
+const cv=document.createElement('canvas'),pc=document.createElement('canvas');
+[cv,pc].forEach(c=>{c.style.cssText='position:absolute;inset:0;width:100%;height:100%;display:block';ov.appendChild(c)});
+const lab=document.createElement('div');lab.style.cssText="position:absolute;left:0;right:0;text-align:center;font-family:'Liberation Mono','DejaVu Sans Mono',monospace;font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:#8d8b84;pointer-events:none;transition:opacity .6s";
+lab.innerHTML='<div style="color:#cfccc2">Temporary Custody</div><div style="margin-top:1.1em;font-size:11px;letter-spacing:.24em;animation:tcob 2.8s ease-in-out infinite">Touch the glass</div>';
+const st=document.createElement('style');st.textContent='@keyframes tcob{50%{opacity:.35}}';ov.appendChild(st);// just the orb: no words on the page
+
+(document.body||document.documentElement).appendChild(ov);
+// keep it on top even if the page is rebuilt underneath
+const keep=new MutationObserver(()=>{if(!ov.isConnected&&!gone)document.documentElement.appendChild(ov)});keep.observe(document.documentElement,{childList:true,subtree:true});
+let W=0,H=0,D=1,R=0,cx=0,cy=0;
+function size(){D=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;[cv,pc].forEach(c=>{c.width=Math.round(W*D);c.height=Math.round(H*D)});R=Math.min(W,H)*(W<600?.34:.26);cx=W/2;cy=H*.46;lab.style.top=(cy+R+38)+'px'}
+size();addEventListener('resize',size);
+const gl=cv.getContext('webgl',{premultipliedAlpha:true,alpha:true});
+const FS=`precision highp float;uniform vec2 uRes,uC;uniform float uR,uT,uB,uH,uS;
+float h(vec3 p){p=fract(p*vec3(.1031,.103,.0973));p+=dot(p,p.yxz+33.33);return fract((p.x+p.y)*p.z);}
+float vn(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z);}
+float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*vn(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return s;}
+vec3 stars(vec3 d,float sc){vec3 q=d*sc,c=floor(q),f=fract(q)-.5;float r=h(c);vec3 o=vec3(h(c+1.3),h(c+2.7),h(c+5.1))-.5;float s=length(f-o*.6);
+ float b=step(.62,r)*pow(max(0.,1.-s*7.),3.)*(.4+1.6*h(c+9.));vec3 col=mix(vec3(.85,.9,1.),mix(vec3(1.,.75,.6),vec3(.6,.8,1.),h(c+4.)),step(.82,r));return col*b;}
+mat3 ry(float a){float c=cos(a),s=sin(a);return mat3(c,0.,-s,0.,1.,0.,s,0.,c);}
+void main(){vec2 p=(gl_FragCoord.xy-uC)/(uR*uS);float r=length(p),px=1.5/(uR*uS);
+ float glow=exp(-max(r-1.,0.)*16.)*smoothstep(1.-px,1.+px,r)*.12;
+ if(r>1.+px){gl_FragColor=vec4(vec3(.55,.62,.95)*glow,glow)*(1.-uB);return;}
+ vec3 n=vec3(p,sqrt(max(0.,1.-r*r)));
+ vec3 inner=vec3(0.);
+ // the space inside, seen through the glass: each colour bends a little differently at the edge
+ for(int k=0;k<3;k++){float eta=1./(1.42+.025*float(k));vec3 d=refract(vec3(0.,0.,-1.),n,eta);d=ry(uT*.035)*normalize(d+vec3(0.,0.,.6));
+  vec3 s=stars(d,38.)+stars(d,74.)*.7+stars(d,140.)*.45;
+  float cur=exp(-abs(d.x+.25*sin(d.y*3.+uT*.12)+.15)*5.)*smoothstep(-.4,.9,d.y);
+  float neb=fbm(d*2.2+vec3(0.,uT*.02,0.));float neb2=fbm(d*4.+vec3(uT*.015,0.,3.));
+  vec3 cl=vec3(.22,.3,.9)*cur*.9+vec3(.55,.32,.85)*smoothstep(.5,.8,neb)*.55+vec3(.3,.75,.85)*smoothstep(.6,.85,neb2)*.3+vec3(.95,.55,.3)*smoothstep(.72,.9,neb*neb2*1.9)*.25;
+  vec3 c=s+cl;inner[k]=c[k];}
+ inner*=.5+.5*n.z;
+ float fr=pow(1.-n.z,2.6);
+ vec3 rim=vec3(pow(1.-n.z,2.3),pow(1.-n.z,2.7),pow(1.-n.z,3.1))*vec3(.75,.85,1.1);
+ vec2 h1=p-vec2(-.42,.46);float s1=exp(-dot(h1*vec2(1.,1.9),h1*vec2(1.,1.9))*26.)*.85;
+ vec2 h2=p-vec2(.38,-.5);float s2=exp(-dot(h2,h2)*120.)*.35;
+ float caus=smoothstep(.7,1.,r)*smoothstep(-.2,-.75,p.y)*.18;
+ vec3 col=inner*(1.-fr*.55)+rim*.55+vec3(.92,.95,1.)*(s1+s2)+vec3(.55,.65,1.)*caus;
+ col*=1.+uH*.12;
+ float a=smoothstep(1.+px,1.-px,r);float al=max(a*.96,max(max(col.r,col.g),col.b)*a);
+ gl_FragColor=vec4(col*a,al)*(1.-uB)+vec4(vec3(.55,.62,.95)*glow,glow)*(1.-uB);}`;
+let prog=null,U={};
+if(gl){const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};prog=gl.createProgram();
+ gl.attachShader(prog,sh(gl.VERTEX_SHADER,'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(prog);
+ if(!gl.getProgramParameter(prog,gl.LINK_STATUS))prog=null;else{gl.useProgram(prog);const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const al=gl.getAttribLocation(prog,'a');gl.enableVertexAttribArray(al);gl.vertexAttribPointer(al,2,gl.FLOAT,false,0,0);['uRes','uC','uR','uT','uB','uH','uS'].forEach(k=>U[k]=gl.getUniformLocation(prog,k))}}
+const pg=pc.getContext('2d');
+let t0=performance.now(),bt=-1,hov=0,hovT=0,gone=false,parts=[],shards=[];
+ov.addEventListener('pointermove',e=>{hovT=Math.hypot(e.clientX-cx,e.clientY-cy)<R?1:0});ov.addEventListener('pointerleave',()=>{hovT=0});
+function scale(now){if(bt<0)return 1+.025*hov;const k=(now-bt)/1000;
+ if(ORB==='C')return k<.28?1-.1*Math.sin(k/.28*Math.PI/2):.9+k*1.2;
+ if(ORB==='B')return 1+k*.5;return 1+k*.08}
+function fadeB(now){if(bt<0)return 0;const k=(now-bt)/1000;return ORB==='A'?Math.min(1,k/.12):ORB==='B'?Math.min(1,k/.55):Math.min(1,Math.max(0,(k-.25)/.15))}
+function frame(now){if(gone)return;const t=(now-t0)/1000;hov+=(hovT-hov)*.08;
+ if(prog){gl.viewport(0,0,cv.width,cv.height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.uniform2f(U.uRes,cv.width,cv.height);gl.uniform2f(U.uC,cx*D,(H-cy)*D);gl.uniform1f(U.uR,R*D);
+  gl.uniform1f(U.uT,t);gl.uniform1f(U.uB,fadeB(now));gl.uniform1f(U.uH,hov);gl.uniform1f(U.uS,scale(now));gl.drawArrays(gl.TRIANGLES,0,3)}
+ else{pg.setTransform(D,0,0,D,0,0);if(bt<0){pg.clearRect(0,0,W,H);const g=pg.createRadialGradient(cx-R*.3,cy-R*.3,R*.1,cx,cy,R);g.addColorStop(0,'#1a2050');g.addColorStop(1,'#05060c');pg.fillStyle=g;pg.beginPath();pg.arc(cx,cy,R,0,7);pg.fill()}}
+ if(bt>=0)drawParts(now);
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+/* the pieces */
+function rnd(a,b){return a+Math.random()*(b-a)}
+function makeParts(){const n=ORB==='C'?520:420;parts=[];
+ for(let i=0;i<n;i++){const a=rnd(0,6.283),rr=Math.sqrt(Math.random())*R*.96,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr,warm=Math.random()<.18,b=rnd(.35,1);
+  const col=warm?[255,214,190]:Math.random()<.2?[170,200,255]:[232,238,255];
+  let vx,vy,tx,ty;const sp=ORB==='C'?rnd(200,780):rnd(90,420)*(.4+rr/R);
+  vx=Math.cos(a)*sp+rnd(-30,30);vy=Math.sin(a)*sp+rnd(-30,30);tx=rnd(0,W);ty=rnd(0,H);
+  parts.push({x,y,x0:x,y0:y,vx,vy,tx,ty,r:rnd(.5,1.6)*(b>.85?1.6:1),col,b,d:rnd(0,.25)})}
+ shards=[];if(ORB==='A'){const m=46;for(let i=0;i<m;i++){const a=i/m*6.283+rnd(-.05,.05),a2=a+6.283/m*rnd(.8,1.3),r0=R*rnd(.55,.9);
+  const pts=[[Math.cos(a)*R,Math.sin(a)*R],[Math.cos(a2)*R,Math.sin(a2)*R],[Math.cos((a+a2)/2)*r0,Math.sin((a+a2)/2)*r0]];const mx=(pts[0][0]+pts[1][0]+pts[2][0])/3,my=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+  shards.push({pts:pts.map(([x,y])=>[x-mx,y-my]),x:cx+mx,y:cy+my,vx:mx/R*rnd(260,620),vy:my/R*rnd(260,620)+rnd(-40,40),rot:0,vr:rnd(-4,4),a:rnd(.5,.9)})}
+  for(let i=0;i<70;i++){const a=rnd(0,6.283),r0=R*rnd(0,.85),s=rnd(4,14);const a1=rnd(0,6.283);
+   shards.push({pts:[[0,-s],[s*.8,s*.6],[-s*.7,s*.5]],x:cx+Math.cos(a)*r0,y:cy+Math.sin(a)*r0,vx:Math.cos(a)*rnd(150,500),vy:Math.sin(a)*rnd(150,500),rot:a1,vr:rnd(-6,6),a:rnd(.3,.7)})}}}
+function drawParts(now){const k=(now-bt)/1000,dt=1/60;pg.setTransform(D,0,0,D,0,0);
+ if(ORB==='C'){pg.fillStyle='rgba(0,0,0,.28)';pg.fillRect(0,0,W,H)}else pg.clearRect(0,0,W,H);
+ const T=ORB==='B'?2.4:ORB==='C'?1.9:1.8,life=Math.max(0,1-k/T);
+ if(ORB==='A'&&k<.35){ // the crack, drawn on the glass before it gives
+  pg.strokeStyle=`rgba(225,235,255,${(.8*(1-k/.35)).toFixed(3)})`;pg.lineWidth=.8;for(let i=0;i<14;i++){let a=i/14*6.283+.2,x=cx+Math.cos(a)*R*.08,y=cy+Math.sin(a)*R*.08;pg.beginPath();pg.moveTo(x,y);
+   for(let j=0;j<6;j++){a+=rnd(-.25,.25);const l=R*.15*Math.min(1,k/.18);x+=Math.cos(a)*l;y+=Math.sin(a)*l;pg.lineTo(x,y)}pg.stroke()}}
+ for(const p of parts){const kk=Math.max(0,k-p.d);if(kk<=0){pg.fillStyle=`rgba(${p.col},${p.b})`;pg.beginPath();pg.arc(p.x,p.y,p.r,0,7);pg.fill();continue}
+  let al=p.b;
+  if(ORB==='B'){const e=1-Math.pow(1-Math.min(1,kk/1.8),3);p.x=p.x0+(p.tx-p.x0)*e;p.y=p.y0+(p.ty-p.y0)*e;al*=Math.max(0,1-Math.max(0,kk-1.2)/1.1)}
+  else{const g=ORB==='C'?1.5:1.2;p.vx*=1+dt*g*.6;p.vy*=1+dt*g*.6;const ox=p.x,oy=p.y;p.x+=p.vx*dt;p.y+=p.vy*dt;al*=life;
+   if(ORB==='C'){pg.strokeStyle=`rgba(${p.col},${(al*.8).toFixed(3)})`;pg.lineWidth=p.r;pg.beginPath();pg.moveTo(ox-(p.x-ox)*2,oy-(p.y-oy)*2);pg.lineTo(p.x,p.y);pg.stroke();continue}}
+  pg.fillStyle=`rgba(${p.col},${al.toFixed(3)})`;pg.beginPath();pg.arc(p.x,p.y,p.r,0,7);pg.fill()}
+ for(const s of shards){s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=60*dt;s.rot+=s.vr*dt;const al=s.a*life;if(al<=0)continue;pg.save();pg.translate(s.x,s.y);pg.rotate(s.rot);
+  const g=pg.createLinearGradient(-12,-12,12,12);g.addColorStop(0,`rgba(235,242,255,${(al*.55).toFixed(3)})`);g.addColorStop(1,`rgba(120,140,220,${(al*.12).toFixed(3)})`);pg.fillStyle=g;
+  pg.strokeStyle=`rgba(240,246,255,${(al*.7).toFixed(3)})`;pg.lineWidth=.7;pg.beginPath();s.pts.forEach(([x,y],i)=>i?pg.lineTo(x,y):pg.moveTo(x,y));pg.closePath();pg.fill();pg.stroke();pg.restore()}
+ if(ORB==='B'&&k<.9){const rr=R*(1+k*.9);pg.strokeStyle=`rgba(200,215,255,${(.35*(1-k/.9)).toFixed(3)})`;pg.lineWidth=1.2;pg.beginPath();pg.arc(cx,cy,rr,0,7);pg.stroke()}
+ if(ORB==='C')pc.style.opacity=String(Math.max(0,1-Math.max(0,k-.7)/1.1));
+ const bgA=ORB==='B'?Math.max(0,1-Math.max(0,k-.5)/1.6):Math.max(0,1-Math.max(0,k-.45)/1.1);ov.style.background=`rgba(0,0,0,${bgA.toFixed(3)})`;
+ if(k>T+.1){gone=true;keep.disconnect();ov.remove();removeEventListener('resize',size)}}
+/* a glass sound: a cluster of small high tones and one low bloom, nothing noisy */
+function chime(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ac=new A(),m=ac.createGain();m.gain.value=.5;m.connect(ac.destination);const t=ac.currentTime+.02;
+ const dl=ac.createDelay(1);dl.delayTime.value=.23;const fb=ac.createGain();fb.gain.value=.35;const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3000;dl.connect(lp);lp.connect(fb);fb.connect(dl);lp.connect(m);
+ const n=ORB==='A'?16:ORB==='C'?10:7;for(let i=0;i<n;i++){const f=[1318.5,1567.98,1760,2093,2349.3,2637][Math.floor(Math.random()*6)]*(Math.random()<.3?.5:1),at=t+(ORB==='B'?i*.09:i*.035)+Math.random()*.03;
+  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(.05/(1+i*.1),at+.004);g.gain.exponentialRampToValueAtTime(.0001,at+.9+Math.random()*.8);o.connect(g);g.connect(m);g.connect(dl);o.start(at);o.stop(at+2)}
+ const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=ORB==='C'?98:110;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12,t+.25);g.gain.exponentialRampToValueAtTime(.0001,t+3.2);o.connect(g);g.connect(m);o.start(t);o.stop(t+3.4);
+ setTimeout(()=>{try{ac.close()}catch(_){}},4500)}catch(_){}}
+function burst(){if(bt>=0)return;try{sessionStorage.setItem('tcOrb','1')}catch(_){}lab.style.opacity='0';chime();
+ if(reduce){bt=performance.now();parts=[];shards=[];ov.style.transition='opacity .6s';ov.style.opacity='0';setTimeout(()=>{gone=true;keep.disconnect();ov.remove()},650);return}
+ makeParts();bt=performance.now()}
+ov.addEventListener('click',burst);ov.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();burst()}});
+setTimeout(()=>{try{ov.focus({preventScroll:true})}catch(_){}},50);
+})();
 </script></body>
 </html>
