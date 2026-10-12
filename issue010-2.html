@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><!-- tc-slim --><script>(function(){try{if(matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<700)location.replace('issue010-2_m.html'+location.search+location.hash)}catch(_){}})()</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Wine-Dark Sea</title>
@@ -130,113 +130,11 @@ const holdOf=it=>it.title?6.5:3.2+it.words*.34;
 const C=3.6,D=3.8;   // condense, disperse
 
 /* ---------- gl ---------- */
-const gl=window.__MOBALT?null:cv.getContext('webgl',{premultipliedAlpha:true,alpha:true,antialias:false});if(gl)gl.getExtension('OES_standard_derivatives');
+const gl=window.__MOBALT?null:/* this page never draws the planet, so it takes no WebGL at all */true?new Proxy({},{get:(o,k)=>k==='getShaderParameter'||k==='getProgramParameter'?()=>true:typeof k==='string'&&/^[A-Z0-9_]+$/.test(k)?0:()=>null}):cv.getContext('webgl',{premultipliedAlpha:true,alpha:true,antialias:false});if(gl)gl.getExtension('OES_standard_derivatives');
 if(!gl){if(window.__MOBALT)return;const n=document.getElementById('nogl');n.style.display='flex';n.innerHTML='<p>This reading needs WebGL, which this browser has turned off.<br><a style="color:#ee4a64" href="'+location.pathname.split('/').pop().replace(/\.html$/,'_study.html')+'">Read the study as pages instead</a></p>';return}
 const VS='attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
-const FS=`
-#extension GL_OES_standard_derivatives : enable
-precision highp float;
-uniform vec2 uRes,uC,uTs;uniform float uT,uRad,uIntro;uniform mat3 uR;
-uniform sampler2D uTA,uTB;uniform samplerCube uTer;uniform vec3 uA,uB;
-const float PI=3.14159265;
-float h3(vec3 p){p=fract(p*vec3(.1031,.1030,.0973));p+=dot(p,p.yxz+33.33);return fract((p.x+p.y)*p.z);}
-float vn(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
- return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
-            mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}
-float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<4;i++){s+=a*vn(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return s;}
-vec3 wx(sampler2D T,vec3 W,float lon,float lat,vec3 np){
- float x=lon-W.x;if(abs(x)>1.52||W.y>1.25)return vec3(0.);
- vec2 tc=vec2(.5+x/PI,.5-lat/(PI*.5));
- vec2 s=texture2D(T,tc).rg;vec2 sh=texture2D(T,tc+vec2(-.0045,-.009)).rg;
- float nz=fbm(vec3(x*7.,lat*9.,0.)+np*2.+vec3(0.,0.,uT*.05));float nz2=fbm(vec3(x*22.,lat*26.,uT*.08));
- float edge=smoothstep(1.52,1.2,abs(x));
- float cl=smoothstep(W.z,W.z+.5,s.g*(.35+1.1*nz))*smoothstep(.3,.85,nz2)*smoothstep(.9,.2,s.g)*.45*edge;
- float storm=smoothstep(W.z-.1,W.z+.85,s.g*(.55+.7*nz))*.66*edge;
- float tx=0.;
- float shd=storm;
- return vec3(cl,tx,shd);}
-
-vec2 tuv(vec3 p){return vec2(atan(p.z,p.x)/(2.*PI)+.5,asin(clamp(p.y,-1.,1.))/PI+.5);}
-void main(){
- float S=.5*min(uRes.x,uRes.y);
- vec2 uv=(gl_FragCoord.xy-uC)/S;
- float r=length(uv)/uRad,px=1.4/(S*uRad);
- vec3 Lv=normalize(vec3(-.62,.32,.72));
- float out1=max(r-1.,0.);vec2 dir=normalize(uv+1e-5);
- float sunw=dot(dir,normalize(Lv.xy));
- float haze=exp(-out1*38.)*smoothstep(1.-px,1.+px,r)*(.1+.9*smoothstep(-.6,.8,sunw))*uIntro;
- vec3 hcol=mix(vec3(0.478,0.227,0.416),vec3(0.847,0.627,0.784),smoothstep(.2,1.,sunw))*haze;
- if(r>1.+px){gl_FragColor=vec4(hcol,haze*.9);return;}
- vec3 n=vec3(uv/uRad,0.);n.z=sqrt(max(0.,1.-dot(n.xy,n.xy)));
- vec3 p=uR*n;
- vec4 ter=textureCube(uTer,p);
- vec3 col=ter.rgb;
- // relief: slope of the baked height along east and north
- vec3 east=normalize(vec3(-p.z,0.,p.x)+1e-5),north=cross(p,east);float ep=uTs.x;
- float e=textureCube(uTer,p+east*ep).a-textureCube(uTer,p-east*ep).a;
- float nn=textureCube(uTer,p+north*ep).a-textureCube(uTer,p-north*ep).a;
- vec3 Np=normalize(p-(east*e+north*nn)*10.);
- vec3 L=uR*Lv;
- float ndl=dot(Np,L),ndl0=dot(p,L);
- float day=smoothstep(-.12,.3,ndl0);
- float diff=max(ndl,0.)*.92+.08*max(ndl0+.3,0.);
- col*=diff*day*vec3(1.000,0.941,0.957)+.012;
- {vec3 V=uR*vec3(0.,0.,1.);float wtr=1.-step(.004,ter.a);col+=vec3(.95,.93,.88)*pow(max(dot(reflect(-L,normalize(p+(east*e+north*nn)*3.)),V),0.),60.)*0.550*wtr*day;}
- col+=vec3(1.000,0.753,0.439)*smoothstep(0.760,0.880,fbm(p*9.00))*smoothstep(.4,.75,fbm(p*27.90+3.))*(1.-smoothstep(-.25,.15,ndl0))*((1.-step(.004,ter.a))*0.+step(.004,ter.a))*0.500;
- float a2=uT*.006;vec3 pc=vec3(p.x*cos(a2)-p.z*sin(a2),p.y,p.x*sin(a2)+p.z*cos(a2));
- float hz=smoothstep(0.52,0.86,fbm(vec3(pc.x*2.5,pc.y*7.,pc.z*2.5)))*0.30;
- col=mix(col,vec3(0.949,0.902,0.933)*(day*max(ndl0,0.)*.95+.03),hz);
- float facing=max(n.z,0.);
- float limb=pow(1.-facing,2.8);
- col+=mix(vec3(0.290,0.125,0.259),vec3(0.784,0.565,0.722),day)*limb*(.08+.9*smoothstep(-.3,.5,ndl0))*.6;
- col+=vec3(1.000,0.541,0.439)*smoothstep(.25,0.,abs(ndl0+.02))*.06;
- float lon=atan(n.x,n.z),latv=asin(clamp(n.y,-1.,1.));
- vec3 wa=wx(uTA,uA,lon,latv,p),wb=wx(uTB,uB,lon,latv,p);
- float cw=max(wa.x,wb.x),tx=max(wa.y,wb.y),shd=max(wa.z,wb.z);
- col*=1.-.8*shd;
- float lit=max(.55,smoothstep(-.1,.5,ndl0));
- col=mix(col,vec3(1.,.95,.92)*lit,cw);
- col=mix(col,vec3(.914,.902,.863)*max(.8,lit),tx);
- col=vec3(1.)-exp(-col*1.5);
- col*=uIntro;
- float a=smoothstep(1.+px,1.-px,r);
- gl_FragColor=vec4(col*a+hcol*(1.-a),a+(1.-a)*haze*.9);
-}`;
-const BFS=`precision highp float;
-uniform vec2 uRes,uC;uniform float uT,uRad,uIntro;uniform mat3 uR;
-uniform vec2 uSz;uniform float uFace;
-const float PI=3.14159265;
-float h3(vec3 p){p=fract(p*vec3(.1031,.1030,.0973));p+=dot(p,p.yxz+33.33);return fract((p.x+p.y)*p.z);}
-float vn(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
- return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
-            mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}
-float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<4;i++){s+=a*vn(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return s;}
-float fbm6(vec3 p){float a=.5,s=0.;for(int i=0;i<7;i++){s+=a*vn(p);p=p*2.07+vec3(5.1,1.3,7.7);a*=.5;}return s;}
-float ridge(vec3 p){float a=.5,s=0.;for(int i=0;i<5;i++){float r=1.-abs(vn(p)*2.-1.);s+=a*r*r;p=p*2.11+vec3(3.3,8.1,2.2);a*=.5;}return s;}
-
-void main(){
- vec2 st=gl_FragCoord.xy/uSz*2.-1.;float s=st.x,t=st.y;vec3 d;
- if(uFace<.5)d=vec3(1.,-t,-s);else if(uFace<1.5)d=vec3(-1.,-t,s);else if(uFace<2.5)d=vec3(s,1.,t);else if(uFace<3.5)d=vec3(s,-1.,-t);else if(uFace<4.5)d=vec3(s,-t,1.);else d=vec3(-s,-t,-1.);
- vec3 p=normalize(d);float lat=asin(clamp(p.y,-1.,1.));
-
- vec3 w=vec3(fbm(p*1.5+vec3(2.,7.,1.)),fbm(p*1.5+vec3(9.,3.,5.)),fbm(p*1.5+vec3(4.,1.,8.)));
- float cont=fbm6(p*1.400+w*1.400),fine=fbm6(p*30.),mtn=ridge(p*4.2+w*.8);
- float h=cont+0.200*mtn*smoothstep(.42,.62,cont);
- vec3 cp=p*7.;vec3 ci=floor(cp);float crat=0.;
- for(int k=0;k<8;k++){vec3 o=vec3(mod(float(k),2.),mod(floor(float(k)/2.),2.),floor(float(k)/4.));vec3 c=ci+o;
-  float hh=h3(c);if(hh>.16)continue;vec3 cc=normalize((c+vec3(h3(c+1.3),h3(c+2.7),h3(c+5.1)))/7.);
-  float rr=.025+.06*h3(c+9.1);float d=length(p-cc)/rr;crat+=(smoothstep(1.2,.95,d)*smoothstep(.6,1.,d)*.35-smoothstep(1.,.2,d)*.25)*step(d,1.3);}
- h+=crat*.1*0.000;
- float sea=0.700,land=sea<0.?1.:smoothstep(sea,sea+.012,h),depth=sea<0.?0.:smoothstep(sea,sea-.18,h);
- float hl=sea<0.?h:(h-sea)/(1.-sea);
- vec3 col=mix(vec3(0.478,0.416,0.282),vec3(0.416,0.416,0.227),smoothstep(0.05,0.2,hl));
- col=mix(col,vec3(0.541,0.541,0.353),smoothstep(0.3,0.5,hl));col=mix(col,vec3(0.839,0.804,0.690),smoothstep(0.6,0.85,hl));
- float stk=fbm(vec3(p.x*3.,p.y*22.,p.z*3.)+w);col=mix(col,vec3(1.000,1.000,1.000),smoothstep(.55,.75,stk)*0.000);
- col*=.84+.32*fine;
- {float silt=fbm(p*6.+w*3.);vec3 water=mix(vec3(0.290,0.094,0.204),vec3(0.071,0.016,0.055),depth);water*=.9+.2*silt;col=mix(water,col,land);}
- float cap=smoothstep(9.000,9.080,abs(lat)+.16*fbm(p*5.)+.05*fine);col=mix(col,vec3(1.000,1.000,1.000),cap);
- gl_FragColor=vec4(col,clamp((hl*.9-.05)*0.850,0.,1.)*land*(1.-cap*.6));
-}`;
+const FS='';
+const BFS='';
 function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
 const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
 const bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
@@ -259,7 +157,7 @@ gl.uniform1i(U.uTer,2);gl.uniform2f(U.uTs,2/MW,2/MW);
 
 /* ---------- weather textures: text in red, cloud mass in green ---------- */
 const big=gl.getParameter(gl.MAX_TEXTURE_SIZE)>=4096&&Math.min(innerWidth,innerHeight)>500;
-const TW=big?4096:2048,TH=TW/2,K=TW/4096;
+const TW=2,TH=TW/2,K=TW/4096;
 const tcv=document.createElement('canvas');tcv.width=TW;tcv.height=TH;const tg=tcv.getContext('2d');
 const tex=[0,1].map(i=>{const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,t);
  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -309,7 +207,7 @@ for(let i=0;i<NF;i++){if(hr()>.2)continue;const ph=2*Math.PI*((i*PHI)%1),ct=1-(2
 
 /* ---------- timeline ---------- */
 const HASH0=location.hash+location.search,GO=/[#?&]go\b/.test(HASH0),V2=/[#?&]v2\b/.test(HASH0),PNUM=+((HASH0.match(/[#?&]p(\d+)\b/)||[])[1]||0);
-const FILE=location.pathname.split('/').pop()||'',POSKEY='tcPos:'+FILE;
+const FILE=(location.pathname.split('/').pop()||'').replace(/_m\.html$/,'.html'),POSKEY='tcPos:'+FILE;
 const FRAMED=window.parent!==window&&/[#?&]frame/.test(location.href);if(FRAMED)document.documentElement.classList.add('framed');
 const ARRIVE=/[#?&]arrive/.test(location.href);if(ARRIVE)try{history.replaceState(null,'',location.pathname)}catch(_){}
 const arrImg=document.getElementById('arrive');let arrFrames=0;
@@ -587,187 +485,6 @@ addEventListener('pageshow',ev=>{if(ev.persisted){gone=false;document.body.class
 const bs=document.getElementById('bSnd');bs.addEventListener('click',e=>{e.stopPropagation();if(!started){begin();return}bs.textContent=SND.toggle()?'Sound on':'Sound off'});
 window.__planet={next,back,state:()=>({T,live:live.map(l=>[l.k,l.slot]),intro}),seek:k=>{live=[];T+=20;spawn(k)},pose:(k,tau,sp)=>{intro=1;started=true;document.getElementById('begin').classList.add('gone');frozen=true;live=[];spawn(k);cur().t0=T-tau;if(sp!=null)spin=sp}};
 (document.fonts&&document.fonts.load?Promise.all(["40px 'TeX Gyre Pagella'","italic 40px 'TeX Gyre Pagella'","40px 'Liberation Mono'"].map(f=>document.fonts.load(f))):Promise.resolve()).then(()=>requestAnimationFrame(t=>{last=t;frame(t)}));
-})();
-</script>
-<style>
-html.mobalt body>*:not(#sky):not(#mob):not(script):not(style){display:none!important}
-html.mobalt,html.mobalt body{background:#05060a;overflow:hidden;height:100%}
-#mob{position:fixed;inset:0;z-index:5;color:#e9e6dc;font-family:'TeX Gyre Pagella',Palatino,serif;-webkit-tap-highlight-color:transparent}
-#mob .mono{font-family:'Liberation Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase}
-#mob a,#mob button{all:unset;cursor:pointer;color:#cfccc2}#mob a:focus-visible,#mob button:focus-visible{outline:1px solid #ee4a64;outline-offset:3px}
-#mob .bar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;z-index:3}
-#mob .bar .iss{color:#7d7b75}
-#mob .pl{position:absolute;pointer-events:none;filter:drop-shadow(0 0 22px rgba(140,150,200,.12))}
-#mob .pass{position:absolute;left:0;right:0;padding:0 22px;text-align:center;transition:opacity .9s ease;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#mob .pass.out{opacity:0}
-#mob .lb{color:#bdbab1;margin-bottom:.9em}
-#mob .tx{font-size:18.5px;line-height:1.5;color:#f1eee6;text-shadow:0 0 12px rgba(5,6,10,.9),0 1px 1px rgba(5,6,10,.9);max-width:34em;margin:0 auto}
-#mob .ttl .tx{font-size:27px;line-height:1.18}#mob .ttl .dk{display:block;font-style:italic;font-size:16px;line-height:1.45;margin-top:.8em;color:#d8d4ca}
-#mob .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:1.1em}
-#mob .chip{font-size:13.5px;line-height:1.3;padding:.32em .75em;border-radius:999px;border:1px solid}
-#mob .chip.k1{color:#d9e4e4;border-color:rgba(110,150,160,.55);background:rgba(60,110,130,.16)}
-#mob .chip.k2{color:#e9e6dc;border-color:rgba(200,110,140,.5);background:rgba(150,80,120,.16)}
-#mob .chip.k3{color:#ee4a64;border-color:rgba(238,74,100,.55);background:rgba(238,74,100,.1)}
-#mob .does{margin-top:1em;font-style:italic;font-size:15px;line-height:1.45;color:#b9b6c9;max-width:30em;margin-left:auto;margin-right:auto}
-#mob .does b{font-style:normal;font-weight:400;font-family:'Liberation Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8d8aa3;margin-right:.6em}
-#mob .foot{position:absolute;left:0;right:0;bottom:0;padding:0 16px calc(12px + env(safe-area-inset-bottom));z-index:3}
-#mob .prog{position:relative;height:14px;margin-bottom:8px}
-#mob .prog i{position:absolute;bottom:0;width:1px;height:4px;background:rgba(233,230,220,.25)}#mob .prog i.g{height:8px;background:rgba(233,230,220,.5)}
-#mob .prog i.cur{background:#ee4a64;height:9px;width:2px}
-#mob .prog .base{position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(233,230,220,.14)}
-#mob .ctl{display:flex;justify-content:space-between;align-items:center}
-#mob .ctl button{padding:8px 4px}
-#mob .gate{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:18vh;gap:18px;background:linear-gradient(transparent 40%,rgba(5,6,10,.7));transition:opacity .8s}
-#mob .gate.gone{opacity:0;pointer-events:none}#mob .gate .q{color:#7d7b75}
-#mob .endp .k{color:#ee4a64;margin-bottom:1em}#mob .endp button{display:block;margin:1.1em auto;font-family:'Liberation Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
-#mob .endp button b{display:block;font-family:'TeX Gyre Pagella',Palatino,serif;font-weight:400;letter-spacing:0;text-transform:none;font-size:17px;color:#e9e6dc;margin-top:.35em}
-/* D: the planet as a horizon */
-html.mobD #mob .foot{background:linear-gradient(transparent,rgba(5,6,10,.55))}
-/* N: a nebula in the planet's colours; it drifts by a slow transform only, so the phone just moves one picture */
-#mob .neb{position:absolute;left:-12%;top:-12%;width:124%;height:124%;pointer-events:none;opacity:0;transition:opacity 2.5s ease;animation:tcneb 80s ease-in-out infinite alternate}
-#mob .neb.on{opacity:1}
-@keyframes tcneb{from{transform:translate(0,0) scale(1) rotate(0deg)}to{transform:translate(-3%,2.5%) scale(1.07) rotate(2deg)}}
-/* E: the planet as a dark disc against its own light */
-#mob .ecl{position:absolute;pointer-events:none}
-#mob .ecl .cor{position:absolute;border-radius:50%;animation:tccor 9s ease-in-out infinite alternate}
-#mob .ecl img{position:absolute;inset:0;width:100%;height:100%;filter:brightness(.06) saturate(.3)}
-#mob .ecl .rim{position:absolute;border-radius:50%}
-@keyframes tccor{from{opacity:.75}to{opacity:1}}
-@media (prefers-reduced-motion: reduce){#mob .neb,#mob .ecl .cor{animation:none}}
-/* C: one scrolling column */
-html.mobC #mob{overflow-y:auto;-webkit-overflow-scrolling:touch}
-html.mobC #mob .bar{position:sticky;padding-bottom:26px;background:linear-gradient(#05060a 62%,rgba(5,6,10,0))}
-#mob .col{padding:0 22px 80px;text-align:center}
-#mob .col .hd{padding:6vh 0 5vh}#mob .col .hd img{width:min(46vw,220px);display:block;margin:0 auto 26px;filter:drop-shadow(0 0 22px rgba(140,150,200,.12))}
-#mob .col .sec{margin:3.2em 0 1.6em;color:#ee4a64}
-#mob .col .p{margin:0 auto 2.6em;max-width:34em;opacity:1;transition:opacity 1.2s ease}#mob .col .p.dim{opacity:.25}
-#mob .col .p .n{color:#7d7b75;margin-bottom:.7em}
-#mob .col .p .tx{font-size:18px}
-@media (prefers-reduced-motion: reduce){#mob .pass,#mob .col .p,#mob .gate{transition:none}}
-</style>
-<script>
-(function(){const MODE=window.__MOBALT;if(!MODE)return;
-const strip=h=>h.replace(/<[^>]+>/g,'').replace(/&#8217;/g,'’').replace(/&amp;/g,'&');
-const ITEMS=[{title:true,words:10}];
-DATA.beats.forEach(b=>{const sg=DATA.seg.find(s=>s.k==='beat'&&s.i===b.i),an=DATA.annot[String(b.i)]||{};ITEMS.push({i:b.i,name:strip((DATA.names||{})[String(b.i)]||''),text:strip(b.html),words:b.words,label:DATA.gname[sg?sg.g:0],tags:(an.tags||[]).map(([k,l])=>[k,strip(l)]),does:an.does?strip(an.does):null})});
-const FILE=location.pathname.split('/').pop()||'',POSKEY='tcPos:'+FILE,HREF=location.href;
-const FRAMED=window.parent!==window&&/[#?&]frame/.test(HREF),GO=/[#?&]go\b/.test(HREF),PNUM=+((HREF.match(/[#?&]p(\d+)\b/)||[])[1]||0);
-const SIBS=DATA.__sibs||[],ROOT=146.83,reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const STILL=(document.getElementById('arrive')||{}).src||'';
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const secStart=k=>{const it=ITEMS[k];return it.title||k===1||(ITEMS[k-1]&&!ITEMS[k-1].title&&ITEMS[k-1].label!==it.label)};
-function passHTML(it,withLabel){
- if(it.title)return `<div class="ttl"><div class="lb mono">Temporary Custody · ${esc(DATA.__issue)}</div><div class="tx">${esc(DATA.__title)}<span class="dk">${esc(DATA.__deck||'')}</span></div></div>`;
- return (withLabel?`<div class="lb mono">${esc(it.label)}</div>`:'')+`<div class="tx">${esc(it.text)}</div>`+
-  (it.tags.length?`<div class="chips">${it.tags.map(([k,l])=>`<span class="chip k${k}">${esc(l)}</span>`).join('')}</div>`:'')+
-  (it.does?`<div class="does"><b>Does</b>${esc(it.does)}</div>`:'')}
-function save(k){try{localStorage.setItem(POSKEY,String(k))}catch(_){}}
-function seen(){try{localStorage.removeItem(POSKEY);const s=JSON.parse(localStorage.getItem('tcSeen')||'[]');if(!s.includes(FILE)){s.push(FILE);localStorage.setItem('tcSeen',JSON.stringify(s))}}catch(_){}}
-function resumeAt(){if(PNUM){const j=ITEMS.findIndex(it=>it.i===PNUM);if(j>0)return j}let s=0;try{s=+(localStorage.getItem(POSKEY)||0)}catch(_){}return s>1&&s<ITEMS.length-1?s:0}
-let left=false;function toSky(e){if(e)e.preventDefault();if(left)return;left=true;snd.fade();
- if(FRAMED){try{parent.postMessage({tc:'planetClose'},'*')}catch(_){}return}location.href='index.html#issues'}
-function nextStudy(){const i=SIBS.findIndex(s=>s[1]===FILE);return i>=0?SIBS[i+1]:null}
-function goNext(nx){snd.fade();if(FRAMED){try{parent.postMessage({tc:'planetNext',key:nx[1]},'*')}catch(_){}}else location.href=nx[1]+'#v2'}
-function ready(){let n=0;(function f(){if(++n<3)return requestAnimationFrame(f);if(FRAMED)try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}})()}
-addEventListener('keydown',e=>{if(e.key==='Escape')toSky()});
-
-/* sound: a low open fifth in the study's key and a soft bell for each passage; no noise */
-const snd=(()=>{let ac=null,m=null,on=true;
- function start(){if(ac)return;const A=window.AudioContext||window.webkitAudioContext;if(!A)return;try{ac=new A()}catch(_){return}m=ac.createGain();m.gain.value=0;m.connect(ac.destination);m.gain.setTargetAtTime(on?.9:0,ac.currentTime,1.2);
-  const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=650;const bg=ac.createGain();bg.gain.value=.05;lp.connect(bg);bg.connect(m);
-  [[ROOT/2,1],[ROOT*.75,.55],[ROOT,.25]].forEach(([f,a],i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;o.detune.value=(i-1)*4;g.gain.value=a;o.connect(g);g.connect(lp);o.start();
-   const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=.05+i*.03;lg.gain.value=a*.35;l.connect(lg);lg.connect(g.gain);l.start()})}
- const PENT=[1,9/8,5/4,3/2,5/3,2];
- function bell(k){if(!ac||!on)return;const t=ac.currentTime+.05,f=ROOT*2*PENT[(k*3)%PENT.length];
-  [[f,.05,2.8],[f*2.01,.012,1.4]].forEach(([fr,a,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=fr;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(m);o.start(t);o.stop(t+d+.1)})}
- function toggle(){on=!on;if(!ac)start();else m.gain.setTargetAtTime(on?.9:0,ac.currentTime,.4);return on}
- function fade(){if(ac)m.gain.setTargetAtTime(0,ac.currentTime,.2)}
- return {start,bell,toggle,fade,get on(){return on},get ac(){return ac}}})();
-
-const root=document.createElement('div');root.id='mob';document.body.appendChild(root);
-const bar=`<div class="bar"><a href="index.html#issues" class="mono back">‹ Temporary Custody</a><span class="mono iss">${esc(DATA.__issue||'')}</span></div>`;
-
-if(MODE==='C'){
- /* the reader: everything in one column, nothing moves but the page */
- let h=bar+`<div class="col"><div class="hd">${STILL?`<img alt="" src="${STILL}">`:''}${passHTML(ITEMS[0])}</div>`;
- ITEMS.forEach((it,k)=>{if(it.title)return;if(secStart(k))h+=`<div class="sec mono">${esc(it.label)}</div>`;
-  h+=`<div class="p${reduce?'':' dim'}" data-k="${k}">${it.i?`<div class="n mono">¶${it.i}${it.name?' · '+esc(it.name):''}</div>`:''}${passHTML(it,false)}</div>`});
- const nx=nextStudy();
- h+=`<div class="endp" id="mEnd"><div class="k mono">End of the study</div>${nx?`<button type="button" id="mNext">Next study<b>${esc(nx[0])}</b></button>`:''}<button type="button" id="mSky">Back to the sky</button></div></div>`;
- root.innerHTML=h;root.querySelector('.back').addEventListener('click',toSky);root.querySelector('#mSky').addEventListener('click',toSky);
- if(nx)root.querySelector('#mNext').addEventListener('click',()=>goNext(nx));
- const ps=[...root.querySelectorAll('.p')];
- const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.remove('dim')}}),{root,rootMargin:'0px 0px -12% 0px'});ps.forEach(p=>io.observe(p));
- const endIO=new IntersectionObserver(es=>{if(es[0].isIntersecting)seen()},{root});endIO.observe(root.querySelector('#mEnd'));
- let st=0;root.addEventListener('scroll',()=>{clearTimeout(st);st=setTimeout(()=>{const y=root.scrollTop+innerHeight*.3;let k=0;for(const p of ps){if(p.offsetTop<=y)k=+p.dataset.k;else break}save(k)},300)},{passive:true});
- const r=resumeAt();if(r){const p=ps.find(p=>+p.dataset.k===r);if(p)requestAnimationFrame(()=>{root.scrollTop=p.offsetTop-innerHeight*.18;p.classList.remove('dim')})}
- ready();return}
-
-/* B and D: one passage at a time, crossfading */
-root.innerHTML=bar+(MODE==='N'?'<canvas class="neb" aria-hidden="true"></canvas>':MODE==='E'?`<div class="ecl"><div class="cor"></div><img alt="" src="${STILL}"><div class="rim"></div></div>`:STILL?`<img class="pl" alt="" src="${STILL}">`:'')+`<div class="pass" aria-live="polite"></div>`+
- `<div class="foot"><div class="prog"><div class="base"></div></div><div class="ctl mono"><button type="button" id="mBack">‹ Back</button><button type="button" id="mPause">Pause</button><button type="button" id="mNext">Next ›</button><button type="button" id="mSnd">Sound on</button></div></div>`+
- `<div class="gate"><button type="button" class="mono" id="mGo">Tap to begin, with sound</button><button type="button" class="mono q" id="mQuiet">or read in silence</button></div>`;
-const pl=root.querySelector('.pl'),pass=root.querySelector('.pass'),prog=root.querySelector('.prog'),TK=[];
-ITEMS.forEach((it,k)=>{const t=document.createElement('i');t.style.left=(k/(ITEMS.length-1)*100)+'%';if(secStart(k))t.className='g';prog.appendChild(t);TK.push(t)});
-prog.addEventListener('click',e=>{const r=prog.getBoundingClientRect();show(Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(ITEMS.length-1)),true)});
-function layout(){const W=innerWidth,H=innerHeight;
- if(MODE==='N'){Object.assign(pass.style,{top:'64px',bottom:'96px',display:'flex',flexDirection:'column'});return}
- if(MODE==='E'){const S=Math.min(W*.56,H*.28,280),e=root.querySelector('.ecl'),d=S/1.16,o=(S-d)/2;Object.assign(e.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H*.11)+'px'});
-  Object.assign(e.querySelector('.rim').style,{left:o+'px',top:o+'px',width:d+'px',height:d+'px'});const c=d*2.1;Object.assign(e.querySelector('.cor').style,{left:(S-c)/2+'px',top:(S-c)/2+'px',width:c+'px',height:c+'px'});
-  Object.assign(pass.style,{top:(H*.11+S+26)+'px',bottom:'92px'});return}
- if(MODE==='B'){const S=Math.min(W*.62,H*.3,300);if(pl)Object.assign(pl.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H*.1)+'px'});
-  const top=H*.1+S+22;Object.assign(pass.style,{top:top+'px',bottom:'92px'})}
- else{const S=Math.max(W*2.3,H*1.1),vis=Math.min(H*.24,S*.2);if(pl)Object.assign(pl.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H-vis)+'px'});
-  Object.assign(pass.style,{top:'64px',bottom:(vis+20)+'px',display:'flex',flexDirection:'column'})}}
-addEventListener('resize',layout);layout();
-function tones(cb){const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=40;const x=c.getContext('2d');x.drawImage(im,0,0,40,40);const d=x.getImageData(0,0,40,40).data,px=[];
-  for(let i=0;i<d.length;i+=4)if(d[i+3]>220)px.push([d[i],d[i+1],d[i+2],d[i]*.3+d[i+1]*.59+d[i+2]*.11]);px.sort((a,b)=>a[3]-b[3]);
-  const avg=a=>{const s=[0,0,0];a.forEach(p=>{s[0]+=p[0];s[1]+=p[1];s[2]+=p[2]});return s.map(v=>v/Math.max(1,a.length))};
-  const sat=(c,k)=>{const m=(c[0]+c[1]+c[2])/3;return c.map(v=>Math.max(0,Math.min(255,m+(v-m)*k)))};
-  cb(sat(avg(px.slice(Math.floor(px.length*.75))),1.5),sat(avg(px.slice(0,Math.floor(px.length*.4))),1.6))};im.src=STILL}
-if(MODE==='N')tones((hi,lo)=>{const cv=root.querySelector('.neb'),W=innerWidth*1.24,H=innerHeight*1.24,w=180,h=Math.round(w*H/W);cv.width=w;cv.height=h;const x=cv.getContext('2d'),img=x.createImageData(w,h);
-  let sd=(FILE.length*7919)%1000;const P=new Float32Array(512);for(let i=0;i<512;i++){sd=(sd*16807+11)%2147483647;P[i]=sd/2147483647}
-  const hs=(i,j)=>P[((i*57+j*131)%512+512)%512];const sm=t=>t*t*(3-2*t);
-  const vn=(X,Y)=>{const i=Math.floor(X),j=Math.floor(Y),fx=sm(X-i),fy=sm(Y-j);const a=hs(i,j),b=hs(i+1,j),c=hs(i,j+1),d=hs(i+1,j+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy};
-  const fbm=(X,Y)=>{let v=0,a=.5;for(let o=0;o<5;o++){v+=a*vn(X,Y);X*=2.03;Y*=2.03;a*=.5}return v};
-  const deep=[12,10,24];
-  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const u=i/w*3.2,v=j/h*3.2*H/W;const q=fbm(u+1.7,v+.3),r=fbm(u+3*q+.4,v+3*q+5.2);let f=fbm(u+2.2*r,v+2.2*r);
-   const cy=(j/h-.42),cx=(i/w-.5),fall=Math.max(0,1-Math.hypot(cx*1.1,cy*1.6)*1.35);let den=Math.max(0,(f-.3)*2.5)*fall;den=Math.min(1,den);const fil=Math.pow(Math.max(0,1-Math.abs(r-.55)*7),3)*fall*.6;
-   const k=(j*w+i)*4,t=Math.min(1,f*1.25);for(let ch=0;ch<3;ch++){const base=lo[ch]+(hi[ch]-lo[ch])*t;img.data[k+ch]=Math.min(255,deep[ch]*(1-den)+base*den*1.15+hi[ch]*fil*.6)}
-   img.data[k+3]=Math.round(Math.min(1,den*.85+fil)*240)}
-  x.putImageData(img,0,0);requestAnimationFrame(()=>cv.classList.add('on'))});
-if(MODE==='E')tones((hi)=>{const e=root.querySelector('.ecl'),c=hi.map(Math.round).join(',');
-  e.querySelector('.cor').style.background=`radial-gradient(circle closest-side,rgba(${c},0) 45%,rgba(${c},.42) 48%,rgba(${c},.16) 56%,rgba(${c},.05) 72%,rgba(${c},0) 100%)`;
-  e.querySelector('.rim').style.boxShadow=`0 0 0 1px rgba(255,244,230,.55),0 0 14px 3px rgba(${c},.45),inset 0 0 18px rgba(${c},.25)`});
-let k=-1,timer=null,paused=false,started=false,ended=false;
-const holdOf=it=>it.title?7:Math.min(26,4.5+it.words*.3);
-function center(){/* the passage sits in the middle of its space unless it is too long, then it scrolls from the top */
- if(MODE==='D'||MODE==='N'){const inner=pass.firstElementChild;if(inner)inner.style.margin=pass.scrollHeight>pass.clientHeight+2?'0':'auto 0'}
- else{const inner=pass.firstElementChild;if(inner){inner.style.marginTop='0';const room=pass.clientHeight-inner.offsetHeight;inner.style.marginTop=room>0?(room*.35)+'px':'0'}}}
-function show(j,user){if(j<0||j>=ITEMS.length)return;if(ended)ended=false;k=j;save(j);clearTimeout(timer);
- TK.forEach((t,i)=>t.classList.toggle('cur',i===j));
- pass.classList.add('out');setTimeout(()=>{pass.innerHTML=`<div>${passHTML(ITEMS[j],true)}</div>`;pass.scrollTop=0;center();pass.classList.remove('out');snd.bell(j)},reduce?0:user?450:900);
- schedule()}
-function schedule(){clearTimeout(timer);if(paused||!started)return;timer=setTimeout(()=>{if(k>=ITEMS.length-1)end();else show(k+1)},(holdOf(ITEMS[k])+1)*1000)}
-function end(){ended=true;seen();const nx=nextStudy();pass.classList.add('out');
- setTimeout(()=>{pass.innerHTML=`<div class="endp"><div class="k mono">End of the study</div><div class="tx">${esc(DATA.__title)}</div><button type="button" id="eA">Read again</button>${nx?`<button type="button" id="eN">Next study<b>${esc(nx[0])}</b></button>`:''}<button type="button" id="eS">Back to the sky</button></div>`;center();pass.classList.remove('out');
-  pass.querySelector('#eA').onclick=()=>show(0,true);pass.querySelector('#eS').onclick=toSky;if(nx)pass.querySelector('#eN').onclick=()=>goNext(nx)},reduce?0:900)}
-function begin(withSound){if(started)return;started=true;root.querySelector('.gate').classList.add('gone');
- if(withSound)snd.start();else{snd.toggle();root.querySelector('#mSnd').textContent='Sound off'}
- const r=resumeAt();show(r);}
-root.querySelector('#mGo').onclick=()=>begin(true);root.querySelector('#mQuiet').onclick=()=>begin(false);
-root.querySelector('.back').addEventListener('click',toSky);
-root.querySelector('#mNext').onclick=()=>{if(!started)begin(true);else if(k>=ITEMS.length-1)end();else show(k+1,true)};
-root.querySelector('#mBack').onclick=()=>{if(!started)begin(true);else show(Math.max(0,k-1),true)};
-root.querySelector('#mPause').onclick=e=>{paused=!paused;e.target.textContent=paused?'Play':'Pause';schedule()};
-root.querySelector('#mSnd').onclick=e=>{e.target.textContent=snd.toggle()?'Sound on':'Sound off'};
-let sx=null,sy=0;root.addEventListener('touchstart',e=>{if(e.touches.length===1){sx=e.touches[0].clientX;sy=e.touches[0].clientY}},{passive:true});
-root.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=null;
- if(Math.abs(dx)>60&&Math.abs(dx)>1.6*Math.abs(dy)){if(!started){begin(true);return}if(dx<0){if(k>=ITEMS.length-1)end();else show(k+1,true)}else show(Math.max(0,k-1),true)}},{passive:true});
-/* before beginning, the title sits under the gate */
-pass.innerHTML=`<div>${passHTML(ITEMS[0],true)}</div>`;requestAnimationFrame(center);
-if(FRAMED&&GO)setTimeout(()=>begin(true),60);
-ready();
 })();
 </script>
 <script>
