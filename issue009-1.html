@@ -54,16 +54,20 @@ html.framed,html.framed body{background:transparent!important}html.framed #sky{d
 </style>
 </head>
 <body>
+<script>window.__NEB='drift';</script>
 <script>
 /* Phones: the planet readthrough in a gentler form. MOB picks the form:
+   S calm still  as A, but the planet is its still picture: no shader, no turning
+   N nebula  no planet: a slow nebula in the planet's colours behind the passage
+   E eclipse  the planet as a dark disc with a lit rim, the passage beneath
    A calm  the same live planet, drawn at lower resolution and 30 frames a second, slower turning, a still sky, no blur
    B still the planet as a still image, the passage beneath it, one passage at a time with a soft crossfade
    C read  no motion at all: the study as one scrolling column under a small still planet
    D horizon  the planet's still rising as a great arc at the foot of the screen, the passage above it
    FORCE makes a draft show its form at any size; otherwise only phones get it. */
-(function(){const MOB='A',FORCE=false;
+(function(){const MOB='S',FORCE=false;
  const phone=matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<700;
- if(!(FORCE||phone))return;window.__MOB=MOB;if(MOB!=='A'){window.__MOBALT=MOB;document.documentElement.classList.add('mobalt','mob'+MOB)}})();
+ if(!(FORCE||phone))return;window.__MOB=MOB;if(MOB==='S')window.__MOBS=true;if(MOB!=='A'&&MOB!=='S'){window.__MOBALT=MOB;document.documentElement.classList.add('mobalt','mob'+MOB)}})();
 </script>
 <canvas id="sky" aria-hidden="true"></canvas><script>
 (function(){
@@ -87,7 +91,7 @@ function draw(now){const t=(now-t0)/1000;g.setTransform(D,0,0,D,0,0);g.fillStyle
 addEventListener('resize',()=>{build();if(still)draw(performance.now())});build();requestAnimationFrame(draw);
 })();
 </script>
-<canvas id="back" aria-hidden="true"></canvas><canvas id="planet" aria-hidden="true"></canvas><canvas id="hair" aria-hidden="true"></canvas>
+<canvas id="neb" aria-hidden="true" style="position:fixed;inset:0;z-index:0;pointer-events:none"></canvas><canvas id="back" aria-hidden="true"></canvas><canvas id="planet" aria-hidden="true"></canvas><canvas id="hair" aria-hidden="true"></canvas>
 <div class="ui" id="top"><a href="index.html#issues">‹ Temporary Custody</a></div>
 <div class="ui" id="where"></div>
 <div class="ui" id="ctl"><button type="button" id="bBack">‹ Back</button><button type="button" id="bPause">Pause</button><button type="button" id="bNext">Next ›</button><button type="button" id="bSnd">Sound on</button></div>
@@ -315,7 +319,7 @@ const FILE=location.pathname.split('/').pop()||'',POSKEY='tcPos:'+FILE;
 const FRAMED=window.parent!==window&&/[#?&]frame/.test(location.href);if(FRAMED)document.documentElement.classList.add('framed');
 const ARRIVE=/[#?&]arrive/.test(location.href);if(ARRIVE)try{history.replaceState(null,'',location.pathname)}catch(_){}
 const arrImg=document.getElementById('arrive');let arrFrames=0;
-if(ARRIVE&&!FRAMED){const W0=innerWidth,H0=innerHeight,nr=W0<600,R0=nr?Math.min(.33*W0,140):Math.min(150,.2*H0,.2*W0),S0=2*R0*1.16;Object.assign(arrImg.style,{display:'block',width:S0+'px',height:S0+'px',left:(W0/2-S0/2)+'px',top:(H0/2+(nr?10:0)-S0/2)+'px'})}
+if(ARRIVE&&!FRAMED&&!window.__NEB){const W0=innerWidth,H0=innerHeight,nr=W0<600,R0=nr?Math.min(.33*W0,140):Math.min(150,.2*H0,.2*W0),S0=2*R0*1.16;Object.assign(arrImg.style,{display:'block',width:S0+'px',height:S0+'px',left:(W0/2-S0/2)+'px',top:(H0/2+(nr?10:0)-S0/2)+'px'})}
 let started=false,frozen=false,T=0,last=performance.now(),paused=false,spin=0,intro=ARRIVE?1:0;
 let live=[];   // {k,t0,H,slot}
 function slotFree(){const used=live.map(l=>l.slot);return used.includes(0)?(used.includes(1)?-1:1):0}
@@ -374,7 +378,7 @@ const SND=(()=>{let ac=null,master=null,on=true,wet=null;
  function toggle(){on=!on;if(ac)master.gain.setTargetAtTime(on?1.35:0,ac.currentTime,.4);return on}
  return {start,arrive,leave,toggle,fade,get on(){return on}}})();
 function spawn(k){k=(k+ITEMS.length)%ITEMS.length;if(V2){try{localStorage.setItem(POSKEY,String(k))}catch(_){}}if(ended&&k!==ITEMS.length-1)hideEnd();if(live.length)SND.leave();SND.arrive(ITEMS[k],k);let s=slotFree();if(s<0){const old=live.shift();s=old.slot}
- const it=ITEMS[k];upload(s,it);setFlat(s,it);live.push({k,t0:T,H:holdOf(it),slot:s});
+ const it=ITEMS[k];if(!window.__MOBS&&!window.__NEB)upload(s,it);setFlat(s,it);live.push({k,t0:T,H:holdOf(it),slot:s});
  document.getElementById('live').textContent=it.title?DATA.__title+'. '+DATA.__deck+'.':[it.text].concat(it.tags.map(t=>t[1]),it.does?['Does: '+it.does]:[]).join(' ');
  document.getElementById('where').textContent=it.title?DATA.__issue:it.label;
  railTo(k)}
@@ -423,7 +427,7 @@ function rotm(){const tl=.32,a=spin,ct=Math.cos(tl),st=Math.sin(tl),ca=Math.cos(
  // p = Ry(a) * Rx(tl) * n ; column-major for gl
  const Rx=[[1,0,0],[0,ct,-st],[0,st,ct]],Ry=[[ca,0,sa],[0,1,0],[-sa,0,ca]];
  const M=[[0,0,0],[0,0,0],[0,0,0]];for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)M[i][j]+=Ry[i][k]*Rx[k][j];return M}
-function frame(now){if(window.__MOB==='A'){if(now-(frame.l||0)<31){requestAnimationFrame(frame);return}frame.l=now}
+function frame(now){if(window.__MOB==='A'||window.__MOB==='S'){if(now-(frame.l||0)<31){requestAnimationFrame(frame);return}frame.l=now}
  const dt=Math.min(.1,(now-last)/1000);last=now;
  intro=Math.min(1,intro+dt/4.5);
  spin+=(AGAINST?1:-1)*dt*(reduce?.006:window.__MOB?.012:.022);
@@ -434,17 +438,18 @@ function frame(now){if(window.__MOB==='A'){if(now-(frame.l||0)<31){requestAnimat
   if(!c&&T>2.2)spawn(startAt());
   else if(c&&!paused&&T-c.t0>C+c.H){if(V2&&c.k===ITEMS.length-1){if(!ended)endCard()}else spawn(c.k+1)}
   live=live.filter(l=>T-l.t0<C+l.H+D+.2)}
- const g=geom(),M=rotm();
+ const g=geom(),M=rotm();if(window.__NEB){}else if(window.__MOBS)stillAt(g);else{
  gl.uniform2f(U.uRes,cv.width,cv.height);gl.uniform2f(U.uC,g.cx*DPR,(H-g.cy)*DPR);gl.uniform1f(U.uT,T);gl.uniform1f(U.uRad,g.rad);gl.uniform1f(U.uIntro,intro);
  gl.uniformMatrix3fv(U.uR,false,new Float32Array([M[0][0],M[1][0],M[2][0],M[0][1],M[1][1],M[2][1],M[0][2],M[1][2],M[2][2]]));
  const P=[[0,9,9],[0,9,9]];live.forEach(l=>{P[l.slot]=params(l)});
  gl.uniform3fv(U.uA,P[0]);gl.uniform3fv(U.uB,P[1]);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex[0]);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tex[1]);
- gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_CUBE_MAP,ter);if(window.__MOB){const r=g.R*1.75*DPR,x=g.cx*DPR,y=(H-g.cy)*DPR;gl.enable(gl.SCISSOR_TEST);gl.scissor(Math.max(0,Math.floor(x-r)),Math.max(0,Math.floor(y-r)),Math.ceil(2*r),Math.ceil(2*r))}gl.drawArrays(gl.TRIANGLES,0,3);
+ gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_CUBE_MAP,ter);if(window.__MOB){const r=g.R*1.75*DPR,x=g.cx*DPR,y=(H-g.cy)*DPR;gl.enable(gl.SCISSOR_TEST);gl.scissor(Math.max(0,Math.floor(x-r)),Math.max(0,Math.floor(y-r)),Math.ceil(2*r),Math.ceil(2*r))}gl.drawArrays(gl.TRIANGLES,0,3);}
  drawSky(g);
  if(FRAMED&&++arrFrames===3){try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}}
- if(ARRIVE&&!FRAMED&&arrImg.style.display==='block'&&++arrFrames===3){arrImg.style.opacity='0';setTimeout(()=>arrImg.style.display='none',700)}drawFlat(g);
+ if(ARRIVE&&!FRAMED&&!window.__MOBS&&arrImg.style.display==='block'&&++arrFrames===3){arrImg.style.opacity='0';setTimeout(()=>arrImg.style.display='none',700)}drawFlat(g);
  requestAnimationFrame(frame)}
+function stillAt(g){const S=2*g.R*1.16,k=Math.round(g.cx)+','+Math.round(g.cy)+','+Math.round(S);if(arrImg.dataset.k===k)return;arrImg.dataset.k=k;Object.assign(arrImg.style,{display:'block',opacity:String(Math.min(1,intro*1.4)),width:S+'px',height:S+'px',left:(g.cx-S/2)+'px',top:(g.cy-S/2)+'px',transition:'opacity 1.2s'});if(intro<.7){arrImg.dataset.k=''}}
 function drawFlat(g){const mob=W<600,on=[false,false];
  for(const l of live){const [off,ty]=params(l),f=FL[l.slot],it=ITEMS[l.k];on[l.slot]=true;
   const v=Math.max(0,Math.min(1,(1.3-ty)/.88)),w=g.text.w,fs=it.title?Math.min(46,Math.max(26,w/15)):Math.max(mob?17:18,Math.min(32,w/(it.words<=10?17:it.words<=20?21:24)));
@@ -495,7 +500,7 @@ function drawRings(g){const S=DATA.__sibs||[];if(S.length<2||intro<.2)return;con
   c.fillStyle=gr;c.beginPath();c.arc(p[0],p[1],m,0,7);c.fill();c.restore()}}
 function drawSky(g){
  for(const c of [hg,bg]){c.setTransform(DPR,0,0,DPR,0,0);c.clearRect(0,0,W,H)}
- drawRings(g);
+ if(!window.__NEB)drawRings(g);
  if(intro<.5)return;
  const mob=W<600;
  for(const l of live){const it=ITEMS[l.k],f=life(l);
@@ -615,6 +620,17 @@ html.mobalt,html.mobalt body{background:#05060a;overflow:hidden;height:100%}
 #mob .endp button b{display:block;font-family:'TeX Gyre Pagella',Palatino,serif;font-weight:400;letter-spacing:0;text-transform:none;font-size:17px;color:#e9e6dc;margin-top:.35em}
 /* D: the planet as a horizon */
 html.mobD #mob .foot{background:linear-gradient(transparent,rgba(5,6,10,.55))}
+/* N: a nebula in the planet's colours; it drifts by a slow transform only, so the phone just moves one picture */
+#mob .neb{position:absolute;left:-12%;top:-12%;width:124%;height:124%;pointer-events:none;opacity:0;transition:opacity 2.5s ease;animation:tcneb 80s ease-in-out infinite alternate}
+#mob .neb.on{opacity:1}
+@keyframes tcneb{from{transform:translate(0,0) scale(1) rotate(0deg)}to{transform:translate(-3%,2.5%) scale(1.07) rotate(2deg)}}
+/* E: the planet as a dark disc against its own light */
+#mob .ecl{position:absolute;pointer-events:none}
+#mob .ecl .cor{position:absolute;border-radius:50%;animation:tccor 9s ease-in-out infinite alternate}
+#mob .ecl img{position:absolute;inset:0;width:100%;height:100%;filter:brightness(.06) saturate(.3)}
+#mob .ecl .rim{position:absolute;border-radius:50%}
+@keyframes tccor{from{opacity:.75}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){#mob .neb,#mob .ecl .cor{animation:none}}
 /* C: one scrolling column */
 html.mobC #mob{overflow-y:auto;-webkit-overflow-scrolling:touch}
 html.mobC #mob .bar{position:sticky;padding-bottom:26px;background:linear-gradient(#05060a 62%,rgba(5,6,10,0))}
@@ -685,22 +701,45 @@ if(MODE==='C'){
  ready();return}
 
 /* B and D: one passage at a time, crossfading */
-root.innerHTML=bar+(STILL?`<img class="pl" alt="" src="${STILL}">`:'')+`<div class="pass" aria-live="polite"></div>`+
+root.innerHTML=bar+(MODE==='N'?'<canvas class="neb" aria-hidden="true"></canvas>':MODE==='E'?`<div class="ecl"><div class="cor"></div><img alt="" src="${STILL}"><div class="rim"></div></div>`:STILL?`<img class="pl" alt="" src="${STILL}">`:'')+`<div class="pass" aria-live="polite"></div>`+
  `<div class="foot"><div class="prog"><div class="base"></div></div><div class="ctl mono"><button type="button" id="mBack">‹ Back</button><button type="button" id="mPause">Pause</button><button type="button" id="mNext">Next ›</button><button type="button" id="mSnd">Sound on</button></div></div>`+
  `<div class="gate"><button type="button" class="mono" id="mGo">Tap to begin, with sound</button><button type="button" class="mono q" id="mQuiet">or read in silence</button></div>`;
 const pl=root.querySelector('.pl'),pass=root.querySelector('.pass'),prog=root.querySelector('.prog'),TK=[];
 ITEMS.forEach((it,k)=>{const t=document.createElement('i');t.style.left=(k/(ITEMS.length-1)*100)+'%';if(secStart(k))t.className='g';prog.appendChild(t);TK.push(t)});
 prog.addEventListener('click',e=>{const r=prog.getBoundingClientRect();show(Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(ITEMS.length-1)),true)});
 function layout(){const W=innerWidth,H=innerHeight;
+ if(MODE==='N'){Object.assign(pass.style,{top:'64px',bottom:'96px',display:'flex',flexDirection:'column'});return}
+ if(MODE==='E'){const S=Math.min(W*.56,H*.28,280),e=root.querySelector('.ecl'),d=S/1.16,o=(S-d)/2;Object.assign(e.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H*.11)+'px'});
+  Object.assign(e.querySelector('.rim').style,{left:o+'px',top:o+'px',width:d+'px',height:d+'px'});const c=d*2.1;Object.assign(e.querySelector('.cor').style,{left:(S-c)/2+'px',top:(S-c)/2+'px',width:c+'px',height:c+'px'});
+  Object.assign(pass.style,{top:(H*.11+S+26)+'px',bottom:'92px'});return}
  if(MODE==='B'){const S=Math.min(W*.62,H*.3,300);if(pl)Object.assign(pl.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H*.1)+'px'});
   const top=H*.1+S+22;Object.assign(pass.style,{top:top+'px',bottom:'92px'})}
  else{const S=Math.max(W*2.3,H*1.1),vis=Math.min(H*.24,S*.2);if(pl)Object.assign(pl.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H-vis)+'px'});
   Object.assign(pass.style,{top:'64px',bottom:(vis+20)+'px',display:'flex',flexDirection:'column'})}}
 addEventListener('resize',layout);layout();
+function tones(cb){const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=40;const x=c.getContext('2d');x.drawImage(im,0,0,40,40);const d=x.getImageData(0,0,40,40).data,px=[];
+  for(let i=0;i<d.length;i+=4)if(d[i+3]>220)px.push([d[i],d[i+1],d[i+2],d[i]*.3+d[i+1]*.59+d[i+2]*.11]);px.sort((a,b)=>a[3]-b[3]);
+  const avg=a=>{const s=[0,0,0];a.forEach(p=>{s[0]+=p[0];s[1]+=p[1];s[2]+=p[2]});return s.map(v=>v/Math.max(1,a.length))};
+  const sat=(c,k)=>{const m=(c[0]+c[1]+c[2])/3;return c.map(v=>Math.max(0,Math.min(255,m+(v-m)*k)))};
+  cb(sat(avg(px.slice(Math.floor(px.length*.75))),1.5),sat(avg(px.slice(0,Math.floor(px.length*.4))),1.6))};im.src=STILL}
+if(MODE==='N')tones((hi,lo)=>{const cv=root.querySelector('.neb'),W=innerWidth*1.24,H=innerHeight*1.24,w=180,h=Math.round(w*H/W);cv.width=w;cv.height=h;const x=cv.getContext('2d'),img=x.createImageData(w,h);
+  let sd=(FILE.length*7919)%1000;const P=new Float32Array(512);for(let i=0;i<512;i++){sd=(sd*16807+11)%2147483647;P[i]=sd/2147483647}
+  const hs=(i,j)=>P[((i*57+j*131)%512+512)%512];const sm=t=>t*t*(3-2*t);
+  const vn=(X,Y)=>{const i=Math.floor(X),j=Math.floor(Y),fx=sm(X-i),fy=sm(Y-j);const a=hs(i,j),b=hs(i+1,j),c=hs(i,j+1),d=hs(i+1,j+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy};
+  const fbm=(X,Y)=>{let v=0,a=.5;for(let o=0;o<5;o++){v+=a*vn(X,Y);X*=2.03;Y*=2.03;a*=.5}return v};
+  const deep=[12,10,24];
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const u=i/w*3.2,v=j/h*3.2*H/W;const q=fbm(u+1.7,v+.3),r=fbm(u+3*q+.4,v+3*q+5.2);let f=fbm(u+2.2*r,v+2.2*r);
+   const cy=(j/h-.42),cx=(i/w-.5),fall=Math.max(0,1-Math.hypot(cx*1.1,cy*1.6)*1.35);let den=Math.max(0,(f-.3)*2.5)*fall;den=Math.min(1,den);const fil=Math.pow(Math.max(0,1-Math.abs(r-.55)*7),3)*fall*.6;
+   const k=(j*w+i)*4,t=Math.min(1,f*1.25);for(let ch=0;ch<3;ch++){const base=lo[ch]+(hi[ch]-lo[ch])*t;img.data[k+ch]=Math.min(255,deep[ch]*(1-den)+base*den*1.15+hi[ch]*fil*.6)}
+   img.data[k+3]=Math.round(Math.min(1,den*.85+fil)*240)}
+  x.putImageData(img,0,0);requestAnimationFrame(()=>cv.classList.add('on'))});
+if(MODE==='E')tones((hi)=>{const e=root.querySelector('.ecl'),c=hi.map(Math.round).join(',');
+  e.querySelector('.cor').style.background=`radial-gradient(circle closest-side,rgba(${c},0) 45%,rgba(${c},.42) 48%,rgba(${c},.16) 56%,rgba(${c},.05) 72%,rgba(${c},0) 100%)`;
+  e.querySelector('.rim').style.boxShadow=`0 0 0 1px rgba(255,244,230,.55),0 0 14px 3px rgba(${c},.45),inset 0 0 18px rgba(${c},.25)`});
 let k=-1,timer=null,paused=false,started=false,ended=false;
 const holdOf=it=>it.title?7:Math.min(26,4.5+it.words*.3);
 function center(){/* the passage sits in the middle of its space unless it is too long, then it scrolls from the top */
- if(MODE==='D'){const inner=pass.firstElementChild;if(inner)inner.style.margin=pass.scrollHeight>pass.clientHeight+2?'0':'auto 0'}
+ if(MODE==='D'||MODE==='N'){const inner=pass.firstElementChild;if(inner)inner.style.margin=pass.scrollHeight>pass.clientHeight+2?'0':'auto 0'}
  else{const inner=pass.firstElementChild;if(inner){inner.style.marginTop='0';const room=pass.clientHeight-inner.offsetHeight;inner.style.marginTop=room>0?(room*.35)+'px':'0'}}}
 function show(j,user){if(j<0||j>=ITEMS.length)return;if(ended)ended=false;k=j;save(j);clearTimeout(timer);
  TK.forEach((t,i)=>t.classList.toggle('cur',i===j));
@@ -726,6 +765,113 @@ root.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouch
 pass.innerHTML=`<div>${passHTML(ITEMS[0],true)}</div>`;requestAnimationFrame(center);
 if(FRAMED&&GO)setTimeout(()=>begin(true),60);
 ready();
+})();
+</script>
+<script>
+/* In place of the planet: a nebula that drifts, turns and breathes, in the planet's own colours. At each new section of
+   the study the gas re-forms in a shifted colour and the sky behind it takes a new tint, so the key turns of the study
+   are felt in the field. NEB picks the form:
+     drift  one slow cloud mass where the planet was, three layers turning against each other
+     veils  long veils of gas crossing the whole sky at different speeds, like weather seen from far off
+     core   a small hot star inside a shell and two lobes of gas, the whole turning slowly on its axis
+   Phones (window.__MOB) and #lite get the light form: fewer, smaller layers, 30 frames a second, no inner churn. */
+(function(){const STYLE=window.__NEB;if(!STYLE)return;
+const cv=document.getElementById('neb'),g=cv.getContext('2d');
+const LITE=!!window.__MOB||/lite/.test(location.hash),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const RES=LITE?120:240;
+let W=0,H=0,D=1;function size(){W=innerWidth;H=innerHeight;D=LITE?.5:Math.min(1.5,devicePixelRatio||1);cv.width=Math.round(W*D);cv.height=Math.round(H*D);cv.style.width=W+'px';cv.style.height=H+'px'}
+addEventListener('resize',size);size();
+
+/* ---- colour: two tones from the planet's still, turned a little at each section ---- */
+let HI=[220,140,110],LO=[60,40,70];
+function rgb2hsl([r,g2,b]){r/=255;g2/=255;b/=255;const mx=Math.max(r,g2,b),mn=Math.min(r,g2,b),l=(mx+mn)/2;let h=0,s=0;if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g2-b)/d+(g2<b?6:0):mx===g2?(b-r)/d+2:(r-g2)/d+4;h/=6}return [h,s,l]}
+function hsl2rgb([h,s,l]){const f=n=>{const k=(n+h*12)%12,a=s*Math.min(l,1-l);return 255*(l-a*Math.max(-1,Math.min(k-3,9-k,1)))};return [f(0),f(8),f(4)]}
+const TURN=[0,.075,-.06,.13,-.11,.04,.19,-.16];
+function tone(base,gi,ds,dl){const h=rgb2hsl(base);return hsl2rgb([(h[0]+TURN[gi%TURN.length]+1)%1,Math.min(1,h[1]*ds),Math.max(.04,Math.min(.92,h[2]*dl))])}
+/* muted planets (a murky river world) still need gas that reads: the bright tone keeps some colour and light */
+function lift(c,smin,lmin){const h=rgb2hsl(c);return hsl2rgb([h[0],Math.max(smin,h[1]),Math.max(lmin,h[2])])}
+function pal(gi){return {hi:lift(tone(HI,gi,1.15,1.05),.32,.56),lo:tone(LO,gi,1.25,1),mid:hsl2rgb((h=>[(h[0]+TURN[gi%TURN.length]+.035)%1,Math.min(1,h[1]*.9),h[2]*.7])(rgb2hsl(HI))),deep:tone(LO,gi,1,.32)}}
+
+/* ---- noise ---- */
+function noise(seed){const P=new Float32Array(1024);let s=seed*9301+49297;for(let i=0;i<1024;i++){s=(s*16807)%2147483647;P[i]=s/2147483647}
+ const hs=(i,j)=>P[((i*73+j*151)%1024+1024)%1024],sm=t=>t*t*(3-2*t);
+ const vn=(x,y)=>{const i=Math.floor(x),j=Math.floor(y),fx=sm(x-i),fy=sm(y-j),a=hs(i,j),b=hs(i+1,j),c=hs(i,j+1),d=hs(i+1,j+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy};
+ return (x,y,o=5)=>{let v=0,a=.5,n=0;for(let k=0;k<o;k++){v+=a*vn(x,y);n+=a;x=x*2.02+3.1;y=y*2.02+1.7;a*=.5}return v/n}}
+/* one layer: a shape (where the gas may be) times warped noise (how it lies), coloured between two tones */
+const SHAPE={
+ cloud:(u,v)=>Math.exp(-(u*u+v*v)*2.6),
+ wisp:(u,v)=>Math.exp(-(u*u*1.4+v*v*3.2)*2),
+ veil:(u,v)=>Math.exp(-v*v*9)*Math.min(1,(1-Math.abs(u))*3),
+ shell:(u,v)=>{const r=Math.hypot(u,v);return Math.exp(-Math.pow((r-.52)/.13,2))},
+ lobes:(u,v)=>Math.exp(-(u*u/.16+Math.pow((Math.abs(v)-.48)/.36,2))),
+ halo:(u,v)=>Math.exp(-(u*u+v*v)*1.4)};
+function layer(seed,shape,c1,c2,opt){const w=Math.round(RES*(opt.ax||1)),h=RES,c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d'),im=x.createImageData(w,h),n=noise(seed),sh=SHAPE[shape];
+ const sc=opt.scale||3,ridge=opt.ridge||0,gain=opt.gain||1;
+ for(let j=0;j<h;j++)for(let i=0;i<w;i++){const u=(i/w)*2-1,v=(j/h)*2-1;
+  /* every layer fades to nothing well inside its own square, so no edge or corner of it can show when it turns */
+  const win=shape==='veil'?Math.min(1,Math.max(0,(1-Math.abs(u))/.35))*Math.min(1,Math.max(0,(1-Math.abs(v))/.45)):(r=>{const t=Math.max(0,Math.min(1,(.96-r)/.36));return t*t*(3-2*t)})(Math.hypot(u,v));
+  const m=sh(u,v)*win*win;const k=(j*w+i)*4;if(m<.01){im.data[k+3]=0;continue}
+  const X=i/h*sc,Y=j/h*sc,q=n(X+5.2,Y+1.3,4),r=n(X+q*2.4+1.7,Y+q*2.4+9.2,4);let f=n(X+r*2.2,Y+r*2.2,5);
+  if(ridge)f=f*(1-ridge)+ridge*Math.pow(1-Math.abs(r*2-1),3);
+  const d=Math.max(0,Math.min(1,(f-.36)*2.6))*m*gain,t=Math.min(1,f*1.3);
+  for(let ch=0;ch<3;ch++)im.data[k+ch]=Math.min(255,c2[ch]+(c1[ch]-c2[ch])*t);im.data[k+3]=Math.round(Math.min(1,d)*255)}
+ x.putImageData(im,0,0);return c}
+
+/* ---- the forms ---- */
+const MIN=()=>Math.max(Math.min(W,H),Math.max(W,H)*.6);
+function plan(gi){const p=pal(gi),sd=gi*101+7,L=[];
+ if(STYLE==='drift'){
+  L.push({c:['cloud',p.lo,p.deep,{scale:2.2}],s:1.55,rot:.004,a:.85});
+  L.push({c:['wisp',p.hi,p.lo,{scale:3.4,ridge:.5}],s:1.15,rot:-.007,a:.75});
+  if(!LITE)L.push({c:['cloud',p.hi,p.mid,{scale:4.6,ridge:.7,gain:.8}],s:.8,rot:.011,a:.6});}
+ else if(STYLE==='veils'){
+  const n=LITE?3:5;for(let k=0;k<n;k++)L.push({c:['veil',k%2?p.hi:p.mid,k%2?p.lo:p.deep,{ax:2.6,scale:3,ridge:k%2?.55:.2}],veil:true,y:-.32+.64*k/(n-1)+(k%2?.05:-.04),s:1.9+.3*(k%3),v:(k%2?-1:1)*(6+k*3.5),a:.55+.1*(k%2)});}
+ else{ // core
+  L.push({c:['halo',p.deep,p.lo,{scale:2,gain:.7}],s:1.7,rot:.002,a:.7});
+  L.push({c:['lobes',p.lo,p.mid,{scale:3,ridge:.4}],s:1.25,rot:.006,a:.85,axis:true});
+  L.push({c:['shell',p.hi,p.lo,{scale:5,ridge:.6}],s:.7,rot:-.01,a:.85});
+  if(!LITE)L.push({c:['lobes',p.hi,p.lo,{scale:5.5,ridge:.8,gain:.8}],s:1.05,rot:.006,a:.5,axis:true});}
+ L.forEach((l,k)=>{l.seed=sd+k*13;l.ph=k*1.7});return {gi,p,L,ready:false}}
+const sets={},queue=[];
+function want(gi){if(sets[gi])return sets[gi];const s=sets[gi]=plan(gi);queue.push(s);pump();return s}
+let pumping=false;function pump(){if(pumping)return;pumping=true;(function step(){const s=queue[0];if(!s){pumping=false;return}
+  const l=s.L.find(l=>!l.img||(!LITE&&!l.img2));if(!l){s.ready=true;queue.shift();setTimeout(step,30);return}
+  if(!l.img)l.img=layer(l.seed,...l.c);else l.img2=layer(l.seed+500,...l.c);setTimeout(step,16)})()}
+
+/* ---- the section in hand, read from the page's own label ---- */
+function secOf(){const t=(document.getElementById('where')||{}).textContent||'';const i=(DATA.gname||[]).indexOf(t);return i<0?0:i}
+let cur=null,prev=null,mix=1,shift=0;HI=HI;
+function setSec(gi){if(cur&&cur.gi===gi)return;const s=want(gi);if(!cur){cur=s;mix=1;return}prev=cur;cur=s;mix=0;shift=1;want(gi+1)}
+
+/* ---- drawing ---- */
+let last=performance.now(),T=0,frameL=0,axis=0,axisT=0;
+function drawSet(s,alpha,t){if(!s||!s.ready||alpha<=0)return;const m=MIN(),cx=W/2,cy=H/2,br=1+.035*Math.sin(t*.21)+.06*shift;
+ for(const l of s.L){const A=alpha*l.a;g.save();
+  if(l.veil){const w=W*l.s,h=w/2.6,x=((t*l.v+l.ph*W*.37)%(W+w)+W+w)%(W+w)-w*.5,y=cy+l.y*H;g.globalAlpha=A;g.translate(0,y);g.drawImage(l.img,x-w/2,-h/2,w,h);g.drawImage(l.img,x-w/2-(W+w),-h/2,w,h);
+   if(l.img2){g.globalAlpha=A*(.5+.5*Math.sin(t*.06+l.ph));g.drawImage(l.img2,x-w/2,-h/2,w,h);g.drawImage(l.img2,x-w/2-(W+w),-h/2,w,h)}g.restore();continue}
+  const S=m*l.s*br;g.translate(cx+Math.sin(t*.031+l.ph)*m*.03,cy+Math.cos(t*.027+l.ph)*m*.025);g.rotate((reduce?0:t*l.rot)+(l.axis?axis:0)+l.ph);
+  g.globalAlpha=A;g.drawImage(l.img,-S/2,-S/2,S,S);
+  if(l.img2){g.globalAlpha=A*(.5+.5*Math.sin(t*.07+l.ph));g.drawImage(l.img2,-S/2,-S/2,S,S)}g.restore()}
+ if(STYLE==='core'){const r=m*(.05+.006*Math.sin(t*1.3)),c=s.p.hi.map(Math.round).join(','),gr=g.createRadialGradient(cx,cy,0,cx,cy,r*4);
+  gr.addColorStop(0,`rgba(255,250,240,${.95*alpha})`);gr.addColorStop(.12,`rgba(${c},${.6*alpha})`);gr.addColorStop(1,`rgba(${c},0)`);g.globalAlpha=1;g.fillStyle=gr;g.fillRect(cx-r*4,cy-r*4,r*8,r*8)}}
+function tint(s,alpha){if(!s)return;const c=s.p.deep.map(Math.round).join(','),gr=g.createRadialGradient(W/2,H*.45,0,W/2,H*.45,Math.max(W,H)*.75);
+ gr.addColorStop(0,`rgba(${c},${.32*alpha})`);gr.addColorStop(1,`rgba(${c},${.1*alpha})`);g.globalAlpha=1;g.fillStyle=gr;g.fillRect(0,0,W,H)}
+let fadeIn=0;
+function frame(now){requestAnimationFrame(frame);if(LITE&&now-frameL<40)return;frameL=now;const dt=Math.min(.1,(now-last)/1000);last=now;if(!reduce)T+=dt;
+ setSec(secOf());if(!cur||!cur.ready)return;
+ if(mix<1&&(!prev||cur.ready))mix=Math.min(1,mix+dt/4.5);if(mix>=1)prev=null;shift=Math.max(0,shift-dt/6);fadeIn=Math.min(1,fadeIn+dt/3);
+ if(STYLE==='core'){const target=cur.gi*.9;axis+=(target-axis)*Math.min(1,dt*.4)}
+ g.setTransform(D,0,0,D,0,0);g.clearRect(0,0,W,H);g.globalCompositeOperation='source-over';
+ tint(prev,(1-mix)*fadeIn);tint(cur,mix*fadeIn);
+ g.globalCompositeOperation='screen';drawSet(prev,(1-mix)*fadeIn,T);drawSet(cur,mix*fadeIn,T);g.globalCompositeOperation='source-over'}
+/* the tones come from the planet's still once it has loaded */
+const st=document.getElementById('arrive');
+function start(){try{const c=document.createElement('canvas');c.width=c.height=40;const x=c.getContext('2d');x.drawImage(st,0,0,40,40);const d=x.getImageData(0,0,40,40).data,px=[];
+  for(let i=0;i<d.length;i+=4)if(d[i+3]>220)px.push([d[i],d[i+1],d[i+2],d[i]*.3+d[i+1]*.59+d[i+2]*.11]);px.sort((a,b)=>a[3]-b[3]);
+  const avg=a=>{const s=[0,0,0];a.forEach(p=>{s[0]+=p[0];s[1]+=p[1];s[2]+=p[2]});return s.map(v=>v/Math.max(1,a.length))};
+  if(px.length>20){HI=avg(px.slice(Math.floor(px.length*.7)));LO=avg(px.slice(0,Math.floor(px.length*.45)))}}catch(_){}
+ want(0);requestAnimationFrame(frame)}
+if(st&&st.complete&&st.naturalWidth)start();else if(st){st.addEventListener('load',start);st.addEventListener('error',start)}else start();
 })();
 </script>
 </body>
