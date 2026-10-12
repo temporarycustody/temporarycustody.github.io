@@ -753,6 +753,42 @@ const NCSS="\nhtml.tcnight{background:#05060a!important}\nhtml.tcnight body{back
   else if(ab)ab.style.display='none';
   setTimeout(tick,300)}
  setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab';
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const r=src.getBoundingClientRect(),cs=getComputedStyle(src);ab.style.left=r.left+'px';ab.style.top=r.top+'px';ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding=cs.padding;ab.style.display='block'}
+  else if(ab)ab.style.display='none';
+  setTimeout(tick,300)}
+ setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab';
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const r=src.getBoundingClientRect(),cs=getComputedStyle(src);ab.style.left=r.left+'px';ab.style.top=r.top+'px';ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding=cs.padding;ab.style.display='block'}
+  else if(ab)ab.style.display='none';
+  setTimeout(tick,300)}
+ setTimeout(tick,500)})();
 const ISS=[
  {n:1,sub:'Hard Rain Falling',e:[['The Indians Buried Her','issue001.html']]},
  {n:2,sub:'The Plains',e:[['The Darkness in the Chamber','issue002.html']]},
@@ -1000,14 +1036,14 @@ function planetGo(url,e){if(!mine()||zooming)return false;const key=String(url).
  if(PZ==='C')streaks(x,y,1,MS+200);
  requestAnimationFrame(()=>{pzPlace(im,g.cx,g.cy,1,1,MS);skyTo(x,y,PZ==='C'?2.2:1.6,PZ==='C'?.55:.7,MS,PZ==='C'?1.2:0)});
  if(!document.getElementById('tcplanet-css')){const st=document.createElement('style');st.id='tcplanet-css';st.textContent=`body.tcplanet #tchome>*,body.tcplanet #tcld .ctl,body.tcplanet #tcld .lay,body.tcplanet #tcld>.ab,body.tcplanet #tcld .ttl{opacity:0!important;pointer-events:none!important;transition:opacity .6s!important}`;document.head.appendChild(st)}
- document.body.classList.add('tcplanet');ACS.forEach(c=>{try{c.suspend()}catch(_){}});
+ document.body.classList.add('tcplanet');setTimeout(()=>{if(document.getElementById('tcplanet'))ACS.forEach(c=>{try{c.suspend()}catch(_){}})},MS+400);
  const f=document.createElement('iframe');f.id='tcplanet';f.title='Study';f.setAttribute('allowtransparency','true');
  f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483647;background:transparent;opacity:0;transition:opacity .5s;color-scheme:normal';
  f.dataset.key=key;f.dataset.x=x;f.dataset.y=y;
- setTimeout(()=>{f.src=key+'#arrive&frame';document.body.appendChild(f)},MS-500);
+ setTimeout(()=>{f.src=key+'#arrive&frame&go'+(window.__tcV2?'&v2':'');f.allow='autoplay';document.body.appendChild(f)},MS-500);
  f.__still=im;try{history.pushState({tcplanet:key},'',location.pathname+location.search+'#issues')}catch(_){}
  return true}
-function planetClose(fromPop){const f=document.getElementById('tcplanet');if(!f)return;const key=f.dataset.key,g=pzGeom();let x=+f.dataset.x,y=+f.dataset.y;
+function planetClose(fromPop){const f=document.getElementById('tcplanet');if(!f||f.dataset.closing)return;f.dataset.closing='1';const key=f.dataset.key,g=pzGeom();let x=+f.dataset.x,y=+f.dataset.y;
  const im=f.__still&&f.__still.isConnected?f.__still:still(key);if(!im.isConnected){pzPlace(im,g.cx,g.cy,1,1,0);document.body.appendChild(im)}
  im.style.transition='none';pzPlace(im,g.cx,g.cy,1,1,0);f.style.opacity='0';
  setTimeout(()=>{f.remove();const p=starPos(key);if(p){x=p[0];y=p[1]}if(PZ==='C')streaks(x,y,-1,MS);
@@ -1018,6 +1054,30 @@ addEventListener('message',e=>{if(!mine()||!e.data)return;const f=document.getEl
  if(e.data.tc==='planetReady'&&f){f.style.opacity='1';setTimeout(()=>{if(f.__still&&f.isConnected){f.__still.style.transition='opacity .5s';f.__still.style.opacity='0'}},450)}
  if(e.data.tc==='planetClose')planetClose(false)});
 addEventListener('popstate',()=>{if(document.getElementById('tcplanet'))planetClose(true)});
+/* memory: studies keep their place, end on a card with the next study, and finished ones wear a faint ring */
+window.__tcV2=true;
+addEventListener('message',e=>{if(!mine()||!e.data||e.data.tc!=='planetNext')return;const nx=e.data.key;planetClose(false);
+ let n=0;(function go(){if((zooming||document.getElementById('tcplanet'))&&n++<80){setTimeout(go,150);return}const p=starPos(nx)||[innerWidth/2,innerHeight/2];setTimeout(()=>planetGo(nx,{clientX:p[0],clientY:p[1]}),250)})()});
+(function(){const rings={};
+ function tick(){if(mine()){let seen=[];try{seen=JSON.parse(localStorage.getItem('tcSeen')||'[]')}catch(_){}const lay=document.getElementById('tcskysel');
+  if(lay)ISS.forEach(it=>it.e.forEach(([t,href],j)=>{if(!href)return;const on=seen.includes(href);let r=rings[href];
+   if(on&&!r){r=rings[href]=document.createElement('div');r.style.cssText='position:fixed;z-index:2147482999;pointer-events:none;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;border:1px solid rgba(238,74,100,.55);box-shadow:0 0 8px rgba(238,74,100,.25)';document.body.appendChild(r)}
+   if(r){const p=it.k>1?(it.stars||[])[j]:[it.x,it.y];if(p&&on&&!document.body.classList.contains('tcplanet')){r.style.left=p[0]+'px';r.style.top=p[1]+'px';r.style.display='block'}else r.style.display='none'}}))}
+  setTimeout(tick,500)}
+ setTimeout(tick,900)})();
+
+/* the sky leans toward the planet under the pointer: a soft open chord in that world's key, fading as the pointer moves on */
+(function(){const ROOT={"issue001.html": 164.81, "issue002.html": 196, "issue003-1.html": 146.83, "issue003-2.html": 130.81, "issue003-3.html": 138.59, "issue004-1.html": 146.83, "issue005-1.html": 130.81, "issue005-2.html": 130.81, "issue006-1.html": 123.47, "issue006-2.html": 110, "issue008.html": 146.83, "issue010-1.html": 110, "issue010-2.html": 146.83, "issue010-3.html": 164.81, "issue007-1.html": 110, "issue007-2.html": 146.83, "issue009-1.html": 220, "issue009-2.html": 146.83};let ac=null,cur=null,curKey='';
+ addEventListener('pointerdown',()=>{if(ac)return;const A=window.AudioContext||window.webkitAudioContext;if(!A)return;try{ac=new A()}catch(_){}},true);
+ function stop(){if(cur&&ac){const t=ac.currentTime;cur.g.gain.cancelScheduledValues(t);cur.g.gain.setTargetAtTime(0,t,.45);const o=cur.os;setTimeout(()=>o.forEach(x=>{try{x.stop()}catch(_){}}),2500)}cur=null}
+ function play(f){if(!ac)return;if(ac.state!=='running')try{ac.resume()}catch(_){}const t=ac.currentTime,g=ac.createGain(),lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;g.gain.value=0;g.gain.setTargetAtTime(.045,t,.6);lp.connect(g);g.connect(ac.destination);
+  const os=[[f/2,.9],[f*.75,.5],[f,.35]].map(([x,a],i)=>{const o=ac.createOscillator(),ga=ac.createGain();o.type='sine';o.frequency.value=x;o.detune.value=(i-1)*5;ga.gain.value=a;o.connect(ga);ga.connect(lp);o.start(t);return o});cur={g,os}}
+ function tick(){if(mine()){let key='';
+   if(typeof hov==='number'&&hov>0&&ISS[hov-1]&&!document.body.classList.contains('tcplanet')&&!document.getElementById('tcorb')){const it=ISS[hov-1];key=(hovStar?(it.e[hovStar[1]]||[])[1]:(it.e[0]||[])[1])||''}
+   if(key!==curKey){curKey=key;stop();if(key&&ROOT[key])play(ROOT[key])}}
+  setTimeout(tick,120)}
+ setTimeout(tick,900)})();
+
 document.addEventListener('click',e=>{if(!mine())return;const a=e.target.closest&&e.target.closest('a[href]');if(!a)return;const h=a.getAttribute('href')||'';
  if(PLANETS[h.split('/').pop()]){if(planetGo(h,e)){e.preventDefault();e.stopPropagation()}}},true);
 /* A: coming back from a study page, open zoomed in on its planet, then pull back out to its star */
