@@ -889,6 +889,26 @@ const NCSS="\nhtml.tcnight{background:#05060a!important}\nhtml.tcnight body{back
   else if(ab)ab.style.display='none';
   requestAnimationFrame(tick)}
  setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab2';if(!document.getElementById('tcabx')){const x=document.createElement('style');x.id='tcabx';x.textContent='.tcab{display:none!important}';document.head.appendChild(x)}
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const cs=getComputedStyle(src),o=window.__tcOrion,bt=o&&o.pts&&o.pts[0];ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding='0';ab.style.lineHeight='1';ab.style.display='block';
+   if(bt){const w=ab.offsetWidth,h=ab.offsetHeight,ls=parseFloat(cs.letterSpacing)||0;ab.style.left=(bt[0]-bt[2]*1.6-10-w+ls)+'px';ab.style.top=(bt[1]-h/2)+'px'}
+   else{const r=src.getBoundingClientRect();ab.style.left=r.left+'px';ab.style.top=r.top+'px'}}
+  else if(ab)ab.style.display='none';
+  requestAnimationFrame(tick)}
+ setTimeout(tick,500)})();
 const ISS=[
  {n:1,sub:'Hard Rain Falling',e:[['The Indians Buried Her','issue001.html']]},
  {n:2,sub:'The Plains',e:[['The Darkness in the Chamber','issue002.html']]},
@@ -1154,6 +1174,153 @@ addEventListener('message',e=>{if(!mine()||!e.data)return;const f=document.getEl
  if(e.data.tc==='planetReady'&&f){f.style.opacity='1';setTimeout(()=>{if(f.__still&&f.isConnected){f.__still.style.transition='opacity .5s';f.__still.style.opacity='0'}},450)}
  if(e.data.tc==='planetClose')planetClose(false)});
 addEventListener('popstate',()=>{if(document.getElementById('tcplanet'))planetClose(true)});
+/* The title in stars on the issue selection: the words TEMPORARY CUSTODY are set in stars on the spot where the page sets
+   them in ink, and the ink is hidden. When the loader's own starred title dissolves into the sky, these stars gather in
+   from the same scatter, so the words seem to re-form rather than be replaced. Lives in the marker layer, so it goes
+   when a study opens and comes back with the sky. */
+(function(){
+let cv=null,g=null,D=1,W=0,H=0,ST=[],BR=[],LANE=null,key='',born=0,el0=null;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function titleEl(){const c=document.getElementById('tccloud');if(!c)return null;let e=(c.parentElement&&c.parentElement.id==='tccloudwrap'?c.parentElement:c).nextElementSibling;
+ while(e&&!/TEMPORARY CUSTODY/.test(e.textContent))e=e.nextElementSibling;return e}
+function glow(r,rgb){const s=Math.ceil(r*6),c=document.createElement('canvas');c.width=c.height=s*2;const x=c.getContext('2d'),gr=x.createRadialGradient(s,s,0,s,s,s);
+ gr.addColorStop(0,`rgba(${rgb},1)`);gr.addColorStop(.12,`rgba(${rgb},.75)`);gr.addColorStop(.35,`rgba(${rgb},.16)`);gr.addColorStop(1,`rgba(${rgb},0)`);x.fillStyle=gr;x.fillRect(0,0,s*2,s*2);return c}
+function lay(el){const tn=[...el.childNodes].find(n=>n.nodeType===3&&/TEMPORARY/.test(n.textContent));if(!tn)return false;
+ const cs=getComputedStyle(el),fs=parseFloat(cs.fontSize)||30;
+ const oc=document.createElement('canvas');oc.width=W;oc.height=H;const ox=oc.getContext('2d');ox.fillStyle='#fff';ox.font=cs.fontStyle+' '+cs.fontWeight+' '+fs+'px '+cs.fontFamily;ox.textBaseline='alphabetic';
+ const rg=document.createRange(),txt=tn.textContent;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+ for(let k=0;k<txt.length;k++){if(txt[k]===' ')continue;rg.setStart(tn,k);rg.setEnd(tn,k+1);const r=rg.getBoundingClientRect();if(r.width<1)continue;
+  const m=ox.measureText(txt[k]);const asc=m.fontBoundingBoxAscent||fs*.8,desc=m.fontBoundingBoxDescent||fs*.2;ox.fillText(txt[k],r.left,r.top+(r.height-(asc+desc))/2+asc);
+  x0=Math.min(x0,r.left);x1=Math.max(x1,r.right);y0=Math.min(y0,r.top);y1=Math.max(y1,r.bottom)}
+ if(x1<x0)return false;
+ const X0=Math.max(0,Math.floor(x0-4)),Y0=Math.max(0,Math.floor(y0-4)),ww=Math.min(W-X0,Math.ceil(x1-x0+8)),hh=Math.min(H-Y0,Math.ceil(y1-y0+8));
+ const d=ox.getImageData(X0,Y0,ww,hh).data,step=Math.max(1.3,fs/22);let s2=29;const r2=()=>{s2=(s2*1664525+1013904223)>>>0;return s2/4294967296};
+ ST=[];for(let y=0;y<hh;y+=step)for(let x=0;x<ww;x+=step){const jx=x+(r2()-.5)*step*.8,jy=y+(r2()-.5)*step*.8,xi=Math.round(jx),yi=Math.round(jy);
+  if(xi<0||yi<0||xi>=ww||yi>=hh)continue;if(d[(yi*ww+xi)*4+3]<110)continue;const c=r2(),an=r2()*6.283,dd=(8+r2()*40)*(fs/30);
+  ST.push({x:X0+jx,y:Y0+jy,dx:Math.cos(an)*dd,dy:Math.sin(an)*dd-r2()*14,k:.8+r2()*1.6,s:r2()<.6?1.25:1.75,a:.85+r2()*.15,sp:1.5+r2()*6,ph:r2()*6.28,col:c<.12?'255,226,180':c<.4?'210,220,255':'248,248,252'})}
+ BR=[];for(let k=0;k<ST.length;k+=Math.max(9,Math.round(ST.length/40))){const o=ST[Math.floor(r2()*ST.length)];const r=(.6+r2()*.6)*Math.max(.8,fs/30);BR.push({x:o.x,y:o.y,r,img:glow(r,r2()<.3?'200,215,255':'250,250,255'),sp:1+r2()*3,ph:r2()*6.28,dx:o.dx,dy:o.dy,k:o.k})}
+ /* a darker lane behind the words so they read against the field, as on the title screen */
+ LANE=[x0,y0,x1,y1,fs];return true}
+function ensure(){const lay=document.getElementById('tcskysel');if(!lay)return false;
+ if(!cv||!cv.isConnected){cv=document.createElement('canvas');cv.id='tcstitle';cv.style.cssText='position:fixed;left:0;top:0;pointer-events:none';lay.insertBefore(cv,lay.firstChild);g=cv.getContext('2d');W=0}
+ const w=innerWidth,h=innerHeight,dd=Math.min(2,devicePixelRatio||1);if(w!==W||h!==H||dd!==D){W=w;H=h;D=dd;cv.width=W*D;cv.height=H*D;cv.style.width=W+'px';cv.style.height=H+'px';key=''}return true}
+function frame(now){requestAnimationFrame(frame);
+ const ld=document.getElementById('tcld'),night=!!document.querySelector('#tcld.night'),el=titleEl();
+ if(el0&&el0!==el&&el0.isConnected)el0.style.color='';
+ if(!el||!night||!ensure()){if(cv)g.clearRect(0,0,cv.width,cv.height);return}
+ if(el0!==el){el0=el;el.style.transition='none';el.style.color='transparent';el.style.textShadow='none'}
+ const r=el.getBoundingClientRect(),k2=W+'x'+H+':'+Math.round(r.left)+','+Math.round(r.top)+','+Math.round(r.width);
+ if(k2!==key){if(r.width<2)return;if(!lay(el))return;if(!key&&!born)born=now;key=k2}
+ g.setTransform(D,0,0,D,0,0);g.clearRect(0,0,W,H);
+ const t=reduce?1:Math.min(1,(now-born)/2600),e=1-Math.pow(1-t,3),off=1-e,tw=now/1000;
+ if(LANE){const [x0,y0,x1,y1,fs]=LANE,pad=fs*1.1;g.save();g.globalAlpha=.75*e;g.filter='blur('+(fs*.55).toFixed(1)+'px)';g.fillStyle='rgba(5,6,10,.82)';g.fillRect(x0-pad*.4,y0-pad*.2,x1-x0+pad*.8,y1-y0+pad*.4);g.restore()}
+ for(const p of ST){const a=p.a*(reduce?1:(.72+.28*Math.sin(tw*p.sp+p.ph)))*Math.min(1,e*1.3);const x=p.x+p.dx*p.k*off*2.2,y=p.y+p.dy*p.k*off*2.2;
+  g.fillStyle=`rgba(${p.col},${a.toFixed(3)})`;g.fillRect(x-p.s/2,y-p.s/2,p.s,p.s)}
+ for(const b of BR){const a=(.55+.45*Math.sin(tw*b.sp+b.ph))*e;const x=b.x+b.dx*b.k*off*2.2,y=b.y+b.dy*b.k*off*2.2,s=b.img.width/2;g.globalAlpha=Math.max(0,a);g.drawImage(b.img,x-s,y-s)}
+ g.globalAlpha=1}
+requestAnimationFrame(frame);
+})();
+
+/* Things that cross the sky. SKYOBJ picks the draft:
+   A  shooting stars: thin quick streaks now and then, with the odd slower fireball that sheds sparks
+   B  asteroid: a tumbling rock drifts across every so often, with meteors between
+   C  comet: a comet with a glowing head and two tails crosses slowly, with meteors between
+   D  fibration: the fibration of the work floats in the sky as an object you can grab and throw, with meteors
+   All of it lives in the marker layer, so it goes when a study opens and comes back with the sky. */
+(function(){
+const SKYOBJ='D',FIBC='D';const FIB={"series": [["root", "The root", ".50", "#5b4636", "#d2b89c"], ["classical", "Classical witnesses", ".32", "#8a6d2f", "#e0bd73"], ["humanist", "The humanist dimension", ".14", "#7a4f6b", "#d7a6c6"], ["stolen", "The stolen hours", "-.04", "#9b3b2b", "#ee9a84"], ["surreal", "The Surrealists", "-.22", "#2f7a72", "#7fd3c6"], ["wfnk", "Novels and films", "-.40", "#4a6a3a", "#a9cf8e"], ["tc", "Temporary Custody", "-.58", "#b8102c", "#ff6b7f"]], "works": [["ch8", "root", "The formal indication of understanding"], ["paul", "root", "Paul"], ["aug", "root", "Augustine"], ["arist", "root", "Aristotle"], ["cic", "root", "Cicero"], ["quint", "root", "Quintilian"], ["kant", "root", "Kant"], ["seneca", "classical", "Seneca"], ["thuc", "classical", "Thucydides"], ["pindar", "classical", "Pindar"], ["boeth", "classical", "Boethius"], ["hegel", "classical", "Hegel"], ["garden", "classical", "What the Garden Knew"], ["cave", "classical", "The Cave Allegory"], ["erasmus", "humanist", "Praise of Folly"], ["holbein", "humanist", "The Ambassadors"], ["rab1", "humanist", "Gargantua and Pantagruel, I"], ["rab2", "humanist", "Gargantua and Pantagruel, II"], ["mont", "humanist", "The Essais"], ["angle", "humanist", "The Other Angle"], ["fire", "stolen", "The Fire Next Time"], ["beale", "stolen", "If Beale Street Could Talk"], ["opp", "stolen", "Both Texts Turn in Opposite Directions from the Same Place"], ["letter", "stolen", "The Letter and the Moment"], ["time", "stolen", "The Time Between"], ["body", "stolen", "The Body\u2019s Accounting"], ["three", "stolen", "What the Three Together Know"], ["letter", "time", "body"], ["baldwin", "stolen", "Baldwin, the corpus"], ["afflict", "stolen", "What Affliction Knows"], ["factory", "stolen", "What the Factory Wrote"], ["levi", "stolen", "Primo Levi"], ["nadja", "surreal", "Nadja"], ["amour", "surreal", "L\u2019Amour fou"], ["fear", "surreal", "The House of Fear"], ["trumpet", "surreal", "The Hearing Trumpet"], ["surnote", "surreal", "The Surrealists, connecting note"], ["nadja", "amour", "fear"], ["postoffice", "wfnk", "Post Office"], ["chekhov", "wfnk", "What Chekhov Knows"], ["warlock", "wfnk", "Warlock"], ["faustus", "wfnk", "Doctor Faustus"], ["mountain", "wfnk", "The Magic Mountain"], ["foster", "wfnk", "Foster"], ["paramo", "wfnk", "What Desire Makes"], ["hendry", "wfnk", "The Authentic Death of Hendry Jones"], ["tree", "wfnk", "A Tree Grows in Brooklyn"], ["stead", "wfnk", "The Man Who Loved Children"], ["timeless", "wfnk", "What the Record Reduces"], ["world", "wfnk", "The World to Come"], ["blackbirds", "wfnk", "Blackbirds"], ["known", "wfnk", "The Known World"], ["leopard", "wfnk", "The Leopard"], ["country", "wfnk", "The Country and the City"], ["androids", "wfnk", "Do Androids Dream of Electric Sheep?"], ["neuro", "wfnk", "Neuromancer"], ["titus1", "wfnk", "Titus Groan"], ["titus2", "wfnk", "Gormenghast"], ["titus3", "wfnk", "Titus Alone"], ["naked", "wfnk", "Naked Lunch"], ["blank", "wfnk", "The Conscripted Blank"], ["ltz", "wfnk", "What Wouldn\u2019t Disappear"], ["velvet", "wfnk", "Blue Velvet"], ["mulholland", "wfnk", "Mulholland Drive"], ["highway", "wfnk", "Lost Highway"], ["lynchnote", "wfnk", "The Self That Cannot Hold What It Knows"], ["velvet", "mulholland", "highway"], ["hrf", "tc", "The Indians Buried Her"], ["plains", "tc", "The Darkness in the Chamber"], ["wb", "tc", "The Church Without Christ"], ["tvb", "tc", "The Calling That Could Not Be Refused"], ["oconnor", "tc", "What Only Both Novels Together Know"], ["hamlet", "tc", "The Readiness Is All"], ["nadsat", "tc", "No Position Outside Nadsat"], ["beethoven", "tc", "It Removed His Beethoven"], ["camera", "tc", "What the Camera Refuses to Say"], ["language", "tc", "The Only Language the Novel Has"], ["occasioned", "tc", "Occasioned, Not Caused"], ["hand", "tc", "The Hand That Did Not Reach"], ["whale", "tc", "What the Whale Will Not Receive"], ["bm", "tc", "A Position the Field Can\u2019t Contain"], ["suttree", "tc", "The Name That Keeps Surviving Him"], ["iliad", "tc", "Recognition Beyond the Norms"], ["odyssey", "tc", "What Homecoming Requires"], ["excluded", "tc", "What the Excluded Position Knows"]]};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let cv=null,g=null,W=0,H=0,D=1,meteors=[],sparks=[],obj=null,nextM=0,nextO=0,lastT=0;
+const R=(a,b)=>a+Math.random()*(b-a);
+function ensure(){const lay=document.getElementById('tcskysel');if(!lay||!mine())return false;
+ if(!cv||!cv.isConnected){cv=document.createElement('canvas');cv.id='tcskyobj';cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none';lay.insertBefore(cv,lay.firstChild);g=cv.getContext('2d');size()}
+ return true}
+function size(){if(!cv)return;D=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=Math.round(W*D);cv.height=Math.round(H*D)}
+addEventListener('resize',size);
+/* meteors */
+function meteor(big){const fromLeft=Math.random()<.5,ang=(fromLeft?R(.25,.6):Math.PI-R(.25,.6)),sp=big?R(260,420):R(700,1200),len=big?R(160,260):R(90,200);
+ meteors.push({x:R(W*.1,W*.9),y:R(-20,H*.35),vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,len,life:big?R(2.4,3.4):R(.6,1.1),t:0,big,w:big?R(1.8,2.6):R(.8,1.4),warm:big||Math.random()<.25})}
+function drawMeteors(dt){for(const m of meteors){m.t+=dt;m.x+=m.vx*dt;m.y+=m.vy*dt;const k=m.t/m.life,a=Math.sin(Math.min(1,k)*Math.PI);if(k>1)continue;
+  const sp=Math.hypot(m.vx,m.vy),ux=m.vx/sp,uy=m.vy/sp,tx=m.x-ux*m.len,ty=m.y-uy*m.len;
+  const gr=g.createLinearGradient(tx,ty,m.x,m.y);const c=m.warm?'255,214,170':'225,235,255';gr.addColorStop(0,`rgba(${c},0)`);gr.addColorStop(1,`rgba(${c},${(.85*a).toFixed(3)})`);
+  g.strokeStyle=gr;g.lineWidth=m.w;g.lineCap='round';g.beginPath();g.moveTo(tx,ty);g.lineTo(m.x,m.y);g.stroke();
+  if(m.big){const h=g.createRadialGradient(m.x,m.y,0,m.x,m.y,14);h.addColorStop(0,`rgba(255,236,210,${(.9*a).toFixed(3)})`);h.addColorStop(1,'rgba(255,180,120,0)');g.fillStyle=h;g.beginPath();g.arc(m.x,m.y,14,0,7);g.fill();
+   if(Math.random()<.5)sparks.push({x:m.x,y:m.y,vx:m.vx*.15+R(-40,40),vy:m.vy*.15+R(-40,40),t:0,life:R(.4,.9)})}}
+ meteors=meteors.filter(m=>m.t<m.life);
+ for(const s of sparks){s.t+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;const a=1-s.t/s.life;if(a<=0)continue;g.fillStyle=`rgba(255,200,150,${(a*.8).toFixed(3)})`;g.fillRect(s.x,s.y,1.4,1.4)}
+ sparks=sparks.filter(s=>s.t<s.life)}
+/* the asteroid: a lumpy rock, lit from the left, slowly turning */
+function rock(){const n=22,pts=[],r0=R(18,30);for(let i=0;i<n;i++){const a=i/n*6.283;pts.push([a,r0*(1+.22*Math.sin(a*3+R(0,6))+.12*Math.sin(a*5+R(0,6))+R(-.06,.06))])}
+ const cr=[];for(let i=0;i<6;i++)cr.push([R(-.5,.5)*r0,R(-.5,.5)*r0,R(.08,.22)*r0]);
+ const fromLeft=Math.random()<.5;return {kind:'rock',x:fromLeft?-60:W+60,y:R(H*.12,H*.6),vx:(fromLeft?1:-1)*R(18,32),vy:R(-6,6),rot:R(0,6),vr:R(-.25,.25),pts,cr,r0}}
+function drawRock(o){g.save();g.translate(o.x,o.y);g.rotate(o.rot);g.beginPath();o.pts.forEach(([a,r],i)=>{const x=Math.cos(a)*r,y=Math.sin(a)*r;i?g.lineTo(x,y):g.moveTo(x,y)});g.closePath();
+ const gr=g.createRadialGradient(-o.r0*.5,-o.r0*.4,o.r0*.1,0,0,o.r0*1.3);gr.addColorStop(0,'#8a8078');gr.addColorStop(.6,'#4a433e');gr.addColorStop(1,'#161414');g.fillStyle=gr;g.fill();
+ g.save();g.clip();for(const [x,y,r] of o.cr){g.fillStyle='rgba(10,8,8,.35)';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle='rgba(200,190,180,.18)';g.lineWidth=.8;g.beginPath();g.arc(x-r*.15,y-r*.15,r,2.6,5.2);g.stroke()}g.restore();
+ g.strokeStyle='rgba(230,220,210,.18)';g.lineWidth=.8;g.stroke();g.restore()}
+/* the comet: a bright head, a straight blue ion tail away from the sun and a curved pale dust tail */
+function comet(){const fromLeft=Math.random()<.5;return {kind:'comet',x:fromLeft?-80:W+80,y:R(H*.08,H*.4),vx:(fromLeft?1:-1)*R(28,44),vy:R(4,14),t:0}}
+function drawComet(o){const sx=-W*.3,sy=-H*.2,ux=o.x-sx,uy=o.y-sy,ul=Math.hypot(ux,uy),ax=ux/ul,ay=uy/ul,L=Math.min(W,H)*.28;
+ const ion=g.createLinearGradient(o.x,o.y,o.x+ax*L*1.2,o.y+ay*L*1.2);ion.addColorStop(0,'rgba(140,190,255,.45)');ion.addColorStop(1,'rgba(140,190,255,0)');g.strokeStyle=ion;g.lineWidth=2.2;g.beginPath();g.moveTo(o.x,o.y);g.lineTo(o.x+ax*L*1.2,o.y+ay*L*1.2);g.stroke();
+ const bx=-o.vy,by=o.vx,bl=Math.hypot(bx,by)||1;for(let k=0;k<14;k++){const f=k/14;g.strokeStyle=`rgba(255,236,214,${(.06*(1-f)).toFixed(3)})`;g.lineWidth=10*(1-f)+2;g.beginPath();g.moveTo(o.x,o.y);
+  g.quadraticCurveTo(o.x+ax*L*.5+bx/bl*L*.12*f,o.y+ay*L*.5+by/bl*L*.12*f,o.x+ax*L*.95+bx/bl*L*.3*f,o.y+ay*L*.95+by/bl*L*.3*f);g.stroke()}
+ const h=g.createRadialGradient(o.x,o.y,0,o.x,o.y,26);h.addColorStop(0,'rgba(255,250,240,.95)');h.addColorStop(.25,'rgba(220,235,255,.45)');h.addColorStop(1,'rgba(160,200,255,0)');g.fillStyle=h;g.beginPath();g.arc(o.x,o.y,26,0,7);g.fill()}
+/* the fibration: each work a circle (its fibre), each series a torus of circles, all linked; projected and turning */
+let fib=null;
+const hexRGB=h=>{h=h.replace('#','');return [0,2,4].map(i=>parseInt(h.substr(i,2),16))};
+/* colour at rest (FIBC) and in full when selected: held, or under the pointer. Selection comes in quickly and goes slowly.
+   A grey: each series keeps its own lightness in grey. B moonlight: a cool silver, like the stars around it.
+   C ember: one warm amber, after Betelgeuse. D grey, with the Temporary Custody series kept in red. */
+function restRGB(c){const [r,g2,b]=c.rgb,l=.3*r+.59*g2+.11*b;
+ if(FIBC==='B')return [l*.82+18,l*.88+22,l*.98+30];
+ if(FIBC==='C'){const k=l/255;return [255*Math.min(1,k*1.15),190*k,120*k*.85]}
+ if(FIBC==='D'&&c.tc)return c.rgb;
+ return [l,l,l]}
+function mixCol(c,t){const a=restRGB(c),b=c.rgb;return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')})`}
+function fibInit(){if(!FIB)return null;const ser={};FIB.series.forEach(([id,name,c,c0,c1])=>{ser[id]={c:+c,col:c1,n:0,list:[]}});
+ FIB.works.forEach(([wid,sid])=>{(ser[sid]||ser.wfnk).list.push(wid)});const circles=[];
+ Object.values(ser).forEach(s=>{const n=s.list.length;s.list.forEach((w,j)=>{const ph=2*Math.PI*j/n+s.c*3,zc=s.c,rr=Math.sqrt(1-zc*zc),p=[rr*Math.cos(ph),rr*Math.sin(ph),zc],k=1/Math.sqrt(2*(1+p[2])),pts=[];
+  for(let i=0;i<=48;i++){const t=2*Math.PI*i/48,x0=k*(1+p[2])*Math.cos(t),x1=k*(p[0]*Math.sin(t)-p[1]*Math.cos(t)),x2=k*(p[0]*Math.cos(t)+p[1]*Math.sin(t)),x3=k*(1+p[2])*Math.sin(t),d=1/(1-x3+1e-4);pts.push([x0*d,x1*d,x2*d])}
+  circles.push({pts,col:s.col,rgb:hexRGB(s.col),tc:s===ser.tc})})});
+ let m=0;circles.forEach(c=>c.pts.forEach(q=>{m=Math.max(m,Math.hypot(...q))}));const sc=1/Math.min(m,3.2);circles.forEach(c=>c.pts=c.pts.map(q=>q.map(v=>v*sc)));return circles}
+function fibObj(){return {kind:'fib',x:W*(Math.random()<.5?R(.14,.28):R(.72,.86)),y:H*R(.25,.65),vx:R(-8,8),vy:R(-5,5),ra:R(0,6),rb:.5,size:Math.min(W,H)*(W<600?.18:.13),grab:false,hov:false}}
+function drawFib(o,dt){const FA=o.fade==null?1:o.fade;const want=(o.hov||o.grab)?1:0;o.sel=o.sel==null?0:o.sel;o.sel+=want>o.sel?Math.min(want-o.sel,dt*3.5):-Math.min(o.sel-want,dt*.6);const SEL=FIBC?o.sel*o.sel*(3-2*o.sel):1;g.globalAlpha=FA;if(!fib)fib=fibInit();if(!fib)return;if(!o.grab){o.ra+=dt*(reduce?.02:.12)}o.rb+=dt*.03;
+ const ca=Math.cos(o.ra),sa=Math.sin(o.ra),cb=Math.cos(.5+Math.sin(o.rb)*.25),sb=Math.sin(.5+Math.sin(o.rb)*.25),S=o.size;
+ const P=q=>{let x=q[0]*ca-q[2]*sa,z=q[0]*sa+q[2]*ca,y=q[1];const y2=y*cb-z*sb,z2=y*sb+z*cb;const f=1/(1+z2*.35);return [o.x+x*S*f,o.y+y2*S*f,z2]};
+ const glow=g.createRadialGradient(o.x,o.y,0,o.x,o.y,S*1.3);glow.addColorStop(0,`rgba(140,150,200,${o.hov||o.grab?.12:.06})`);glow.addColorStop(1,'rgba(140,150,200,0)');g.fillStyle=glow;g.beginPath();g.arc(o.x,o.y,S*1.3,0,7);g.fill();
+ for(const c of fib){const pp=c.pts.map(P),sc=FIBC?mixCol(c,SEL):c.col;for(let i=1;i<pp.length;i++){const z=(pp[i][2]+pp[i-1][2])/2,a=(.25+.5*(1-(z+1)/2))*(o.hov||o.grab?1:.85);g.strokeStyle=sc;g.globalAlpha=FA*Math.max(.06,Math.min(.95,a))*(c.tc?1:.75);g.lineWidth=c.tc?1.1:.7;g.beginPath();g.moveTo(pp[i-1][0],pp[i-1][1]);g.lineTo(pp[i][0],pp[i][1]);g.stroke()}}
+ g.globalAlpha=FA;
+ if(o.hov||o.grab){g.font="11px 'Liberation Mono',monospace";g.fillStyle='rgba(233,230,220,.85)';g.textAlign='center';if(g.letterSpacing!==undefined)g.letterSpacing='.18em';g.fillText('THE FIBRATION OF THE WORK',o.x,o.y+S*1.25+14);if(g.letterSpacing!==undefined)g.letterSpacing='0px'}}
+/* grabbing the fibration: a small hit area that follows it, so the rest of the sky stays clickable */
+let hit=null,drag=null,moved=0;
+function ensureHit(o){if(SKYOBJ!=='D')return;const lay=document.getElementById('tcskysel');if(!lay)return;
+ if(!hit||!hit.isConnected){hit=document.createElement('div');hit.setAttribute('aria-label','The fibration of the work. Drag to move.');hit.style.cssText='position:fixed;border-radius:50%;cursor:grab;touch-action:none;z-index:2147482990';document.body.appendChild(hit);
+  hit.addEventListener('pointerenter',()=>{if(obj)obj.hov=true});hit.addEventListener('pointerleave',()=>{if(obj&&!drag)obj.hov=false});
+  hit.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(!obj)return;hit.setPointerCapture(e.pointerId);hit.style.cursor='grabbing';drag={dx:obj.x-e.clientX,dy:obj.y-e.clientY,lx:e.clientX,ly:e.clientY,sx:e.clientX,sy:e.clientY,lt:performance.now(),vx:0,vy:0};obj.grab=true});
+  hit.addEventListener('pointermove',e=>{if(!drag||!obj)return;const now=performance.now(),dt=Math.max(.008,(now-drag.lt)/1000);drag.vx=(e.clientX-drag.lx)/dt;drag.vy=(e.clientY-drag.ly)/dt;drag.lx=e.clientX;drag.ly=e.clientY;drag.lt=now;
+   obj.ra+=(e.movementX||0)*.004;obj.x=e.clientX+drag.dx;obj.y=e.clientY+drag.dy});
+  const up=e=>{if(!drag||!obj)return;moved=Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy);obj.vx=Math.max(-260,Math.min(260,drag.vx*.35));obj.vy=Math.max(-260,Math.min(260,drag.vy*.35));obj.grab=false;drag=null;hit.style.cursor='grab'};
+  hit.addEventListener('pointerup',up);hit.addEventListener('pointercancel',up);hit.addEventListener('click',e=>{e.stopPropagation();if(moved>5)return;
+   /* a click that didn't drag passes through to whatever lies under the object: a marker, About, the title */
+   hit.style.pointerEvents='none';const t=document.elementFromPoint(e.clientX,e.clientY);hit.style.pointerEvents='';
+   if(t&&t!==hit)t.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:e.clientX,clientY:e.clientY,view:window}))})}
+ const S=o.size*1.15;hit.style.left=(o.x-S)+'px';hit.style.top=(o.y-S)+'px';hit.style.width=hit.style.height=(2*S)+'px'}
+function frame(now){const dt=Math.min(.05,(now-(lastT||now))/1000);lastT=now;
+ if(ensure()){g.setTransform(D,0,0,D,0,0);g.clearRect(0,0,W,H);
+  const quiet=document.getElementById('tcorb')||document.body.classList.contains('tcplanet')||document.body.classList.contains('tcmeth');
+  if(!quiet&&!reduce){if(now>nextM){meteor(SKYOBJ==='A'&&Math.random()<.22);nextM=now+(SKYOBJ==='A'?R(3500,9000):R(8000,18000))}}
+  if(!quiet&&(SKYOBJ==='B'||SKYOBJ==='C')&&!obj&&now>nextO){obj=SKYOBJ==='B'?rock():comet()}
+  if(SKYOBJ==='D'&&!obj)obj=fibObj();
+  if(meteors.length||sparks.length)drawMeteors(dt);
+  if(obj){if(obj.kind!=='fib'||!obj.grab){obj.x+=obj.vx*dt;obj.y+=obj.vy*dt}if(obj.kind==='rock'){obj.rot+=obj.vr*dt;drawRock(obj)}else if(obj.kind==='comet')drawComet(obj);
+   else{obj.vx*=1-dt*.35;obj.vy*=1-dt*.35;const sp=Math.hypot(obj.vx,obj.vy);if(sp<6){const a=now/9000;obj.vx+=Math.cos(a)*dt*2;obj.vy+=Math.sin(a*1.3)*dt*2}
+    const m=obj.size*1.2;if(obj.x<m){obj.x=m;obj.vx=Math.abs(obj.vx)}if(obj.x>W-m){obj.x=W-m;obj.vx=-Math.abs(obj.vx)}if(obj.y<m){obj.y=m;obj.vy=Math.abs(obj.vy)}if(obj.y>H-m-40){obj.y=H-m-40;obj.vy=-Math.abs(obj.vy)}
+    obj.fade=Math.max(0,Math.min(1,(obj.fade==null?1:obj.fade)+(quiet?-dt*3:dt*1.2)));if(obj.fade>0){drawFib(obj,dt);g.globalAlpha=1}ensureHit(obj);if(hit){const lay=document.getElementById('tcskysel'),cs=lay&&getComputedStyle(lay),vis=lay&&lay.getClientRects().length&&cs.visibility!=='hidden'&&+cs.opacity>.05;hit.style.display=(quiet||!vis)?'none':'block'}}
+   if(obj.kind!=='fib'&&(obj.x<-140||obj.x>W+140||obj.y>H+140)){obj=null;nextO=now+R(25000,60000)}}}
+ requestAnimationFrame(frame)}
+nextM=performance.now()+R(2500,5000);nextO=performance.now()+R(4000,9000);
+requestAnimationFrame(frame);
+})();
+
 /* the orb opens straight onto the issue selection: as it releases, the title screen is passed over (the loader's own
    title button is pressed, so its starred title dissolves into the sky as before) */
 (function(){let armed=false,done=false;
