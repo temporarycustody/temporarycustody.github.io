@@ -829,6 +829,26 @@ const NCSS="\nhtml.tcnight{background:#05060a!important}\nhtml.tcnight body{back
   else if(ab)ab.style.display='none';
   requestAnimationFrame(tick)}
  setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab2';if(!document.getElementById('tcabx')){const x=document.createElement('style');x.id='tcabx';x.textContent='.tcab{display:none!important}';document.head.appendChild(x)}
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const cs=getComputedStyle(src),o=window.__tcOrion,bt=o&&o.pts&&o.pts[0];ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding='0';ab.style.lineHeight='1';ab.style.display='block';
+   if(bt){const w=ab.offsetWidth,h=ab.offsetHeight,ls=parseFloat(cs.letterSpacing)||0;ab.style.left=(bt[0]-bt[2]*1.6-10-w+ls)+'px';ab.style.top=(bt[1]-h/2)+'px'}
+   else{const r=src.getBoundingClientRect();ab.style.left=r.left+'px';ab.style.top=r.top+'px'}}
+  else if(ab)ab.style.display='none';
+  requestAnimationFrame(tick)}
+ setTimeout(tick,500)})();
 const ISS=[
  {n:1,sub:'Hard Rain Falling',e:[['The Indians Buried Her','issue001.html']]},
  {n:2,sub:'The Plains',e:[['The Darkness in the Chamber','issue002.html']]},
@@ -1094,6 +1114,11 @@ addEventListener('message',e=>{if(!mine()||!e.data)return;const f=document.getEl
  if(e.data.tc==='planetReady'&&f){f.style.opacity='1';setTimeout(()=>{if(f.__still&&f.isConnected){f.__still.style.transition='opacity .5s';f.__still.style.opacity='0'}},450)}
  if(e.data.tc==='planetClose')planetClose(false)});
 addEventListener('popstate',()=>{if(document.getElementById('tcplanet'))planetClose(true)});
+/* the title screen holds between the orb and the issue selection: a click or key meant for the orb can't fall through to the title */
+(function(){let seen=0;setInterval(()=>{if(document.getElementById('tcorb'))seen=performance.now()},80);
+ addEventListener('click',e=>{if(!document.getElementById('tcorb')&&performance.now()-seen<1400&&e.target.closest&&e.target.closest('#tcld')){e.preventDefault();e.stopPropagation()}},true);
+ addEventListener('keydown',e=>{const o=document.getElementById('tcorb');if(o&&(e.key==='Enter'||e.key===' ')&&!o.contains(e.target)){e.preventDefault();e.stopPropagation();o.click()}},true)})();
+
 /* memory: studies keep their place, end on a card with the next study, and finished ones wear a faint ring */
 window.__tcV2=true;
 addEventListener('message',e=>{if(!mine()||!e.data||e.data.tc!=='planetNext')return;const nx=e.data.key;planetClose(false);
