@@ -56,14 +56,17 @@ html.framed,html.framed body{background:transparent!important}html.framed #sky{d
 <body>
 <script>
 /* Phones: the planet readthrough in a gentler form. MOB picks the form:
+   S calm still  as A, but the planet is its still picture: no shader, no turning
+   N nebula  no planet: a slow nebula in the planet's colours behind the passage
+   E eclipse  the planet as a dark disc with a lit rim, the passage beneath
    A calm  the same live planet, drawn at lower resolution and 30 frames a second, slower turning, a still sky, no blur
    B still the planet as a still image, the passage beneath it, one passage at a time with a soft crossfade
    C read  no motion at all: the study as one scrolling column under a small still planet
    D horizon  the planet's still rising as a great arc at the foot of the screen, the passage above it
    FORCE makes a draft show its form at any size; otherwise only phones get it. */
-(function(){const MOB='A',FORCE=false;
+(function(){const MOB='S',FORCE=false;
  const phone=matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<700;
- if(!(FORCE||phone))return;window.__MOB=MOB;if(MOB!=='A'){window.__MOBALT=MOB;document.documentElement.classList.add('mobalt','mob'+MOB)}})();
+ if(!(FORCE||phone))return;window.__MOB=MOB;if(MOB==='S')window.__MOBS=true;if(MOB!=='A'&&MOB!=='S'){window.__MOBALT=MOB;document.documentElement.classList.add('mobalt','mob'+MOB)}})();
 </script>
 <canvas id="sky" aria-hidden="true"></canvas><script>
 (function(){
@@ -374,7 +377,7 @@ const SND=(()=>{let ac=null,master=null,on=true,wet=null,beds={},want=null;
  function bed(n){want=n;if(!ac)return;Object.keys(beds).forEach(k=>beds[k].gain.setTargetAtTime(k===n?AMB.level:0,ac.currentTime,1.4))}
  return {start,arrive,leave,toggle,fade,bed,get on(){return on}}})();
 function spawn(k){k=(k+ITEMS.length)%ITEMS.length;if(V2){try{localStorage.setItem(POSKEY,String(k))}catch(_){}}if(ended&&k!==ITEMS.length-1)hideEnd();if(live.length)SND.leave();SND.arrive(ITEMS[k],k);if(AMB){const it=ITEMS[k];SND.bed(it.title||!it.i?AMB.first:(AMB.bedOf[it.i]||AMB.first))}let s=slotFree();if(s<0){const old=live.shift();s=old.slot}
- const it=ITEMS[k];upload(s,it);setFlat(s,it);live.push({k,t0:T,H:holdOf(it),slot:s});
+ const it=ITEMS[k];if(!window.__MOBS)upload(s,it);setFlat(s,it);live.push({k,t0:T,H:holdOf(it),slot:s});
  document.getElementById('live').textContent=it.title?DATA.__title+'. '+DATA.__deck+'.':[it.text].concat(it.tags.map(t=>t[1]),it.does?['Does: '+it.does]:[]).join(' ');
  document.getElementById('where').textContent=it.title?DATA.__issue:it.label;
  railTo(k)}
@@ -423,7 +426,7 @@ function rotm(){const tl=.32,a=spin,ct=Math.cos(tl),st=Math.sin(tl),ca=Math.cos(
  // p = Ry(a) * Rx(tl) * n ; column-major for gl
  const Rx=[[1,0,0],[0,ct,-st],[0,st,ct]],Ry=[[ca,0,sa],[0,1,0],[-sa,0,ca]];
  const M=[[0,0,0],[0,0,0],[0,0,0]];for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)M[i][j]+=Ry[i][k]*Rx[k][j];return M}
-function frame(now){if(window.__MOB==='A'){if(now-(frame.l||0)<31){requestAnimationFrame(frame);return}frame.l=now}
+function frame(now){if(window.__MOB==='A'||window.__MOB==='S'){if(now-(frame.l||0)<31){requestAnimationFrame(frame);return}frame.l=now}
  const dt=Math.min(.1,(now-last)/1000);last=now;
  intro=Math.min(1,intro+dt/4.5);
  spin+=(AGAINST?1:-1)*dt*(reduce?.006:window.__MOB?.012:.022);
@@ -434,17 +437,18 @@ function frame(now){if(window.__MOB==='A'){if(now-(frame.l||0)<31){requestAnimat
   if(!c&&T>2.2)spawn(startAt());
   else if(c&&!paused&&T-c.t0>C+c.H){if(V2&&c.k===ITEMS.length-1){if(!ended)endCard()}else spawn(c.k+1)}
   live=live.filter(l=>T-l.t0<C+l.H+D+.2)}
- const g=geom(),M=rotm();
+ const g=geom(),M=rotm();if(window.__MOBS)stillAt(g);else{
  gl.uniform2f(U.uRes,cv.width,cv.height);gl.uniform2f(U.uC,g.cx*DPR,(H-g.cy)*DPR);gl.uniform1f(U.uT,T);gl.uniform1f(U.uRad,g.rad);gl.uniform1f(U.uIntro,intro);
  gl.uniformMatrix3fv(U.uR,false,new Float32Array([M[0][0],M[1][0],M[2][0],M[0][1],M[1][1],M[2][1],M[0][2],M[1][2],M[2][2]]));
  const P=[[0,9,9],[0,9,9]];live.forEach(l=>{P[l.slot]=params(l)});
  gl.uniform3fv(U.uA,P[0]);gl.uniform3fv(U.uB,P[1]);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex[0]);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tex[1]);
- gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_CUBE_MAP,ter);if(window.__MOB){const r=g.R*1.75*DPR,x=g.cx*DPR,y=(H-g.cy)*DPR;gl.enable(gl.SCISSOR_TEST);gl.scissor(Math.max(0,Math.floor(x-r)),Math.max(0,Math.floor(y-r)),Math.ceil(2*r),Math.ceil(2*r))}gl.drawArrays(gl.TRIANGLES,0,3);
+ gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_CUBE_MAP,ter);if(window.__MOB){const r=g.R*1.75*DPR,x=g.cx*DPR,y=(H-g.cy)*DPR;gl.enable(gl.SCISSOR_TEST);gl.scissor(Math.max(0,Math.floor(x-r)),Math.max(0,Math.floor(y-r)),Math.ceil(2*r),Math.ceil(2*r))}gl.drawArrays(gl.TRIANGLES,0,3);}
  drawSky(g);
  if(FRAMED&&++arrFrames===3){try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}}
- if(ARRIVE&&!FRAMED&&arrImg.style.display==='block'&&++arrFrames===3){arrImg.style.opacity='0';setTimeout(()=>arrImg.style.display='none',700)}drawFlat(g);
+ if(ARRIVE&&!FRAMED&&!window.__MOBS&&arrImg.style.display==='block'&&++arrFrames===3){arrImg.style.opacity='0';setTimeout(()=>arrImg.style.display='none',700)}drawFlat(g);
  requestAnimationFrame(frame)}
+function stillAt(g){const S=2*g.R*1.16,k=Math.round(g.cx)+','+Math.round(g.cy)+','+Math.round(S);if(arrImg.dataset.k===k)return;arrImg.dataset.k=k;Object.assign(arrImg.style,{display:'block',opacity:String(Math.min(1,intro*1.4)),width:S+'px',height:S+'px',left:(g.cx-S/2)+'px',top:(g.cy-S/2)+'px',transition:'opacity 1.2s'});if(intro<.7){arrImg.dataset.k=''}}
 function drawFlat(g){const mob=W<600,on=[false,false];
  for(const l of live){const [off,ty]=params(l),f=FL[l.slot],it=ITEMS[l.k];on[l.slot]=true;
   const v=Math.max(0,Math.min(1,(1.3-ty)/.88)),w=g.text.w,fs=it.title?Math.min(46,Math.max(26,w/15)):Math.max(mob?17:18,Math.min(32,w/(it.words<=10?17:it.words<=20?21:24)));
@@ -616,6 +620,17 @@ html.mobalt,html.mobalt body{background:#05060a;overflow:hidden;height:100%}
 #mob .endp button b{display:block;font-family:'TeX Gyre Pagella',Palatino,serif;font-weight:400;letter-spacing:0;text-transform:none;font-size:17px;color:#e9e6dc;margin-top:.35em}
 /* D: the planet as a horizon */
 html.mobD #mob .foot{background:linear-gradient(transparent,rgba(5,6,10,.55))}
+/* N: a nebula in the planet's colours; it drifts by a slow transform only, so the phone just moves one picture */
+#mob .neb{position:absolute;left:-12%;top:-12%;width:124%;height:124%;pointer-events:none;opacity:0;transition:opacity 2.5s ease;animation:tcneb 80s ease-in-out infinite alternate}
+#mob .neb.on{opacity:1}
+@keyframes tcneb{from{transform:translate(0,0) scale(1) rotate(0deg)}to{transform:translate(-3%,2.5%) scale(1.07) rotate(2deg)}}
+/* E: the planet as a dark disc against its own light */
+#mob .ecl{position:absolute;pointer-events:none}
+#mob .ecl .cor{position:absolute;border-radius:50%;animation:tccor 9s ease-in-out infinite alternate}
+#mob .ecl img{position:absolute;inset:0;width:100%;height:100%;filter:brightness(.06) saturate(.3)}
+#mob .ecl .rim{position:absolute;border-radius:50%}
+@keyframes tccor{from{opacity:.75}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){#mob .neb,#mob .ecl .cor{animation:none}}
 /* C: one scrolling column */
 html.mobC #mob{overflow-y:auto;-webkit-overflow-scrolling:touch}
 html.mobC #mob .bar{position:sticky;padding-bottom:26px;background:linear-gradient(#05060a 62%,rgba(5,6,10,0))}
@@ -686,22 +701,45 @@ if(MODE==='C'){
  ready();return}
 
 /* B and D: one passage at a time, crossfading */
-root.innerHTML=bar+(STILL?`<img class="pl" alt="" src="${STILL}">`:'')+`<div class="pass" aria-live="polite"></div>`+
+root.innerHTML=bar+(MODE==='N'?'<canvas class="neb" aria-hidden="true"></canvas>':MODE==='E'?`<div class="ecl"><div class="cor"></div><img alt="" src="${STILL}"><div class="rim"></div></div>`:STILL?`<img class="pl" alt="" src="${STILL}">`:'')+`<div class="pass" aria-live="polite"></div>`+
  `<div class="foot"><div class="prog"><div class="base"></div></div><div class="ctl mono"><button type="button" id="mBack">‹ Back</button><button type="button" id="mPause">Pause</button><button type="button" id="mNext">Next ›</button><button type="button" id="mSnd">Sound on</button></div></div>`+
  `<div class="gate"><button type="button" class="mono" id="mGo">Tap to begin, with sound</button><button type="button" class="mono q" id="mQuiet">or read in silence</button></div>`;
 const pl=root.querySelector('.pl'),pass=root.querySelector('.pass'),prog=root.querySelector('.prog'),TK=[];
 ITEMS.forEach((it,k)=>{const t=document.createElement('i');t.style.left=(k/(ITEMS.length-1)*100)+'%';if(secStart(k))t.className='g';prog.appendChild(t);TK.push(t)});
 prog.addEventListener('click',e=>{const r=prog.getBoundingClientRect();show(Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(ITEMS.length-1)),true)});
 function layout(){const W=innerWidth,H=innerHeight;
+ if(MODE==='N'){Object.assign(pass.style,{top:'64px',bottom:'96px',display:'flex',flexDirection:'column'});return}
+ if(MODE==='E'){const S=Math.min(W*.56,H*.28,280),e=root.querySelector('.ecl'),d=S/1.16,o=(S-d)/2;Object.assign(e.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H*.11)+'px'});
+  Object.assign(e.querySelector('.rim').style,{left:o+'px',top:o+'px',width:d+'px',height:d+'px'});const c=d*2.1;Object.assign(e.querySelector('.cor').style,{left:(S-c)/2+'px',top:(S-c)/2+'px',width:c+'px',height:c+'px'});
+  Object.assign(pass.style,{top:(H*.11+S+26)+'px',bottom:'92px'});return}
  if(MODE==='B'){const S=Math.min(W*.62,H*.3,300);if(pl)Object.assign(pl.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H*.1)+'px'});
   const top=H*.1+S+22;Object.assign(pass.style,{top:top+'px',bottom:'92px'})}
  else{const S=Math.max(W*2.3,H*1.1),vis=Math.min(H*.24,S*.2);if(pl)Object.assign(pl.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H-vis)+'px'});
   Object.assign(pass.style,{top:'64px',bottom:(vis+20)+'px',display:'flex',flexDirection:'column'})}}
 addEventListener('resize',layout);layout();
+function tones(cb){const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=40;const x=c.getContext('2d');x.drawImage(im,0,0,40,40);const d=x.getImageData(0,0,40,40).data,px=[];
+  for(let i=0;i<d.length;i+=4)if(d[i+3]>220)px.push([d[i],d[i+1],d[i+2],d[i]*.3+d[i+1]*.59+d[i+2]*.11]);px.sort((a,b)=>a[3]-b[3]);
+  const avg=a=>{const s=[0,0,0];a.forEach(p=>{s[0]+=p[0];s[1]+=p[1];s[2]+=p[2]});return s.map(v=>v/Math.max(1,a.length))};
+  const sat=(c,k)=>{const m=(c[0]+c[1]+c[2])/3;return c.map(v=>Math.max(0,Math.min(255,m+(v-m)*k)))};
+  cb(sat(avg(px.slice(Math.floor(px.length*.75))),1.5),sat(avg(px.slice(0,Math.floor(px.length*.4))),1.6))};im.src=STILL}
+if(MODE==='N')tones((hi,lo)=>{const cv=root.querySelector('.neb'),W=innerWidth*1.24,H=innerHeight*1.24,w=180,h=Math.round(w*H/W);cv.width=w;cv.height=h;const x=cv.getContext('2d'),img=x.createImageData(w,h);
+  let sd=(FILE.length*7919)%1000;const P=new Float32Array(512);for(let i=0;i<512;i++){sd=(sd*16807+11)%2147483647;P[i]=sd/2147483647}
+  const hs=(i,j)=>P[((i*57+j*131)%512+512)%512];const sm=t=>t*t*(3-2*t);
+  const vn=(X,Y)=>{const i=Math.floor(X),j=Math.floor(Y),fx=sm(X-i),fy=sm(Y-j);const a=hs(i,j),b=hs(i+1,j),c=hs(i,j+1),d=hs(i+1,j+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy};
+  const fbm=(X,Y)=>{let v=0,a=.5;for(let o=0;o<5;o++){v+=a*vn(X,Y);X*=2.03;Y*=2.03;a*=.5}return v};
+  const deep=[12,10,24];
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const u=i/w*3.2,v=j/h*3.2*H/W;const q=fbm(u+1.7,v+.3),r=fbm(u+3*q+.4,v+3*q+5.2);let f=fbm(u+2.2*r,v+2.2*r);
+   const cy=(j/h-.42),cx=(i/w-.5),fall=Math.max(0,1-Math.hypot(cx*1.1,cy*1.6)*1.35);let den=Math.max(0,(f-.3)*2.5)*fall;den=Math.min(1,den);const fil=Math.pow(Math.max(0,1-Math.abs(r-.55)*7),3)*fall*.6;
+   const k=(j*w+i)*4,t=Math.min(1,f*1.25);for(let ch=0;ch<3;ch++){const base=lo[ch]+(hi[ch]-lo[ch])*t;img.data[k+ch]=Math.min(255,deep[ch]*(1-den)+base*den*1.15+hi[ch]*fil*.6)}
+   img.data[k+3]=Math.round(Math.min(1,den*.85+fil)*240)}
+  x.putImageData(img,0,0);requestAnimationFrame(()=>cv.classList.add('on'))});
+if(MODE==='E')tones((hi)=>{const e=root.querySelector('.ecl'),c=hi.map(Math.round).join(',');
+  e.querySelector('.cor').style.background=`radial-gradient(circle closest-side,rgba(${c},0) 45%,rgba(${c},.42) 48%,rgba(${c},.16) 56%,rgba(${c},.05) 72%,rgba(${c},0) 100%)`;
+  e.querySelector('.rim').style.boxShadow=`0 0 0 1px rgba(255,244,230,.55),0 0 14px 3px rgba(${c},.45),inset 0 0 18px rgba(${c},.25)`});
 let k=-1,timer=null,paused=false,started=false,ended=false;
 const holdOf=it=>it.title?7:Math.min(26,4.5+it.words*.3);
 function center(){/* the passage sits in the middle of its space unless it is too long, then it scrolls from the top */
- if(MODE==='D'){const inner=pass.firstElementChild;if(inner)inner.style.margin=pass.scrollHeight>pass.clientHeight+2?'0':'auto 0'}
+ if(MODE==='D'||MODE==='N'){const inner=pass.firstElementChild;if(inner)inner.style.margin=pass.scrollHeight>pass.clientHeight+2?'0':'auto 0'}
  else{const inner=pass.firstElementChild;if(inner){inner.style.marginTop='0';const room=pass.clientHeight-inner.offsetHeight;inner.style.marginTop=room>0?(room*.35)+'px':'0'}}}
 function show(j,user){if(j<0||j>=ITEMS.length)return;if(ended)ended=false;k=j;save(j);clearTimeout(timer);
  TK.forEach((t,i)=>t.classList.toggle('cur',i===j));
