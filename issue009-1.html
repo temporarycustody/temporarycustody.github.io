@@ -446,7 +446,7 @@ function frame(now){if(window.__MOB==='A'||window.__MOB==='S'){if(now-(frame.l||
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex[0]);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tex[1]);
  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_CUBE_MAP,ter);if(window.__MOB){const r=g.R*1.75*DPR,x=g.cx*DPR,y=(H-g.cy)*DPR;gl.enable(gl.SCISSOR_TEST);gl.scissor(Math.max(0,Math.floor(x-r)),Math.max(0,Math.floor(y-r)),Math.ceil(2*r),Math.ceil(2*r))}gl.drawArrays(gl.TRIANGLES,0,3);}
  drawSky(g);
- if(FRAMED&&++arrFrames===3){try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}}
+ if(FRAMED&&!window.__NEB&&++arrFrames===3){try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}}
  if(ARRIVE&&!FRAMED&&!window.__MOBS&&arrImg.style.display==='block'&&++arrFrames===3){arrImg.style.opacity='0';setTimeout(()=>arrImg.style.display='none',700)}drawFlat(g);
  requestAnimationFrame(frame)}
 function stillAt(g){const S=2*g.R*1.16,k=Math.round(g.cx)+','+Math.round(g.cy)+','+Math.round(S);if(arrImg.dataset.k===k)return;arrImg.dataset.k=k;Object.assign(arrImg.style,{display:'block',opacity:String(Math.min(1,intro*1.4)),width:S+'px',height:S+'px',left:(g.cx-S/2)+'px',top:(g.cy-S/2)+'px',transition:'opacity 1.2s'});if(intro<.7){arrImg.dataset.k=''}}
@@ -819,7 +819,8 @@ function layer(seed,shape,c1,c2,opt){const w=Math.round(RES*(opt.ax||1)),h=RES,c
 
 /* ---- the forms ---- */
 const MIN=()=>Math.max(Math.min(W,H),Math.max(W,H)*.6);
-function plan(gi){const p=pal(gi),sd=gi*101+7,L=[];
+const FSEED=[...(location.pathname.split('/').pop()||'x')].reduce((a,c)=>(a*31+c.charCodeAt(0))%9973,7);   // each study its own gas
+function plan(gi){const p=pal(gi),sd=gi*101+7+FSEED*17,L=[];
  if(STYLE==='drift'){
   L.push({c:['cloud',p.lo,p.deep,{scale:2.2}],s:1.55,rot:.004,a:.85});
   L.push({c:['wisp',p.hi,p.lo,{scale:3.4,ridge:.5}],s:1.15,rot:-.007,a:.75});
@@ -856,10 +857,11 @@ function drawSet(s,alpha,t){if(!s||!s.ready||alpha<=0)return;const m=MIN(),cx=W/
   gr.addColorStop(0,`rgba(255,250,240,${.95*alpha})`);gr.addColorStop(.12,`rgba(${c},${.6*alpha})`);gr.addColorStop(1,`rgba(${c},0)`);g.globalAlpha=1;g.fillStyle=gr;g.fillRect(cx-r*4,cy-r*4,r*8,r*8)}}
 function tint(s,alpha){if(!s)return;const c=s.p.deep.map(Math.round).join(','),gr=g.createRadialGradient(W/2,H*.45,0,W/2,H*.45,Math.max(W,H)*.75);
  gr.addColorStop(0,`rgba(${c},${.32*alpha})`);gr.addColorStop(1,`rgba(${c},${.1*alpha})`);g.globalAlpha=1;g.fillStyle=gr;g.fillRect(0,0,W,H)}
-let fadeIn=0;
+const FRAMED=document.documentElement.classList.contains('framed')||(window.parent!==window&&/[#?&]frame/.test(location.href));   // the page drops its #frame on arrival, but marks <html> framed
+let fadeIn=FRAMED?.35:0,told=false;
 function frame(now){requestAnimationFrame(frame);if(LITE&&now-frameL<40)return;frameL=now;const dt=Math.min(.1,(now-last)/1000);last=now;if(!reduce)T+=dt;
  setSec(secOf());if(!cur||!cur.ready)return;
- if(mix<1&&(!prev||cur.ready))mix=Math.min(1,mix+dt/4.5);if(mix>=1)prev=null;shift=Math.max(0,shift-dt/6);fadeIn=Math.min(1,fadeIn+dt/3);
+ if(mix<1&&(!prev||cur.ready))mix=Math.min(1,mix+dt/4.5);if(mix>=1)prev=null;shift=Math.max(0,shift-dt/6);fadeIn=Math.min(1,fadeIn+dt/3);if(FRAMED&&!told&&fadeIn>.55){told=true;try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}}
  if(STYLE==='core'){const target=cur.gi*.9;axis+=(target-axis)*Math.min(1,dt*.4)}
  g.setTransform(D,0,0,D,0,0);g.clearRect(0,0,W,H);g.globalCompositeOperation='source-over';
  tint(prev,(1-mix)*fadeIn);tint(cur,mix*fadeIn);
