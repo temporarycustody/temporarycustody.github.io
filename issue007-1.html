@@ -438,7 +438,7 @@ function frame(now){if(window.__MOB==='A'||window.__MOB==='S'){if(now-(frame.l||
   const c=cur();
   // paused: the passage on screen holds where it is, but Next and Back still play their weather through
   if(paused&&c&&T-c.t0>C)c.H=Math.max(c.H,T-c.t0-C+.05);
-  if(!c&&T>2.2)spawn(startAt());
+  if(!c&&T>2.2&&!ended)spawn(startAt());   /* after the end card nothing starts again on its own */
   else if(c&&!paused&&T-c.t0>C+c.H){if(V2&&c.k===ITEMS.length-1){if(!ended)endCard()}else spawn(c.k+1)}
   live=live.filter(l=>T-l.t0<C+l.H+D+.2)}
  const g=geom(),M=rotm();if(window.__NEB){}else if(window.__MOBS)stillAt(g);else{
