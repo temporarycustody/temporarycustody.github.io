@@ -808,8 +808,9 @@ function layer(seed,shape,c1,c2,opt){const w=Math.round(RES*(opt.ax||1)),h=RES,c
  const sc=opt.scale||3,ridge=opt.ridge||0,gain=opt.gain||1;
  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const u=(i/w)*2-1,v=(j/h)*2-1;
   /* every layer fades to nothing well inside its own square, so no edge or corner of it can show when it turns */
-  const win=shape==='veil'?Math.min(1,Math.max(0,(1-Math.abs(u))/.35))*Math.min(1,Math.max(0,(1-Math.abs(v))/.45)):(r=>{const t=Math.max(0,Math.min(1,(.96-r)/.36));return t*t*(3-2*t)})(Math.hypot(u,v));
-  const m=sh(u,v)*win*win;const k=(j*w+i)*4;if(m<.01){im.data[k+3]=0;continue}
+  const nb=n(u*1.15+7.3,v*1.15+2.9,3),wk=shape==='veil'?1:1+(nb-.5)*1.1,uu=u*wk,vv=v*wk;
+  const win=shape==='veil'?Math.min(1,Math.max(0,(1-Math.abs(u))/.35))*Math.min(1,Math.max(0,(1-Math.abs(v))/.45)):(r=>{const t=Math.max(0,Math.min(1,(.96-r)/.42));return t*t*(3-2*t)})(Math.min(Math.hypot(uu,vv),Math.hypot(u,v)*1.04+.02));
+  const m=sh(uu,vv)*win*win;const k=(j*w+i)*4;if(m<.01){im.data[k+3]=0;continue}
   const X=i/h*sc,Y=j/h*sc,q=n(X+5.2,Y+1.3,4),r=n(X+q*2.4+1.7,Y+q*2.4+9.2,4);let f=n(X+r*2.2,Y+r*2.2,5);
   if(ridge)f=f*(1-ridge)+ridge*Math.pow(1-Math.abs(r*2-1),3);
   const d=Math.max(0,Math.min(1,(f-.36)*2.6))*m*gain,t=Math.min(1,f*1.3);
@@ -841,11 +842,16 @@ let pumping=false;function pump(){if(pumping)return;pumping=true;(function step(
 /* ---- the section in hand, read from the page's own label ---- */
 function secOf(){const t=(document.getElementById('where')||{}).textContent||'';const i=(DATA.gname||[]).indexOf(t);return i<0?0:i}
 let cur=null,prev=null,mix=1,shift=0;HI=HI;
-function setSec(gi){if(cur&&cur.gi===gi)return;const s=want(gi);if(!cur){cur=s;mix=1;return}prev=cur;cur=s;mix=0;shift=1;want(gi+1)}
+let pend=null;
+function setSec(gi){if(cur&&cur.gi===gi){pend=null;return}const s=want(gi);if(!cur){cur=s;mix=1;return}
+ if(!s.ready||(prev&&mix<1)){pend=s;return}      // keep the gas in hand until the next has formed and any exchange has finished
+ prev=cur;cur=s;mix=0;pend=null;want(gi+1)}
+const XF=9;   // seconds for one gas to give way to the next
+const ez=x=>x*x*(3-2*x);
 
 /* ---- drawing ---- */
 let last=performance.now(),T=0,frameL=0,axis=0,axisT=0;
-function drawSet(s,alpha,t){if(!s||!s.ready||alpha<=0)return;const m=MIN(),cx=W/2,cy=H/2,br=1+.035*Math.sin(t*.21)+.06*shift;
+function drawSet(s,alpha,t){if(!s||!s.ready||alpha<=0)return;const m=MIN(),cx=W/2,cy=H/2,br=(1+.035*Math.sin(t*.21))*(s.sc||1);
  for(const l of s.L){const A=alpha*l.a;g.save();
   if(l.veil){const w=W*l.s,h=w/2.6,x=((t*l.v+l.ph*W*.37)%(W+w)+W+w)%(W+w)-w*.5,y=cy+l.y*H;g.globalAlpha=A;g.translate(0,y);g.drawImage(l.img,x-w/2,-h/2,w,h);g.drawImage(l.img,x-w/2-(W+w),-h/2,w,h);
    if(l.img2){g.globalAlpha=A*(.5+.5*Math.sin(t*.06+l.ph));g.drawImage(l.img2,x-w/2,-h/2,w,h);g.drawImage(l.img2,x-w/2-(W+w),-h/2,w,h)}g.restore();continue}
@@ -854,24 +860,25 @@ function drawSet(s,alpha,t){if(!s||!s.ready||alpha<=0)return;const m=MIN(),cx=W/
   if(l.img2){g.globalAlpha=A*(.5+.5*Math.sin(t*.07+l.ph));g.drawImage(l.img2,-S/2,-S/2,S,S)}g.restore()}
  if(STYLE==='core'){const r=m*(.05+.006*Math.sin(t*1.3)),c=s.p.hi.map(Math.round).join(','),gr=g.createRadialGradient(cx,cy,0,cx,cy,r*4);
   gr.addColorStop(0,`rgba(255,250,240,${.95*alpha})`);gr.addColorStop(.12,`rgba(${c},${.6*alpha})`);gr.addColorStop(1,`rgba(${c},0)`);g.globalAlpha=1;g.fillStyle=gr;g.fillRect(cx-r*4,cy-r*4,r*8,r*8)}}
-function tint(s,alpha){if(!s)return;const c=s.p.deep.map(Math.round).join(','),gr=g.createRadialGradient(W/2,H*.45,0,W/2,H*.45,Math.max(W,H)*.75);
- gr.addColorStop(0,`rgba(${c},${.32*alpha})`);gr.addColorStop(1,`rgba(${c},${.1*alpha})`);g.globalAlpha=1;g.fillStyle=gr;g.fillRect(0,0,W,H)}
+function tint(s,alpha){if(!s)return;const c=s.p.deep.map(Math.round).join(','),gr=g.createRadialGradient(W/2,H*.45,0,W/2,H*.45,Math.hypot(W,H)*.7);
+ gr.addColorStop(0,`rgba(${c},${.2*alpha})`);gr.addColorStop(.6,`rgba(${c},${.13*alpha})`);gr.addColorStop(1,`rgba(${c},${.1*alpha})`);g.globalAlpha=1;g.fillStyle=gr;g.fillRect(0,0,W,H)}
 const FRAMED=document.documentElement.classList.contains('framed')||(window.parent!==window&&/[#?&]frame/.test(location.href));   // the page drops its #frame on arrival, but marks <html> framed
 let fadeIn=FRAMED?.35:0,told=false;
 function frame(now){requestAnimationFrame(frame);if(LITE&&now-frameL<40)return;frameL=now;const dt=Math.min(.1,(now-last)/1000);last=now;if(!reduce)T+=dt;
  setSec(secOf());if(!cur||!cur.ready)return;
- if(mix<1&&(!prev||cur.ready))mix=Math.min(1,mix+dt/4.5);if(mix>=1)prev=null;shift=Math.max(0,shift-dt/6);fadeIn=Math.min(1,fadeIn+dt/3);if(FRAMED&&!told&&fadeIn>.55){told=true;try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}}
+ if(pend&&pend.ready&&!(prev&&mix<1))setSec(pend.gi);
+ if(mix<1)mix=Math.min(1,mix+dt/XF);if(mix>=1)prev=null;const e=ez(mix);if(prev)prev.sc=1+.1*e;cur.sc=prev?.94+.06*e:1;fadeIn=Math.min(1,fadeIn+dt/3);if(FRAMED&&!told&&fadeIn>.55){told=true;try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}}
  if(STYLE==='core'){const target=cur.gi*.9;axis+=(target-axis)*Math.min(1,dt*.4)}
  g.setTransform(D,0,0,D,0,0);g.clearRect(0,0,W,H);g.globalCompositeOperation='source-over';
- tint(prev,(1-mix)*fadeIn);tint(cur,mix*fadeIn);
- g.globalCompositeOperation='screen';drawSet(prev,(1-mix)*fadeIn,T);drawSet(cur,mix*fadeIn,T);g.globalCompositeOperation='source-over'}
+ tint(prev,(1-e)*fadeIn);tint(cur,e*fadeIn);
+ g.globalCompositeOperation='screen';drawSet(prev,(1-e)*fadeIn,T);drawSet(cur,e*fadeIn,T);g.globalCompositeOperation='source-over'}
 /* the tones come from the planet's still once it has loaded */
 const st=document.getElementById('arrive');
 function start(){try{const c=document.createElement('canvas');c.width=c.height=40;const x=c.getContext('2d');x.drawImage(st,0,0,40,40);const d=x.getImageData(0,0,40,40).data,px=[];
   for(let i=0;i<d.length;i+=4)if(d[i+3]>220)px.push([d[i],d[i+1],d[i+2],d[i]*.3+d[i+1]*.59+d[i+2]*.11]);px.sort((a,b)=>a[3]-b[3]);
   const avg=a=>{const s=[0,0,0];a.forEach(p=>{s[0]+=p[0];s[1]+=p[1];s[2]+=p[2]});return s.map(v=>v/Math.max(1,a.length))};
   if(px.length>20){HI=avg(px.slice(Math.floor(px.length*.7)));LO=avg(px.slice(0,Math.floor(px.length*.45)))}}catch(_){}
- want(0);requestAnimationFrame(frame)}
+ want(0);requestAnimationFrame(frame);setTimeout(()=>{(DATA.gname||[]).forEach((_,i)=>want(i))},2500)}
 if(st&&st.complete&&st.naturalWidth)start();else if(st){st.addEventListener('load',start);st.addEventListener('error',start)}else start();
 })();
 </script>
