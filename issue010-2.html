@@ -54,9 +54,20 @@ html.framed,html.framed body{background:transparent!important}html.framed #sky{d
 </style>
 </head>
 <body>
+<script>
+/* Phones: the planet readthrough in a gentler form. MOB picks the form:
+   A calm  the same live planet, drawn at lower resolution and 30 frames a second, slower turning, a still sky, no blur
+   B still the planet as a still image, the passage beneath it, one passage at a time with a soft crossfade
+   C read  no motion at all: the study as one scrolling column under a small still planet
+   D horizon  the planet's still rising as a great arc at the foot of the screen, the passage above it
+   FORCE makes a draft show its form at any size; otherwise only phones get it. */
+(function(){const MOB='A',FORCE=false;
+ const phone=matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<700;
+ if(!(FORCE||phone))return;window.__MOB=MOB;if(MOB!=='A'){window.__MOBALT=MOB;document.documentElement.classList.add('mobalt','mob'+MOB)}})();
+</script>
 <canvas id="sky" aria-hidden="true"></canvas><script>
 (function(){
-const c=document.getElementById('sky'),g=c.getContext('2d'),still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const c=document.getElementById('sky'),g=c.getContext('2d'),still=matchMedia('(prefers-reduced-motion: reduce)').matches||!!window.__MOB;
 let W=0,H=0,D=1,stars=[],t0=performance.now(),seed=7;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
 function build(){W=innerWidth;H=innerHeight;D=Math.min(2,devicePixelRatio||1);c.width=W*D;c.height=H*D;seed=7;stars=[];
  const n=Math.round(W*H/900);
@@ -98,7 +109,6 @@ const strip=h=>h.replace(/<[^>]+>/g,'').replace(/&#8217;/g,'’').replace(/&amp;
 
 /* ---------- what the weather carries ---------- */
 const ITEMS=[{title:true,words:10}];
-(DATA.intro||[]).forEach(t=>{const x=strip(t);ITEMS.push({i:0,name:'',text:x,words:x.split(/\s+/).length,label:'Opening',tags:[],does:null})});
 DATA.beats.forEach((b,k)=>{const sg=DATA.seg.find(s=>s.k==='beat'&&s.i===b.i),an=DATA.annot[String(b.i)]||{};ITEMS.push({i:b.i,name:strip((DATA.names||{})[String(b.i)]||''),text:strip(b.html),words:b.words,label:DATA.gname[sg?sg.g:0],tags:(an.tags||[]).map(([k,l])=>[k,strip(l)]),does:an.does?strip(an.does):null})});
 /* ---------- the bottom bar: a tick per passage, a taller tick where a section begins ---------- */
 const railEl=document.getElementById('rail'),tipEl=document.getElementById('tip'),TICKS=[];
@@ -116,8 +126,8 @@ const holdOf=it=>it.title?6.5:3.2+it.words*.34;
 const C=3.6,D=3.8;   // condense, disperse
 
 /* ---------- gl ---------- */
-const gl=cv.getContext('webgl',{premultipliedAlpha:true,alpha:true,antialias:false});if(gl)gl.getExtension('OES_standard_derivatives');
-if(!gl){const n=document.getElementById('nogl');n.style.display='flex';n.innerHTML='<p>This reading needs WebGL, which this browser has turned off.<br><a style="color:#ee4a64" href="'+location.pathname.split('/').pop().replace(/\.html$/,'_study.html')+'">Read the study as pages instead</a></p>';return}
+const gl=window.__MOBALT?null:cv.getContext('webgl',{premultipliedAlpha:true,alpha:true,antialias:false});if(gl)gl.getExtension('OES_standard_derivatives');
+if(!gl){if(window.__MOBALT)return;const n=document.getElementById('nogl');n.style.display='flex';n.innerHTML='<p>This reading needs WebGL, which this browser has turned off.<br><a style="color:#ee4a64" href="'+location.pathname.split('/').pop().replace(/\.html$/,'_study.html')+'">Read the study as pages instead</a></p>';return}
 const VS='attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
 const FS=`
 #extension GL_OES_standard_derivatives : enable
@@ -383,7 +393,7 @@ function params(l){const tau=T-l.t0,ez=x=>x*x*(3-2*x);let off,ty,tc;
 
 /* ---------- frame ---------- */
 let W=0,H=0,DPR=1;
-function resize(){DPR=Math.min(1.75,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);hc.width=cv.width;hc.height=cv.height;bc.width=cv.width;bc.height=cv.height;gl.viewport(0,0,cv.width,cv.height)}
+function resize(){DPR=Math.min(window.__MOB?1:1.75,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);hc.width=cv.width;hc.height=cv.height;bc.width=cv.width;bc.height=cv.height;gl.viewport(0,0,cv.width,cv.height)}
 addEventListener('resize',resize);resize();
 const LAYOUT='across';
 /* a smaller planet; the words sit off it or cross it, and the clouds gather close round it */
@@ -415,10 +425,10 @@ function rotm(){const tl=.32,a=spin,ct=Math.cos(tl),st=Math.sin(tl),ca=Math.cos(
  // p = Ry(a) * Rx(tl) * n ; column-major for gl
  const Rx=[[1,0,0],[0,ct,-st],[0,st,ct]],Ry=[[ca,0,sa],[0,1,0],[-sa,0,ca]];
  const M=[[0,0,0],[0,0,0],[0,0,0]];for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)M[i][j]+=Ry[i][k]*Rx[k][j];return M}
-function frame(now){
+function frame(now){if(window.__MOB==='A'){if(now-(frame.l||0)<31){requestAnimationFrame(frame);return}frame.l=now}
  const dt=Math.min(.1,(now-last)/1000);last=now;
  intro=Math.min(1,intro+dt/4.5);
- spin+=(AGAINST?1:-1)*dt*(reduce?.006:.022);
+ spin+=(AGAINST?1:-1)*dt*(reduce?.006:window.__MOB?.012:.022);
  if(started&&!frozen){T+=dt;
   const c=cur();
   // paused: the passage on screen holds where it is, but Next and Back still play their weather through
@@ -432,7 +442,7 @@ function frame(now){
  const P=[[0,9,9],[0,9,9]];live.forEach(l=>{P[l.slot]=params(l)});
  gl.uniform3fv(U.uA,P[0]);gl.uniform3fv(U.uB,P[1]);
  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex[0]);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tex[1]);
- gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_CUBE_MAP,ter);gl.drawArrays(gl.TRIANGLES,0,3);
+ gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_CUBE_MAP,ter);if(window.__MOB){const r=g.R*1.75*DPR,x=g.cx*DPR,y=(H-g.cy)*DPR;gl.enable(gl.SCISSOR_TEST);gl.scissor(Math.max(0,Math.floor(x-r)),Math.max(0,Math.floor(y-r)),Math.ceil(2*r),Math.ceil(2*r))}gl.drawArrays(gl.TRIANGLES,0,3);
  drawSky(g);
  if(FRAMED&&++arrFrames===3){try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}}
  if(ARRIVE&&!FRAMED&&arrImg.style.display==='block'&&++arrFrames===3){arrImg.style.opacity='0';setTimeout(()=>arrImg.style.display='none',700)}drawFlat(g);
@@ -442,7 +452,7 @@ function drawFlat(g){const mob=W<600,on=[false,false];
   const v=Math.max(0,Math.min(1,(1.3-ty)/.88)),w=g.text.w,fs=it.title?Math.min(46,Math.max(26,w/15)):Math.max(mob?17:18,Math.min(32,w/(it.words<=10?17:it.words<=20?21:24)));
   f.style.width=w+'px';f.style.fontSize=fs+'px';
   const x=g.text.x+Math.sin(off)*g.text.span-w/2,y=g.text.y-f.offsetHeight/2;
-  f.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;f.style.opacity=(v*Math.min(1,intro*1.5)).toFixed(3);f.style.filter=v>.98?'none':`blur(${((1-v)*7).toFixed(2)}px)`}
+  f.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;f.style.opacity=(v*Math.min(1,intro*1.5)).toFixed(3);f.style.filter=(v>.98||window.__MOB)?'none':`blur(${((1-v)*7).toFixed(2)}px)`}
  FL.forEach((f,i)=>{if(!on[i])f.style.opacity=0})}
 
 /* ---------- tags and the does line as gas clouds, each kind its own colour and form ---------- */
@@ -572,6 +582,153 @@ addEventListener('pageshow',ev=>{if(ev.persisted){gone=false;document.body.class
 const bs=document.getElementById('bSnd');bs.addEventListener('click',e=>{e.stopPropagation();if(!started){begin();return}bs.textContent=SND.toggle()?'Sound on':'Sound off'});
 window.__planet={next,back,state:()=>({T,live:live.map(l=>[l.k,l.slot]),intro}),seek:k=>{live=[];T+=20;spawn(k)},pose:(k,tau,sp)=>{intro=1;started=true;document.getElementById('begin').classList.add('gone');frozen=true;live=[];spawn(k);cur().t0=T-tau;if(sp!=null)spin=sp}};
 (document.fonts&&document.fonts.load?Promise.all(["40px 'TeX Gyre Pagella'","italic 40px 'TeX Gyre Pagella'","40px 'Liberation Mono'"].map(f=>document.fonts.load(f))):Promise.resolve()).then(()=>requestAnimationFrame(t=>{last=t;frame(t)}));
+})();
+</script>
+<style>
+html.mobalt body>*:not(#sky):not(#mob):not(script):not(style){display:none!important}
+html.mobalt,html.mobalt body{background:#05060a;overflow:hidden;height:100%}
+#mob{position:fixed;inset:0;z-index:5;color:#e9e6dc;font-family:'TeX Gyre Pagella',Palatino,serif;-webkit-tap-highlight-color:transparent}
+#mob .mono{font-family:'Liberation Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase}
+#mob a,#mob button{all:unset;cursor:pointer;color:#cfccc2}#mob a:focus-visible,#mob button:focus-visible{outline:1px solid #ee4a64;outline-offset:3px}
+#mob .bar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;z-index:3}
+#mob .bar .iss{color:#7d7b75}
+#mob .pl{position:absolute;pointer-events:none;filter:drop-shadow(0 0 22px rgba(140,150,200,.12))}
+#mob .pass{position:absolute;left:0;right:0;padding:0 22px;text-align:center;transition:opacity .9s ease;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#mob .pass.out{opacity:0}
+#mob .lb{color:#bdbab1;margin-bottom:.9em}
+#mob .tx{font-size:18.5px;line-height:1.5;color:#f1eee6;text-shadow:0 0 12px rgba(5,6,10,.9),0 1px 1px rgba(5,6,10,.9);max-width:34em;margin:0 auto}
+#mob .ttl .tx{font-size:27px;line-height:1.18}#mob .ttl .dk{display:block;font-style:italic;font-size:16px;line-height:1.45;margin-top:.8em;color:#d8d4ca}
+#mob .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:1.1em}
+#mob .chip{font-size:13.5px;line-height:1.3;padding:.32em .75em;border-radius:999px;border:1px solid}
+#mob .chip.k1{color:#d9e4e4;border-color:rgba(110,150,160,.55);background:rgba(60,110,130,.16)}
+#mob .chip.k2{color:#e9e6dc;border-color:rgba(200,110,140,.5);background:rgba(150,80,120,.16)}
+#mob .chip.k3{color:#ee4a64;border-color:rgba(238,74,100,.55);background:rgba(238,74,100,.1)}
+#mob .does{margin-top:1em;font-style:italic;font-size:15px;line-height:1.45;color:#b9b6c9;max-width:30em;margin-left:auto;margin-right:auto}
+#mob .does b{font-style:normal;font-weight:400;font-family:'Liberation Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8d8aa3;margin-right:.6em}
+#mob .foot{position:absolute;left:0;right:0;bottom:0;padding:0 16px calc(12px + env(safe-area-inset-bottom));z-index:3}
+#mob .prog{position:relative;height:14px;margin-bottom:8px}
+#mob .prog i{position:absolute;bottom:0;width:1px;height:4px;background:rgba(233,230,220,.25)}#mob .prog i.g{height:8px;background:rgba(233,230,220,.5)}
+#mob .prog i.cur{background:#ee4a64;height:9px;width:2px}
+#mob .prog .base{position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(233,230,220,.14)}
+#mob .ctl{display:flex;justify-content:space-between;align-items:center}
+#mob .ctl button{padding:8px 4px}
+#mob .gate{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:18vh;gap:18px;background:linear-gradient(transparent 40%,rgba(5,6,10,.7));transition:opacity .8s}
+#mob .gate.gone{opacity:0;pointer-events:none}#mob .gate .q{color:#7d7b75}
+#mob .endp .k{color:#ee4a64;margin-bottom:1em}#mob .endp button{display:block;margin:1.1em auto;font-family:'Liberation Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+#mob .endp button b{display:block;font-family:'TeX Gyre Pagella',Palatino,serif;font-weight:400;letter-spacing:0;text-transform:none;font-size:17px;color:#e9e6dc;margin-top:.35em}
+/* D: the planet as a horizon */
+html.mobD #mob .foot{background:linear-gradient(transparent,rgba(5,6,10,.55))}
+/* C: one scrolling column */
+html.mobC #mob{overflow-y:auto;-webkit-overflow-scrolling:touch}
+html.mobC #mob .bar{position:sticky;padding-bottom:26px;background:linear-gradient(#05060a 62%,rgba(5,6,10,0))}
+#mob .col{padding:0 22px 80px;text-align:center}
+#mob .col .hd{padding:6vh 0 5vh}#mob .col .hd img{width:min(46vw,220px);display:block;margin:0 auto 26px;filter:drop-shadow(0 0 22px rgba(140,150,200,.12))}
+#mob .col .sec{margin:3.2em 0 1.6em;color:#ee4a64}
+#mob .col .p{margin:0 auto 2.6em;max-width:34em;opacity:1;transition:opacity 1.2s ease}#mob .col .p.dim{opacity:.25}
+#mob .col .p .n{color:#7d7b75;margin-bottom:.7em}
+#mob .col .p .tx{font-size:18px}
+@media (prefers-reduced-motion: reduce){#mob .pass,#mob .col .p,#mob .gate{transition:none}}
+</style>
+<script>
+(function(){const MODE=window.__MOBALT;if(!MODE)return;
+const strip=h=>h.replace(/<[^>]+>/g,'').replace(/&#8217;/g,'’').replace(/&amp;/g,'&');
+const ITEMS=[{title:true,words:10}];
+DATA.beats.forEach(b=>{const sg=DATA.seg.find(s=>s.k==='beat'&&s.i===b.i),an=DATA.annot[String(b.i)]||{};ITEMS.push({i:b.i,name:strip((DATA.names||{})[String(b.i)]||''),text:strip(b.html),words:b.words,label:DATA.gname[sg?sg.g:0],tags:(an.tags||[]).map(([k,l])=>[k,strip(l)]),does:an.does?strip(an.does):null})});
+const FILE=location.pathname.split('/').pop()||'',POSKEY='tcPos:'+FILE,HREF=location.href;
+const FRAMED=window.parent!==window&&/[#?&]frame/.test(HREF),GO=/[#?&]go\b/.test(HREF),PNUM=+((HREF.match(/[#?&]p(\d+)\b/)||[])[1]||0);
+const SIBS=DATA.__sibs||[],ROOT=146.83,reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const STILL=(document.getElementById('arrive')||{}).src||'';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const secStart=k=>{const it=ITEMS[k];return it.title||k===1||(ITEMS[k-1]&&!ITEMS[k-1].title&&ITEMS[k-1].label!==it.label)};
+function passHTML(it,withLabel){
+ if(it.title)return `<div class="ttl"><div class="lb mono">Temporary Custody · ${esc(DATA.__issue)}</div><div class="tx">${esc(DATA.__title)}<span class="dk">${esc(DATA.__deck||'')}</span></div></div>`;
+ return (withLabel?`<div class="lb mono">${esc(it.label)}</div>`:'')+`<div class="tx">${esc(it.text)}</div>`+
+  (it.tags.length?`<div class="chips">${it.tags.map(([k,l])=>`<span class="chip k${k}">${esc(l)}</span>`).join('')}</div>`:'')+
+  (it.does?`<div class="does"><b>Does</b>${esc(it.does)}</div>`:'')}
+function save(k){try{localStorage.setItem(POSKEY,String(k))}catch(_){}}
+function seen(){try{localStorage.removeItem(POSKEY);const s=JSON.parse(localStorage.getItem('tcSeen')||'[]');if(!s.includes(FILE)){s.push(FILE);localStorage.setItem('tcSeen',JSON.stringify(s))}}catch(_){}}
+function resumeAt(){if(PNUM){const j=ITEMS.findIndex(it=>it.i===PNUM);if(j>0)return j}let s=0;try{s=+(localStorage.getItem(POSKEY)||0)}catch(_){}return s>1&&s<ITEMS.length-1?s:0}
+let left=false;function toSky(e){if(e)e.preventDefault();if(left)return;left=true;snd.fade();
+ if(FRAMED){try{parent.postMessage({tc:'planetClose'},'*')}catch(_){}return}location.href='index.html#issues'}
+function nextStudy(){const i=SIBS.findIndex(s=>s[1]===FILE);return i>=0?SIBS[i+1]:null}
+function goNext(nx){snd.fade();if(FRAMED){try{parent.postMessage({tc:'planetNext',key:nx[1]},'*')}catch(_){}}else location.href=nx[1]+'#v2'}
+function ready(){let n=0;(function f(){if(++n<3)return requestAnimationFrame(f);if(FRAMED)try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}})()}
+addEventListener('keydown',e=>{if(e.key==='Escape')toSky()});
+
+/* sound: a low open fifth in the study's key and a soft bell for each passage; no noise */
+const snd=(()=>{let ac=null,m=null,on=true;
+ function start(){if(ac)return;const A=window.AudioContext||window.webkitAudioContext;if(!A)return;try{ac=new A()}catch(_){return}m=ac.createGain();m.gain.value=0;m.connect(ac.destination);m.gain.setTargetAtTime(on?.9:0,ac.currentTime,1.2);
+  const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=650;const bg=ac.createGain();bg.gain.value=.05;lp.connect(bg);bg.connect(m);
+  [[ROOT/2,1],[ROOT*.75,.55],[ROOT,.25]].forEach(([f,a],i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;o.detune.value=(i-1)*4;g.gain.value=a;o.connect(g);g.connect(lp);o.start();
+   const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=.05+i*.03;lg.gain.value=a*.35;l.connect(lg);lg.connect(g.gain);l.start()})}
+ const PENT=[1,9/8,5/4,3/2,5/3,2];
+ function bell(k){if(!ac||!on)return;const t=ac.currentTime+.05,f=ROOT*2*PENT[(k*3)%PENT.length];
+  [[f,.05,2.8],[f*2.01,.012,1.4]].forEach(([fr,a,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=fr;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(m);o.start(t);o.stop(t+d+.1)})}
+ function toggle(){on=!on;if(!ac)start();else m.gain.setTargetAtTime(on?.9:0,ac.currentTime,.4);return on}
+ function fade(){if(ac)m.gain.setTargetAtTime(0,ac.currentTime,.2)}
+ return {start,bell,toggle,fade,get on(){return on},get ac(){return ac}}})();
+
+const root=document.createElement('div');root.id='mob';document.body.appendChild(root);
+const bar=`<div class="bar"><a href="index.html#issues" class="mono back">‹ Temporary Custody</a><span class="mono iss">${esc(DATA.__issue||'')}</span></div>`;
+
+if(MODE==='C'){
+ /* the reader: everything in one column, nothing moves but the page */
+ let h=bar+`<div class="col"><div class="hd">${STILL?`<img alt="" src="${STILL}">`:''}${passHTML(ITEMS[0])}</div>`;
+ ITEMS.forEach((it,k)=>{if(it.title)return;if(secStart(k))h+=`<div class="sec mono">${esc(it.label)}</div>`;
+  h+=`<div class="p${reduce?'':' dim'}" data-k="${k}">${it.i?`<div class="n mono">¶${it.i}${it.name?' · '+esc(it.name):''}</div>`:''}${passHTML(it,false)}</div>`});
+ const nx=nextStudy();
+ h+=`<div class="endp" id="mEnd"><div class="k mono">End of the study</div>${nx?`<button type="button" id="mNext">Next study<b>${esc(nx[0])}</b></button>`:''}<button type="button" id="mSky">Back to the sky</button></div></div>`;
+ root.innerHTML=h;root.querySelector('.back').addEventListener('click',toSky);root.querySelector('#mSky').addEventListener('click',toSky);
+ if(nx)root.querySelector('#mNext').addEventListener('click',()=>goNext(nx));
+ const ps=[...root.querySelectorAll('.p')];
+ const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.remove('dim')}}),{root,rootMargin:'0px 0px -12% 0px'});ps.forEach(p=>io.observe(p));
+ const endIO=new IntersectionObserver(es=>{if(es[0].isIntersecting)seen()},{root});endIO.observe(root.querySelector('#mEnd'));
+ let st=0;root.addEventListener('scroll',()=>{clearTimeout(st);st=setTimeout(()=>{const y=root.scrollTop+innerHeight*.3;let k=0;for(const p of ps){if(p.offsetTop<=y)k=+p.dataset.k;else break}save(k)},300)},{passive:true});
+ const r=resumeAt();if(r){const p=ps.find(p=>+p.dataset.k===r);if(p)requestAnimationFrame(()=>{root.scrollTop=p.offsetTop-innerHeight*.18;p.classList.remove('dim')})}
+ ready();return}
+
+/* B and D: one passage at a time, crossfading */
+root.innerHTML=bar+(STILL?`<img class="pl" alt="" src="${STILL}">`:'')+`<div class="pass" aria-live="polite"></div>`+
+ `<div class="foot"><div class="prog"><div class="base"></div></div><div class="ctl mono"><button type="button" id="mBack">‹ Back</button><button type="button" id="mPause">Pause</button><button type="button" id="mNext">Next ›</button><button type="button" id="mSnd">Sound on</button></div></div>`+
+ `<div class="gate"><button type="button" class="mono" id="mGo">Tap to begin, with sound</button><button type="button" class="mono q" id="mQuiet">or read in silence</button></div>`;
+const pl=root.querySelector('.pl'),pass=root.querySelector('.pass'),prog=root.querySelector('.prog'),TK=[];
+ITEMS.forEach((it,k)=>{const t=document.createElement('i');t.style.left=(k/(ITEMS.length-1)*100)+'%';if(secStart(k))t.className='g';prog.appendChild(t);TK.push(t)});
+prog.addEventListener('click',e=>{const r=prog.getBoundingClientRect();show(Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(ITEMS.length-1)),true)});
+function layout(){const W=innerWidth,H=innerHeight;
+ if(MODE==='B'){const S=Math.min(W*.62,H*.3,300);if(pl)Object.assign(pl.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H*.1)+'px'});
+  const top=H*.1+S+22;Object.assign(pass.style,{top:top+'px',bottom:'92px'})}
+ else{const S=Math.max(W*2.3,H*1.1),vis=Math.min(H*.24,S*.2);if(pl)Object.assign(pl.style,{width:S+'px',height:S+'px',left:(W-S)/2+'px',top:(H-vis)+'px'});
+  Object.assign(pass.style,{top:'64px',bottom:(vis+20)+'px',display:'flex',flexDirection:'column'})}}
+addEventListener('resize',layout);layout();
+let k=-1,timer=null,paused=false,started=false,ended=false;
+const holdOf=it=>it.title?7:Math.min(26,4.5+it.words*.3);
+function center(){/* the passage sits in the middle of its space unless it is too long, then it scrolls from the top */
+ if(MODE==='D'){const inner=pass.firstElementChild;if(inner)inner.style.margin=pass.scrollHeight>pass.clientHeight+2?'0':'auto 0'}
+ else{const inner=pass.firstElementChild;if(inner){inner.style.marginTop='0';const room=pass.clientHeight-inner.offsetHeight;inner.style.marginTop=room>0?(room*.35)+'px':'0'}}}
+function show(j,user){if(j<0||j>=ITEMS.length)return;if(ended)ended=false;k=j;save(j);clearTimeout(timer);
+ TK.forEach((t,i)=>t.classList.toggle('cur',i===j));
+ pass.classList.add('out');setTimeout(()=>{pass.innerHTML=`<div>${passHTML(ITEMS[j],true)}</div>`;pass.scrollTop=0;center();pass.classList.remove('out');snd.bell(j)},reduce?0:user?450:900);
+ schedule()}
+function schedule(){clearTimeout(timer);if(paused||!started)return;timer=setTimeout(()=>{if(k>=ITEMS.length-1)end();else show(k+1)},(holdOf(ITEMS[k])+1)*1000)}
+function end(){ended=true;seen();const nx=nextStudy();pass.classList.add('out');
+ setTimeout(()=>{pass.innerHTML=`<div class="endp"><div class="k mono">End of the study</div><div class="tx">${esc(DATA.__title)}</div><button type="button" id="eA">Read again</button>${nx?`<button type="button" id="eN">Next study<b>${esc(nx[0])}</b></button>`:''}<button type="button" id="eS">Back to the sky</button></div>`;center();pass.classList.remove('out');
+  pass.querySelector('#eA').onclick=()=>show(0,true);pass.querySelector('#eS').onclick=toSky;if(nx)pass.querySelector('#eN').onclick=()=>goNext(nx)},reduce?0:900)}
+function begin(withSound){if(started)return;started=true;root.querySelector('.gate').classList.add('gone');
+ if(withSound)snd.start();else{snd.toggle();root.querySelector('#mSnd').textContent='Sound off'}
+ const r=resumeAt();show(r);}
+root.querySelector('#mGo').onclick=()=>begin(true);root.querySelector('#mQuiet').onclick=()=>begin(false);
+root.querySelector('.back').addEventListener('click',toSky);
+root.querySelector('#mNext').onclick=()=>{if(!started)begin(true);else if(k>=ITEMS.length-1)end();else show(k+1,true)};
+root.querySelector('#mBack').onclick=()=>{if(!started)begin(true);else show(Math.max(0,k-1),true)};
+root.querySelector('#mPause').onclick=e=>{paused=!paused;e.target.textContent=paused?'Play':'Pause';schedule()};
+root.querySelector('#mSnd').onclick=e=>{e.target.textContent=snd.toggle()?'Sound on':'Sound off'};
+let sx=null,sy=0;root.addEventListener('touchstart',e=>{if(e.touches.length===1){sx=e.touches[0].clientX;sy=e.touches[0].clientY}},{passive:true});
+root.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=null;
+ if(Math.abs(dx)>60&&Math.abs(dx)>1.6*Math.abs(dy)){if(!started){begin(true);return}if(dx<0){if(k>=ITEMS.length-1)end();else show(k+1,true)}else show(Math.max(0,k-1),true)}},{passive:true});
+/* before beginning, the title sits under the gate */
+pass.innerHTML=`<div>${passHTML(ITEMS[0],true)}</div>`;requestAnimationFrame(center);
+if(FRAMED&&GO)setTimeout(()=>begin(true),60);
+ready();
 })();
 </script>
 </body>
