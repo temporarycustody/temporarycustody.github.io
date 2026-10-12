@@ -909,6 +909,106 @@ const NCSS="\nhtml.tcnight{background:#05060a!important}\nhtml.tcnight body{back
   else if(ab)ab.style.display='none';
   requestAnimationFrame(tick)}
  setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab2';if(!document.getElementById('tcabx')){const x=document.createElement('style');x.id='tcabx';x.textContent='.tcab{display:none!important}';document.head.appendChild(x)}
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const cs=getComputedStyle(src),o=window.__tcOrion,bt=o&&o.pts&&o.pts[0];ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding='0';ab.style.lineHeight='1';ab.style.display='block';
+   if(bt){const w=ab.offsetWidth,h=ab.offsetHeight,ls=parseFloat(cs.letterSpacing)||0;ab.style.left=(bt[0]-bt[2]*1.6-10-w+ls)+'px';ab.style.top=(bt[1]-h/2)+'px'}
+   else{const r=src.getBoundingClientRect();ab.style.left=r.left+'px';ab.style.top=r.top+'px'}}
+  else if(ab)ab.style.display='none';
+  requestAnimationFrame(tick)}
+ setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab2';if(!document.getElementById('tcabx')){const x=document.createElement('style');x.id='tcabx';x.textContent='.tcab{display:none!important}';document.head.appendChild(x)}
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const cs=getComputedStyle(src),o=window.__tcOrion,bt=o&&o.pts&&o.pts[0];ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding='0';ab.style.lineHeight='1';ab.style.display='block';
+   if(bt){const w=ab.offsetWidth,h=ab.offsetHeight,ls=parseFloat(cs.letterSpacing)||0;ab.style.left=(bt[0]-bt[2]*1.6-10-w+ls)+'px';ab.style.top=(bt[1]-h/2)+'px'}
+   else{const r=src.getBoundingClientRect();ab.style.left=r.left+'px';ab.style.top=r.top+'px'}}
+  else if(ab)ab.style.display='none';
+  requestAnimationFrame(tick)}
+ setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab2';if(!document.getElementById('tcabx')){const x=document.createElement('style');x.id='tcabx';x.textContent='.tcab{display:none!important}';document.head.appendChild(x)}
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const cs=getComputedStyle(src),o=window.__tcOrion,bt=o&&o.pts&&o.pts[0];ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding='0';ab.style.lineHeight='1';ab.style.display='block';
+   if(bt){const w=ab.offsetWidth,h=ab.offsetHeight,ls=parseFloat(cs.letterSpacing)||0;ab.style.left=(bt[0]-bt[2]*1.6-10-w+ls)+'px';ab.style.top=(bt[1]-h/2)+'px'}
+   else{const r=src.getBoundingClientRect();ab.style.left=r.left+'px';ab.style.top=r.top+'px'}}
+  else if(ab)ab.style.display='none';
+  requestAnimationFrame(tick)}
+ setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab2';if(!document.getElementById('tcabx')){const x=document.createElement('style');x.id='tcabx';x.textContent='.tcab{display:none!important}';document.head.appendChild(x)}
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const cs=getComputedStyle(src),o=window.__tcOrion,bt=o&&o.pts&&o.pts[0];ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding='0';ab.style.lineHeight='1';ab.style.display='block';
+   if(bt){const w=ab.offsetWidth,h=ab.offsetHeight,ls=parseFloat(cs.letterSpacing)||0;ab.style.left=(bt[0]-bt[2]*1.6-10-w+ls)+'px';ab.style.top=(bt[1]-h/2)+'px'}
+   else{const r=src.getBoundingClientRect();ab.style.left=r.left+'px';ab.style.top=r.top+'px'}}
+  else if(ab)ab.style.display='none';
+  requestAnimationFrame(tick)}
+ setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;
+ function tick(){const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab2';if(!document.getElementById('tcabx')){const x=document.createElement('style');x.id='tcabx';x.textContent='.tcab{display:none!important}';document.head.appendChild(x)}
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const cs=getComputedStyle(src),o=window.__tcOrion,bt=o&&o.pts&&o.pts[0];ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding='0';ab.style.lineHeight='1';ab.style.display='block';
+   if(bt){const w=ab.offsetWidth,h=ab.offsetHeight,ls=parseFloat(cs.letterSpacing)||0;ab.style.left=(bt[0]-bt[2]*1.6-10-w+ls)+'px';ab.style.top=(bt[1]-h/2)+'px'}
+   else{const r=src.getBoundingClientRect();ab.style.left=r.left+'px';ab.style.top=r.top+'px'}}
+  else if(ab)ab.style.display='none';
+  requestAnimationFrame(tick)}
+ setTimeout(tick,500)})();
 const ISS=[
  {n:1,sub:'Hard Rain Falling',e:[['The Indians Buried Her','issue001.html']]},
  {n:2,sub:'The Plains',e:[['The Darkness in the Chamber','issue002.html']]},
@@ -1179,6 +1279,17 @@ addEventListener('popstate',()=>{if(document.getElementById('tcplanet'))planetCl
    from the same scatter, so the words seem to re-form rather than be replaced. Lives in the marker layer, so it goes
    when a study opens and comes back with the sky. */
 (function(){
+/* while a study is open the sky carries no words: the home page (title, subtitle, issue numbers) and every label in the
+   marker layer go quiet. SKYQ (drafts) also thins the sky to its main stars by crushing the faint ones. The bundle
+   drops outer style tags as it unpacks, so the style is put back whenever it goes missing. */
+const SKYQ='B';
+const QF={A:'contrast(1.7) brightness(.72)',B:'contrast(2.6) brightness(.5)',C:'contrast(4.2) brightness(.34) saturate(1.2)'}[SKYQ];
+const QCSS='#tchome,#tcskysel *:not(canvas){transition:opacity .6s,color .6s}#tcld .sky{transition:filter 1.4s ease}'+
+ 'body.tcplanet #tchome,body.tcmeth #tchome{opacity:0!important;pointer-events:none!important}'+
+ 'body.tcplanet #tcskysel *:not(canvas),body.tcmeth #tcskysel *:not(canvas){color:transparent!important;text-shadow:none!important;border-color:transparent!important}'+
+ (QF?'body.tcplanet #tcld .sky{filter:'+QF+'}':'');
+function quietCSS(){if(!document.getElementById('tcquiet2')){const st=document.createElement('style');st.id='tcquiet2';st.textContent=QCSS;(document.head||document.documentElement).appendChild(st)}}
+quietCSS();setInterval(quietCSS,500);
 let cv=null,g=null,D=1,W=0,H=0,ST=[],BR=[],LANE=null,key='',born=0,el0=null;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function titleEl(){const c=document.getElementById('tccloud');if(!c)return null;let e=(c.parentElement&&c.parentElement.id==='tccloudwrap'?c.parentElement:c).nextElementSibling;
@@ -1208,6 +1319,8 @@ function frame(now){requestAnimationFrame(frame);
  const ld=document.getElementById('tcld'),night=!!document.querySelector('#tcld.night'),el=titleEl();
  if(el0&&el0!==el&&el0.isConnected)el0.style.color='';
  if(!el||!night||!ensure()){if(cv)g.clearRect(0,0,cv.width,cv.height);return}
+ /* while a study or the method is open, the words leave the sky so nothing sits behind the reading */
+ {const q=document.body.classList.contains('tcplanet')||document.body.classList.contains('tcmeth')||!!document.getElementById('tcplanet');cv.style.transition='opacity .6s';cv.style.opacity=q?'0':'1';if(q&&cv.style.opacity==='0'&&getComputedStyle(cv).opacity<.02)return}
  if(el0!==el){el0=el;el.style.transition='none';el.style.color='transparent';el.style.textShadow='none'}
  const r=el.getBoundingClientRect(),k2=W+'x'+H+':'+Math.round(r.left)+','+Math.round(r.top)+','+Math.round(r.width);
  if(k2!==key){if(r.width<2)return;if(!lay(el))return;if(!key&&!born)born=now;key=k2}
