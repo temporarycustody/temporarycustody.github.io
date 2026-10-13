@@ -1369,6 +1369,26 @@ const NCSS="\nhtml.tcnight{background:#05060a!important}\nhtml.tcnight body{back
   else if(ab)ab.style.display='none';
   requestAnimationFrame(tick)}
  setTimeout(tick,500)})();
+// the sky's own Back and Next stepped through the contents pages; with those gone, only Sound stays
+(function(){const st=document.createElement('style');st.id='tcnc3';st.textContent='#tcld .ctl button:not(.cSnd){display:none!important}#tchome a.scp1[href="#about"],#tchome a.scp1[href="globules.html"]{display:none!important}';(document.head||document.documentElement).appendChild(st);
+ new MutationObserver(()=>{if(!document.getElementById('tcnc3'))(document.head||document.documentElement).appendChild(st);
+  const h=document.getElementById('tchome');if(h)h.querySelectorAll('button:not(.tcgone)').forEach(b=>{const t=b.textContent.trim();if(t==='‹ Back'||t==='Next ›'){b.style.display='none';b.classList.add('tcgone')}})}).observe(document.documentElement,{childList:true,subtree:true})})();
+// About stays where it was, by the amber star. Over the sky the loader's own label is hidden and can't be reached,
+// so a copy sits in its place and opens About the way the old link under the title did.
+(function(){let ab=null;const ME={};window.__tcAbLoop=ME;document.querySelectorAll('a.tcab2').forEach(x=>x.remove());
+ function tick(){if(window.__tcAbLoop!==ME){if(ab)ab.remove();return}const src=document.querySelector('#tcld>.ab'),ld=document.getElementById('tcld'),home=document.getElementById('tchome');
+  if(document.documentElement.dataset.tcsel&&window.__tcAbTok&&document.documentElement.dataset.tcsel!==window.__tcAbTok){if(ab)ab.remove();return}
+  const need=src&&ld&&home&&ld.classList.contains('night')&&!document.body.classList.contains('tcplanet')&&!document.body.classList.contains('tcmeth');
+  if(need){if(!ab){ab=document.createElement('a');ab.href='#about';ab.textContent=src.textContent.trim()||'About';ab.className='tcab2';if(!document.getElementById('tcabx')){const x=document.createElement('style');x.id='tcabx';x.textContent='.tcab{display:none!important}';document.head.appendChild(x)}
+    ab.style.cssText="position:fixed;z-index:2147483000;text-decoration:none;cursor:pointer;color:#e9e6dc;opacity:.9;transition:opacity .4s,color .3s";
+    ab.addEventListener('mouseenter',()=>{ab.style.color='#ee4a64'});ab.addEventListener('mouseleave',()=>{ab.style.color='#e9e6dc'});
+    ab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const a=document.querySelector('#tchome a.scp1[href="#about"]');if(a)a.click();else location.hash='#about'});document.body.appendChild(ab)}
+   const cs=getComputedStyle(src),o=window.__tcOrion,bt=o&&o.pts&&o.pts[0];ab.style.font=cs.font;ab.style.letterSpacing=cs.letterSpacing;ab.style.textTransform=cs.textTransform;ab.style.padding='0';ab.style.lineHeight='1';ab.style.display='block';
+   if(bt){const w=ab.offsetWidth,h=ab.offsetHeight,ls=parseFloat(cs.letterSpacing)||0;ab.style.left=(bt[0]-bt[2]*1.6-10-w+ls)+'px';ab.style.top=(bt[1]-h/2)+'px'}
+   else{const r=src.getBoundingClientRect();ab.style.left=r.left+'px';ab.style.top=r.top+'px'}}
+  else if(ab)ab.style.display='none';
+  requestAnimationFrame(tick)}
+ setTimeout(tick,500)})();
 const ISS=[
  {n:1,sub:'Hard Rain Falling',e:[['The Indians Buried Her','issue001.html']]},
  {n:2,sub:'The Plains',e:[['The Darkness in the Chamber','issue002.html']]},
@@ -1905,13 +1925,15 @@ function size(){if(!cv)return;W0=innerWidth;H0=innerHeight;D=Math.min(2,devicePi
 const PH=()=>W0<700;
 function layout(){/* where the figure, the base sphere and the card sit */
  const ph=PH();let fx,fy,fr,bx=0,by=0,br=0,card={};
- if(FIBV==='C'){if(ph){br=Math.min(W0*.2,H0*.11);bx=W0*.27;by=H0*.2;fx=W0*.66;fy=H0*.24;fr=Math.min(W0*.3,H0*.17)}
-   else{br=Math.min(H0*.2,W0*.13);bx=W0*.2;by=H0*.42;fx=W0*.48;fy=H0*.46;fr=Math.min(H0*.32,W0*.2);card={left:W0*.68+'px',top:H0*.16+'px',right:'24px'}}}
+  /* the circles reach well past their radius when a loop swings toward the eye (EX), so the figure is sized to the
+     room left beside (or below, on a phone) the base sphere, and the two never cross */
+ if(FIBV==='C'){const EX=1.6;if(ph){br=Math.min(W0*.17,H0*.085);bx=W0*.5;by=58+br;const top=by+br+44,bot=H0*.77;fr=Math.min((bot-top)/(2*EX),(W0-16)/(2*EX));fx=W0*.5;fy=(top+bot)/2}
+   else{br=Math.min(H0*.2,W0*.11);bx=36+br;by=H0*.42;const xL=bx+br+28,xR=W0*.68-24;fr=Math.max(60,Math.min((xR-xL)/(2*EX),H0*.42/EX));fx=(xL+xR)/2;fy=H0*.46;card={left:W0*.68+'px',top:H0*.16+'px',right:'24px'}}}
  else if(ph){fx=W0/2;fy=H0*.3;fr=Math.min(W0*.42,H0*.24)}
  else if(FIBV==='B'){fx=W0*.4;fy=H0*.48;fr=Math.min(H0*.34,W0*.28);card={left:W0*.66+'px',top:H0*.22+'px',right:'28px'}}
  else{fx=W0*.42;fy=H0*.5;fr=Math.min(H0*.36,W0*.3);card={left:W0*.68+'px',top:H0*.18+'px',right:'28px'}}
  BOX={fx,fy,fr,bx,by,br};const c=ov&&ov.querySelector('.card');if(c&&!ph)Object.assign(c.style,{left:card.left||'',top:card.top||'',right:card.right||'',bottom:''});
- if(FIBV==='C'&&ov){const c1=ov.querySelector('.c1'),c2=ov.querySelector('.c2');Object.assign(c1.style,{left:(bx-110)+'px',width:'220px',top:(by+br+18)+'px'});Object.assign(c2.style,{left:(fx-140)+'px',width:'280px',top:(fy+fr*1.25+10)+'px'})}}
+ if(FIBV==='C'&&ov){const c1=ov.querySelector('.c1'),c2=ov.querySelector('.c2');Object.assign(c1.style,{left:(bx-110)+'px',width:'220px',top:(by+br+18)+'px'});Object.assign(c2.style,{left:(fx-140)+'px',width:'280px',top:(fy+fr*(ph?1.45:1.5)+10)+'px'})}}
 /* ---- selection ---- */
 let idle=0;
 function choose(o,turn){sel=o;rel=o?related(o):[];selSer=null;if(ov)ov.querySelectorAll('.leg button').forEach(x=>x.classList.remove('on'));
