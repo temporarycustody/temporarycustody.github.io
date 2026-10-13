@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><!-- tc-slim phone -->
+<head><!-- tc-nostudy --><!-- tc-slim phone -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Lacquer World</title>
@@ -130,8 +130,8 @@ const holdOf=it=>it.title?6.5:3.2+it.words*.34;
 const C=3.6,D=3.8;   // condense, disperse
 
 /* ---------- gl ---------- */
-const gl=window.__MOBALT?null:/* this page never draws the planet, so it takes no WebGL at all */true?new Proxy({},{get:(o,k)=>k==='getShaderParameter'||k==='getProgramParameter'?()=>true:typeof k==='string'&&/^[A-Z0-9_]+$/.test(k)?0:()=>null}):cv.getContext('webgl',{premultipliedAlpha:true,alpha:true,antialias:false});if(gl)gl.getExtension('OES_standard_derivatives');
-if(!gl){if(window.__MOBALT)return;const n=document.getElementById('nogl');n.style.display='flex';n.innerHTML='<p>This reading needs WebGL, which this browser has turned off.<br><a style="color:#ee4a64" href="'+location.pathname.split('/').pop().replace(/\.html$/,'_study.html')+'">Read the study as pages instead</a></p>';return}
+const gl=window.__MOBALT?null:/* this page never draws the planet, so it takes no WebGL at all */true?new Proxy({},{get:(o,k)=>k==='getShaderParameter'||k==='getProgramParameter'?()=>true:typeof k==='string'&&/^[A-Z0-9_]+$/.test(k)?0:()=>null}):(cv.getContext('webgl',{premultipliedAlpha:true,alpha:true,antialias:false})||(window.__MOBS=true,new Proxy({},{get:(o,k)=>k==='getShaderParameter'||k==='getProgramParameter'?()=>true:typeof k==='string'&&/^[A-Z0-9_]+$/.test(k)?0:()=>null})));if(gl)gl.getExtension('OES_standard_derivatives');
+if(!gl){return}
 const VS='attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
 const FS='';
 const BFS='';
