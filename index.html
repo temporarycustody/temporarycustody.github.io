@@ -1707,7 +1707,7 @@ const PLANETS={'issue013.html':'data:image/webp;base64,UklGRkqJAABXRUJQVlA4WAoAA
    C  fly-through: as B, with the stars streaming past on the way in and out */
 const PZ='B';
 let zooming=false;
-const ACS=[];(()=>{const A=window.AudioContext||window.webkitAudioContext;if(!A||A.__tcw)return;const W=function(...a){const c=new A(...a);ACS.push(c);return c};W.prototype=A.prototype;W.__tcw=1;try{window.AudioContext=W;if(window.webkitAudioContext)window.webkitAudioContext=W}catch(e){}})();
+const ACS=[];(()=>{const A=window.AudioContext||window.webkitAudioContext;if(!A||A.__tcw)return;const W=function(...a){const c=new A(...a);ACS.push(c);const rs=c.resume.bind(c);c.resume=function(){if(document.getElementById('tcplanet'))return Promise.resolve();return rs()};return c};W.prototype=A.prototype;W.__tcw=1;try{window.AudioContext=W;if(window.webkitAudioContext)window.webkitAudioContext=W}catch(e){}})();
 function pzGeom(){const W=innerWidth,H=innerHeight,narrow=W<600,R=narrow?Math.min(.33*W,140):Math.min(150,.2*H,.2*W);return {cx:W/2,cy:H/2+(narrow?10:0),S:2*R*1.16}}
 function skyEls(){return [...document.querySelectorAll('#tcld .sky,#tcfx,#tcskysel')]}
 function skyTo(x,y,sc,op,ms,blur){skyEls().forEach(el=>{el.style.transformOrigin=`${x}px ${y}px`;el.style.transition=`transform ${ms}ms cubic-bezier(.55,0,.15,1),opacity ${ms}ms ease,filter ${ms}ms ease`;el.style.transform=sc===1?'':`scale(${sc})`;el.style.opacity=op===1?'':String(op);el.style.filter=blur?`blur(${blur}px)`:''})}
