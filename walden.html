@@ -3760,7 +3760,7 @@ const HENRY_TALK={alek:['Henry asks him what he thinks of the world. Alek laughs
 /* ---------- a home for each, and the ordinary things anyone can do: fish, sleep, trade, talk with Henry ---------- */
 function homeAt(o){HOMES.door=o.door;HOMES.x=o.x;HOMES.z=o.z;PLACES.push({name:o.label,x:o.x,z:o.z})}
 const COMMON=[];
-COMMON.push(()=>HOMES.door&&nearPt(HOMES.door,5)&&(HOUR>=19||HOUR<5)?{label:'Go in and sleep till morning',fn:()=>{const b=HOMES.door;H.x=b.x;H.z=b.z;startSleep()}}:null);
+COMMON.push(()=>ROLE!=='hunter'&&HOMES.door&&nearPt(HOMES.door,5)&&(HOUR>=19||HOUR<5)?{label:'Go in and sleep till morning',fn:()=>{const b=HOMES.door;H.x=b.x;H.z=b.z;startSleep()}}:null);
 COMMON.push(()=>HOMES.door&&nearPt(HOMES.door,5)&&!(HOUR>=19||HOUR<5)?{label:'Rest an hour at home',fn:()=>{advance(1);say('He sits a while out of the weather.')}}:null);
 bedSpot=function(){return HOMES.door?{x:HOMES.door.x,z:HOMES.door.z}:{x:H.x,z:H.z}};
 function talkHenry(){const L=HENRY_TALK[ROLE];R.hn=(R.hn||0)+1;for(const f of HENRY_HOOK){if(f())return}henrySays(L[R.hn%L.length])}
@@ -3774,7 +3774,7 @@ roleAction=function(){for(const f of URGENT){const a=f();if(a)return a}if(nearHe
   if(HELD==='berries'&&INV.berries)return{label:'Eat a handful of huckleberries',fn:()=>{INV.berries--;drawInv();say('A handful of huckleberries.')}};
   return null};
 // fish fried at home
-ROLE_ACT.push(()=>{if(!HOMES.door||!nearPt(HOMES.door,5))return null;const f=Object.keys(INV.fish).find(k=>INV.fish[k]>0);if(!f)return null;
+ROLE_ACT.push(()=>{if(ROLE==='hunter'||!HOMES.door||!nearPt(HOMES.door,5))return null;const f=Object.keys(INV.fish).find(k=>INV.fish[k]>0);if(!f)return null;
   return{label:`Fry the ${FISH[f][0].toLowerCase()} for supper`,fn:()=>{INV.fish[f]--;drawInv();sfx.sizzle();busy(1);R.fried=(R.fried||0)+1;say(`He fries the ${FISH[f][0].toLowerCase()} over the fire and eats it.`);errDirty=1}}});
 
 let ROLE_START=()=>'';
@@ -3900,7 +3900,75 @@ if(ROLE==='labourer'){
 if(ROLE==='hunter'){
   Object.assign(R,Object.assign({hunts:0,hits:0,pelts:0,rats:0,traps:[],lost:0,found:0,asked:0,laws:'',gun:1},R));
   const CS=findSite(172,-24,16,(x,z)=>pondD(x,z)>1.6);clearSite(CS.x,CS.z,15);
-  const CABIN2=plainHouse(CS.x,CS.z,10,8,{yaw:-Math.PI/2,wall:0x6a5a44,roof:0x4e4a46,h:5.4,chimney:1});
+  // his cabin, one room he can walk into: a hearth at the back, a bed, a table, a wood box; the roof lifts away and the walls
+  // come down to the sills when he is inside, as at Henry's
+  const CABIN2=(()=>{const W=14,D=10,HW=6.4,yaw=-Math.PI/2,G=new THREE.Group();let y=1e9,ymax=-1e9;for(const [a,b] of [[-W/2,-D/2],[W/2,-D/2],[-W/2,D/2],[W/2,D/2],[0,0]]){const p=new THREE.Vector3(a,0,b).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);const g=groundH(CS.x+p.x,CS.z+p.z);y=Math.min(y,g);ymax=Math.max(ymax,g)}
+    G.position.set(CS.x,y,CS.z);G.rotation.y=yaw;scene.add(G);const F=ymax-y+.35;// the floor stands clear of the highest ground under it
+    const box=(w,h,d,c,x,yy,z,par=G,base)=>{const g=new THREE.BoxGeometry(w,h,d);if(base)g.translate(0,.5,0);const m=new THREE.Mesh(g,vmat(c));m.position.set(x,yy,z);m.castShadow=m.receiveShadow=true;par.add(m);return m};
+    box(W+.8,F,D+.8,0x6e6a62,0,F/2,0);box(W-.2,.12,D-.2,0x8a6a48,0,F+.06,0);for(let z=-D/2+1;z<D/2;z+=1.1)box(W-.3,.02,.06,0x5e4632,0,F+.13,z);
+    const walls=[],wc=0x6a5a44,T=.35,dw=3.2;const wall=(w,d,x,z,h=HW,y0=F)=>{const m=box(w,1,d,wc,x,y0,z,G,1);m.scale.y=h;m.userData.h=h;walls.push(m);return m};
+    wall(W,T,0,-D/2+T/2);wall(T,D,-W/2+T/2,0);wall(T,D,W/2-T/2,0);const side=(W-dw)/2;wall(side,T,-(W+dw)/4,D/2-T/2);wall(side,T,(W+dw)/4,D/2-T/2);
+    {const m=wall(dw,T,0,D/2-T/2,HW-5.2,F+5.2);m.userData.lintel=1}
+    for(let yy=F+1;yy<F+HW;yy+=.85){box(W+.05,.1,.06,0x4e3e2c,0,yy,-D/2-.03);box(.06,.1,D+.05,0x4e3e2c,-W/2-.03,yy,0);box(.06,.1,D+.05,0x4e3e2c,W/2+.03,yy,0)}
+    const roof=new THREE.Group();G.add(roof);const pitch=.55,half=D/2+.9,rl=half/Math.cos(pitch);for(const sg of [-1,1]){const r=box(W+1.8,.3,rl,0x4e4a46,0,F+HW+Math.tan(pitch)*half/2,sg*half/2,roof);r.rotation.x=sg*pitch}
+    for(const sg of [-1,1]){const sh=new THREE.Shape();sh.moveTo(-D/2,0);sh.lineTo(D/2,0);sh.lineTo(0,Math.tan(pitch)*D/2);sh.lineTo(-D/2,0);const gm=new THREE.Mesh(new THREE.ShapeGeometry(sh),vmat(wc).clone());gm.material.side=THREE.DoubleSide;gm.rotation.y=Math.PI/2;gm.position.set(sg*W/2,F+HW,0);roof.add(gm)}
+    // the chimney: fieldstone at the back, the hearth inside it
+    const chim=box(3.2,1,1.6,0x7a7268,3,F,-D/2-.6,G,1);chim.scale.y=HW+4;chim.userData.h=HW+4;walls.push(chim);
+    const hearth=new THREE.Group();hearth.position.set(3,F,-D/2+1.1);G.add(hearth);box(3.4,2.6,.9,0x6a645c,0,1.3,-.35,hearth);box(1.8,1.6,.5,0x1a1612,0,.8,.12,hearth);
+    const fire=new THREE.Group();fire.position.set(0,.25,.15);hearth.add(fire);for(let k=0;k<3;k++){const l=box(1.2,.22,.22,0x6a4a2a,0,.1+k*.05,0,fire);l.rotation.y=k*1.1}
+    const flame=new THREE.Mesh(new THREE.ConeGeometry(.45,1,6),new THREE.MeshBasicMaterial({color:0xff9a3a,transparent:true,opacity:.85}));flame.position.y=.7;fire.add(flame);
+    const glow=new THREE.Mesh(new THREE.CircleGeometry(2.4,16),new THREE.MeshBasicMaterial({color:0xff8a3a,transparent:true,opacity:.18,depthWrite:false}));glow.rotation.x=-Math.PI/2;glow.position.set(0,.16,1.6);hearth.add(glow);
+    const woodbox=new THREE.Group();woodbox.position.set(5.6,F,-D/2+1.4);G.add(woodbox);box(1.6,1,1.4,0x5a4430,0,.5,0,woodbox);const logs=[];for(let k=0;k<12;k++){const l=box(.36,.36,1.3,[0x8a6a48,0x7a5a3a][k%2],-.5+(k%4)*.33,1.05+((k/4)|0)*.32,0,woodbox);logs.push(l)}
+    // the bed, a table and a stool, the gun pegs on the wall
+    box(2.6,.9,5.2,0x6a4a30,-4.8,F+.45,-1.8);box(2.4,.25,5,0xb8a888,-4.8,F+1,-1.8);box(2.3,.3,1.4,0xd8d0c0,-4.8,F+1.2,-3.6);box(2.4,.2,3.2,0x6a5a7a,-4.8,F+1.15,-.8);
+    box(2.6,.15,1.8,0x7a5a3a,-2.6,F+2,2.6);for(const [a,b] of [[-1.1,-.7],[1.1,-.7],[-1.1,.7],[1.1,.7]])box(.15,2,.15,0x5a4430,-2.6+a,F+1,2.6+b);box(1,1.1,1,0x6a4a30,-.8,F+.55,2.8);
+    for(const zz of [-1.2,1.2])box(.3,.2,.3,0x4a3a2a,W/2-.45,F+3.6,zz);
+    // the door, hung on the left post, opening inward
+    const door=new THREE.Group();door.position.set(-dw/2,F,D/2-T/2);G.add(door);box(dw-.1,5.1,.18,0x4a3424,(dw-.1)/2,2.55,0,door);
+    G.updateMatrixWorld(true);
+    // walls to walk into, in world coordinates, with the doorway open
+    const toW=(lx,lz)=>new THREE.Vector3(lx,0,lz).applyAxisAngle(new THREE.Vector3(0,1,0),yaw).add(new THREE.Vector3(CS.x,0,CS.z));
+    const rect=(x0,x1,z0,z1)=>{const P=[toW(x0,z0),toW(x1,z0),toW(x0,z1),toW(x1,z1)];XBLOCK.push({x0:Math.min(...P.map(p=>p.x)),x1:Math.max(...P.map(p=>p.x)),z0:Math.min(...P.map(p=>p.z)),z1:Math.max(...P.map(p=>p.z))})};
+    rect(-W/2-.4,W/2+.4,-D/2-.6,-D/2+.6);rect(-W/2-.6,-W/2+.6,-D/2,D/2);rect(W/2-.6,W/2+.6,-D/2,D/2);rect(-W/2-.4,-dw/2-.2,D/2-.6,D/2+.6);rect(dw/2+.2,W/2+.4,D/2-.6,D/2+.6);
+    rect(-6.2,-3.4,-4.6,1);rect(1.1,7,-5,-3.4);// the bed; the hearth and the wood box
+    const local=()=>{const v=new THREE.Vector3(H.x-CS.x,0,H.z-CS.z).applyAxisAngle(new THREE.Vector3(0,1,0),-yaw);return{lx:v.x,lz:v.z}};
+    return{g:G,F,W,D,walls,roof,door,fire,flame,glow,logs,local,toW,floorY:y+F+.12,door:toW(0,D/2+2.6),doorM:door,hearthP:toW(3,-D/2+2.6),bedP:toW(-3.2,-1.8),boxP:toW(5.2,-D/2+2.8)}})();
+  Object.assign(R,Object.assign({wood:4,fireH:0,carry:0},R));
+  const C2=CABIN2;let c2in=false;window.__c2={C2,inside:()=>c2in};
+  function c2Cut(on){C2.roof.visible=!on;for(const w of C2.walls){if(w.userData.lintel){w.visible=!on;continue}w.scale.y=on?Math.min(w.userData.h,2.2):w.userData.h}}
+  const insideC2=()=>{const {lx,lz}=C2.local();return Math.abs(lx)<C2.W/2-.2&&Math.abs(lz)<C2.D/2-.2};
+  QF.push(dt=>{const inn=insideC2();if(inn!==c2in){c2in=inn;c2Cut(inn);if(inn)sayOnce('c2in','Inside his cabin. The roof lifts away so the room can be seen.')}
+    if(inn)H.g.position.y=C2.floorY+Math.abs(Math.sin(H.ph))*.12*H.sp;
+    const {lx,lz}=C2.local();const near=Math.hypot(lx,lz-C2.D/2)<5.5;C2.doorM.rotation.y=lerp(C2.doorM.rotation.y,near?-1.4:0,Math.min(1,dt*5));
+    // the fire: it burns down with the hours; the logs show in the wood box
+    const lit=R.fireH>0;C2.flame.visible=lit;C2.glow.visible=lit;if(lit){const f=.8+Math.sin(performance.now()/90)*.12+Math.sin(performance.now()/37)*.06;C2.flame.scale.set(f,f*(1+Math.sin(performance.now()/60)*.15),f);C2.glow.material.opacity=.12+.08*f}
+    C2.logs.forEach((l,i)=>l.visible=i<R.wood);ARMLOAD.visible=R.carry>0&&H.hold!=='gun'});
+  {const _adv=advance;advance=function(h){_adv(h);if(R.fireH>0){R.fireH=Math.max(0,R.fireH-h);if(!R.fireH&&c2in)say('The fire has burned down to ashes.')}}}
+  {let last=CLOCK;QF.push(()=>{const d=CLOCK-last;last=CLOCK;if(d>0&&d<120&&R.fireH>0)R.fireH=Math.max(0,R.fireH-d/60)})}
+  // the axe, the pole, and the wood
+  INV.axe=1;INV.pole=1;
+  roleHit=function(t){sfx.chop(t.kind);t.hp-=Math.random()<.4?2:1;t.shake=.2;rumble(90,.7,.3);labour(12);
+    if(t.hp<=0){t.felled=true;t.fall=0;t.fdir=Math.atan2(t.x-H.x,t.z-H.z);sfx.fall();const n=Math.min(3,6-R.carry);R.carry+=n;drawInv();errDirty=1;
+      say(n?`The ${t.kind} comes down. He cuts ${n} lengths for the hearth${R.carry>=6?'; an armful':''}.`:`The ${t.kind} comes down. His arms are full already.`)}};
+  carry('logs','Logs','logs',()=>R.carry||0,'For the wood box by his hearth.');
+  ROLE_ACT.push(()=>{if(c2in||RUN.on)return null;const t=nearTree();if(!t||R.carry>=6)return null;return need('axe',`Chop the ${t.kind}`,()=>{target=t;swingKind='chop';swing=.55;H.yaw=Math.atan2(t.x-H.x,t.z-H.z)})});
+  ROLE_ACT.push(()=>{if(!c2in)return null;const near=p=>Math.hypot(H.x-p.x,H.z-p.z)<3.2;
+    if(R.carry&&R.wood<12&&near(C2.boxP))return{label:'Put the logs in the wood box',fn:()=>{const n=Math.min(R.carry,12-R.wood);R.wood+=n;R.carry-=n;drawInv();sfx.knock(Math.min(4,n));busy(.8);say(`${n} into the wood box. It holds ${R.wood} of 12.`);errDirty=1}};
+    if(near(C2.hearthP)){const f=Object.keys(INV.fish).find(k=>INV.fish[k]>0);
+      if(R.fireH>0&&f)return{label:`Fry the ${FISH[f][0].toLowerCase()} over the fire`,fn:()=>{INV.fish[f]--;drawInv();sfx.sizzle();busy(1);R.fried=(R.fried||0)+1;say(`He fries the ${FISH[f][0].toLowerCase()} in the pan over the fire and eats it.`);errDirty=1}};
+      if(R.wood>=2&&R.fireH<4)return{label:R.fireH>0?'Put more wood on the fire':'Lay a fire on the hearth and light it',fn:()=>{const was=R.fireH>0;R.wood-=2;R.fireH=Math.min(8,R.fireH+3);sfx.knock(2);busy(.8);say(was?'Two more logs on the fire.':'He lays a fire and lights it. The room warms.');R.lit=1;errDirty=1}};
+      if(!R.wood&&!R.fireH)return{label:'The wood box is empty',fn:()=>say('The wood box is empty. The axe, and the woods.')}}
+    if(near(C2.bedP))return{label:(HOUR>=19||HOUR<5)?'Sleep until morning':'Lie down for an hour',fn:()=>{if(HOUR>=19||HOUR<5){HOMES.bed=1;startSleep()}else{advance(1);say('He lies down for an hour.')}}};
+    return null});
+  HOMES.door=CABIN2.door;bedSpot=function(){return HOMES.bed?{x:C2.bedP.x,z:C2.bedP.z}:{x:CABIN2.door.x,z:CABIN2.door.z}};
+  errand({id:'hwood',role:'hunter',title:'Wood for the hearth',when:'Any season',blurb:'A cabin in the woods needs wood: an armful at a time, cut with the axe and carried to the box by the hearth.',
+    steps:()=>[{t:'Fell a tree with the axe, and cut it into lengths',short:'Fell a tree',ok:(R.carry||0)>0||R.wood>4||!!R.lit},{t:`Fill the wood box by the hearth (${Math.min(12,R.wood)}/12)`,short:`Wood box ${Math.min(12,R.wood)}/12`,ok:R.wood>=12||!!qs('hwood').done},{t:'Lay a fire on the hearth and light it',short:'Light the fire',ok:!!R.lit&&R.wood>=10||!!qs('hwood').done}],
+    target:()=>R.carry?{x:CABIN2.door.x,z:CABIN2.door.z,label:'the cabin'}:null});
+  QF.push(()=>{if(!qs('hwood').done&&R.wood>=10&&R.lit)finish('hwood','The wood box full, and a fire on the hearth.','')});
+  errand({id:'hsupper',role:'hunter',title:'A fish for supper',when:'Any season',blurb:'The pond is a mile off through the woods. A perch or a pickerel, fried over his own fire, is supper.',
+    steps:()=>{const n=Object.values(INV.fish).reduce((a,b)=>a+b,0);return[{t:'Catch a fish in the pond',short:'Catch a fish',ok:n>0||(R.fried||0)>0},{t:'Fry it over the fire in his cabin',short:'Fry it at the hearth',ok:(R.fried||0)>0}]},
+    target:()=>Object.values(INV.fish).some(v=>v>0)?{x:CABIN2.door.x,z:CABIN2.door.z,label:'the cabin'}:{x:60,z:30,label:'the pond'}});
+  QF.push(()=>{if(!qs('hsupper').done&&(R.fried||0)>0)finish('hsupper','','')});
   homeAt({x:CS.x,z:CS.z,door:CABIN2.door,label:'Silas’s cabin'});
   // the gun, in his hands
   HAND.gun=new THREE.Group();{const b=live(new THREE.CylinderGeometry(.07,.08,4.6,6),0x2a2a2c,0,-2.6,0,HAND.gun);live(new THREE.BoxGeometry(.3,.5,1.4),0x6a4a2a,0,-.4,-.1,HAND.gun).rotation.x=.3;live(new THREE.BoxGeometry(.1,.2,.5),0x3a3a3a,0,-1.1,.12,HAND.gun)}
@@ -3934,6 +4002,7 @@ if(ROLE==='hunter'){
       RUN.t+=dt;if(RUN.t>150){RUN.earth=1;endHunt('The cry dies away. The fox has gone to earth somewhere toward Fair Haven, and the hounds come back one by one.')}}
     if(RUN.dead){RUN.dead-=dt;FX.rotation.z=Math.min(1.5,FX.rotation.z+dt*3);if(RUN.dead<=0){RUN.dead=0;endHunt('')}}
     for(const [i,d] of DOGS.entries()){let tx=H.x+Math.sin(H.yaw+Math.PI+(i?.6:-.6))*4,tz=H.z+Math.cos(H.yaw+Math.PI+(i?.6:-.6))*4,sp=12;
+      if(c2in){tx=CABIN2.door.x+(i?2:-2);tz=CABIN2.door.z+1.5}
       if(d.state==='run'&&RUN.on){const p=loopAt(RUN.a-.05-i*.03);tx=p.x;tz=p.z;sp=26}
       if(d.state==='lost'){tx=LOSTAT.x;tz=LOSTAT.z;sp=0;d.x=LOSTAT.x;d.z=LOSTAT.z}
       if(d.state==='home'){tx=CABIN2.door.x+2;tz=CABIN2.door.z+2;sp=10}
