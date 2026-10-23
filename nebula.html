@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nebula</title>
+<style>
+html,body{margin:0;height:100%;background:#050307;overflow:hidden;color:#e9e6dc;font-family:'Liberation Mono','DejaVu Sans Mono',ui-monospace,monospace}
+#neb{z-index:0;position:fixed;inset:-3%;width:106%;height:106%;display:block;transform-origin:40% 45%;animation:drift 160s ease-in-out infinite alternate;
+  background:radial-gradient(ellipse 40% 35% at 40% 45%,#c9b4e0 0,#8a3a78 30%,#5a1428 60%,#050307 100%)}
+@keyframes drift{from{transform:scale(1)}to{transform:scale(1.045) translate(-.5%,.35%)}}
+#sky{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen;z-index:1}
+#snd{position:fixed;right:24px;bottom:18px;z-index:5;background:none;border:0;padding:6px 0;color:#8d8b84;font:12px 'Liberation Mono','DejaVu Sans Mono',ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase;cursor:pointer}
+#snd:hover,#snd:focus-visible{color:#e9e6dc;outline:none}
+#top{position:fixed;left:24px;top:18px;z-index:5;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#8d8b84;margin:0;font-weight:normal}
+#top a{color:inherit;text-decoration:none}
+#top a:hover,#top a:focus-visible{color:#e9e6dc;outline:none}
+#top span{opacity:.75}
+.g{position:fixed;z-index:5;display:flex;align-items:center;gap:12px;text-decoration:none;color:#ee4a64;font-size:13px;letter-spacing:.26em;text-transform:uppercase;transform:translate(-9px,-50%);text-shadow:0 0 6px #050307,0 0 14px #050307,0 0 24px rgba(5,3,7,.9);padding:8px 6px 8px 0}
+.g i{position:relative;width:18px;height:18px;flex:none}
+.g i::before{content:"";position:absolute;inset:6px;border-radius:50%;background:#fff6ee;box-shadow:0 0 6px 2px rgba(255,236,224,.9),0 0 18px 6px rgba(255,140,160,.35)}
+.g i::after{content:"";position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,236,224,0);transition:border-color .35s,inset .35s}
+.g:hover i::after,.g:focus-visible i::after{border-color:rgba(255,236,224,.55);inset:-4px}
+.g>span{position:relative}
+.g>span::before{content:"";position:absolute;left:-26px;right:-22px;top:-14px;bottom:-14px;z-index:-1;background:radial-gradient(closest-side,rgba(5,3,7,.78),rgba(5,3,7,.5) 55%,rgba(5,3,7,0));pointer-events:none}
+.g b{font-weight:normal;position:relative}
+.g b::after{content:"";position:absolute;left:0;right:.26em;bottom:-4px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .35s}
+.g:hover b::after,.g:focus-visible b::after{transform:scaleX(1)}
+.g:focus{outline:none}
+.g small{display:block;font-size:10px;letter-spacing:.2em;color:#b9b4aa;margin-top:6px;opacity:0;transition:opacity .35s}
+.g:hover small,.g:focus-visible small{opacity:.85}
+#tetris{left:21%;top:70%}
+#walden{left:69%;top:30%}
+@media (max-width:700px){#tetris{left:12%;top:74%}#walden{left:44%;top:22%}.g{font-size:12px}}
+@media (prefers-reduced-motion:reduce){#neb{animation:none}}
+/* on a touch screen there is no hover: the subtitles show, and the corners keep clear of the notch and the home bar */
+@media (pointer:coarse){.g small{opacity:.8}}
+#top{left:max(24px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top))}#snd{right:max(24px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom))}
+</style>
+</head>
+<body>
+<canvas id="neb" role="img" aria-label="A red and violet nebula in a field of stars, pale and blue-white at its heart"></canvas>
+<canvas id="sky" aria-hidden="true"></canvas>
+<button id="snd" type="button" aria-pressed="true">Sound on</button>
+<p id="top"><a href="index.html#issues">‹ Temporary Custody</a></p>
+<script>
+/* The nebula is drawn here, once for each size of window, from noise: a red cloud of glowing gas with darker red filaments
+   and lanes of dust through it, opening at the heart into a cavity of violet and pale light with a blue-green and warm core,
+   small dark knots of dust in front of it, and the field of stars over all. */
+(function(){
+const cv=document.getElementById('neb'),gl=cv.getContext('webgl',{premultipliedAlpha:false,preserveDrawingBuffer:true});
+let P=null,uR,uT,REDUCE=matchMedia('(prefers-reduced-motion: reduce)').matches;
+// phones and tablets: a lighter nebula, drawn less often, to spare the battery
+const COARSE=matchMedia('(pointer: coarse)').matches,STEP=COARSE?80:48;
+function size(){const cw=cv.clientWidth,ch=cv.clientHeight;let D=Math.min(1.5,devicePixelRatio||1);const lim=REDUCE?2.6e6:COARSE?4.2e5:9e5;if(cw*ch*D*D>lim)D=Math.sqrt(lim/(cw*ch));cv.width=Math.round(cw*D);cv.height=Math.round(ch*D)}
+function nebula(){if(!gl)return;size();const w=cv.width,h=cv.height;if(P){gl.viewport(0,0,w,h);gl.uniform2f(uR,w,h);return}
+  const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  const fs=`precision highp float;uniform vec2 R;uniform float S,T;
+  float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+  float n2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+1.),f.x),f.y);}
+  float fbm(vec2 p){float a=.5,s=0.;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<7;i++){s+=a*n2(p);p=m*p;a*=.5;}return s;}
+  float rid(vec2 p){float a=.5,s=0.;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<6;i++){float n=1.-abs(2.*n2(p)-1.);s+=a*n*n;p=m*p;a*=.52;}return s;}
+  void main(){vec2 uv=gl_FragCoord.xy/R;float asp=R.x/R.y;vec2 q=vec2((uv.x-.5)*max(asp,1.),(uv.y-.5)*max(1./asp,1.))*2.;
+    q+=vec2(S*.37,S*.71);
+    // domain warping, so the gas folds and streams
+    vec2 w1=vec2(fbm(q*1.1+vec2(1.7,9.2)+T*vec2(.011,.006)),fbm(q*1.1+vec2(8.3,2.8)-T*vec2(.005,.009)));
+    vec2 w2=vec2(fbm(q*1.3+3.*w1+vec2(5.2,1.3)+T*vec2(-.008,.01)),fbm(q*1.3+3.*w1+vec2(2.1,7.7)+T*vec2(.007,.004)));
+    float gas=fbm(q*1.2+2.6*w2+T*vec2(.004,-.003));
+    float fil=rid(q*2.3+1.8*w1);float fine=rid(q*6.5+2.4*w2);
+    // the shape of the whole: a broad cloud, brightest a little left of centre and above, fading to black at the edges
+    vec2 c=vec2((.40-.5)*max(asp,1.)*2.,(.55-.5)*max(1./asp,1.)*2.)+vec2(S*.37,S*.71);
+    vec2 d=(q-c)*vec2(.62,.95);float r=length(d+ (w1-.5)*.35);
+    float cloud=smoothstep(1.5,.1,r+(.5-gas)*.7);
+    float heart=exp(-pow(r*1.9+(w2.x-.5)*.6,2.));
+    float core=exp(-pow(length((q-c)*vec2(1.,1.25)+(w2-.5)*.22)*6.,2.));
+    // dust: lanes and small dark knots
+    float dust=smoothstep(.52,.72,fbm(q*2.1+4.*w2+vec2(11.,3.)))*(1.-heart*.5);
+    float knots=smoothstep(.74,.86,fbm(q*7.+w1*6.+vec2(3.,8.)))*smoothstep(1.2,.3,r);
+    vec3 col=vec3(.02,.012,.025);
+    vec3 red=vec3(.62,.07,.16),deep=vec3(.30,.03,.07),mag=vec3(.78,.22,.46),vio=vec3(.56,.56,.86),pale=vec3(.84,.84,.95);
+    float em=cloud*(.12+.95*gas*gas*1.5)+fil*cloud*.45;
+    col+=mix(deep,red,clamp(gas*1.4-.15,0.,1.))*em*1.15;
+    col+=red*fil*fil*cloud*.45;col+=vec3(.95,.32,.4)*pow(fine,2.2)*cloud*(.25+.6*gas);
+    col=mix(col,mix(mag,vio,smoothstep(.2,.8,heart)),clamp(heart*1.05*(.55+gas),0.,1.));
+    col=mix(col,pale,clamp(heart*heart*(gas*1.1)*.7,0.,.6));
+    // the core: blue-green with warm streaks, swirling
+    float sw=fbm((q-c)*6.+w2*3.+T*vec2(.03,-.02));
+    col*=1.-dust*.78*(1.-core);dust*=1.-core;
+    col=mix(col,mix(vec3(.42,.92,.82),vec3(1.,.72,.58),smoothstep(.42,.66,sw)),core*.62);
+    col+=core*core*vec3(.18,.2,.2);col+=heart*vec3(.12,.1,.18)*(1.-dust);
+    col*=1.-dust*.78;col*=1.-knots*.85;
+    // a faint wash of red through the dark, and the vignette
+    col+=vec3(.12,.015,.03)*fbm(q*.8+5.)*smoothstep(2.6,.6,r);
+    float v=length((uv-vec2(.45,.5))*vec2(1.,1.15));col*=1.-smoothstep(.28,.78,v)*.85;
+    col=pow(max(col,0.),vec3(.95));
+    col+=(h21(gl_FragCoord.xy+S)-.5)*.012;col*=1.+.05*sin(T*.21)*core;
+    gl_FragColor=vec4(col,1.);}`;
+  const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))console.warn(gl.getShaderInfoLog(o));return o};
+  const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);gl.useProgram(pr);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const l=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0);
+  uR=gl.getUniformLocation(pr,'R');uT=gl.getUniformLocation(pr,'T');gl.uniform2f(uR,w,h);gl.uniform1f(gl.getUniformLocation(pr,'S'),0.);gl.viewport(0,0,w,h);P=pr}
+const T0=performance.now();let lastN=0;
+function neb(now){if(!gl||!P)return;if(!REDUCE)requestAnimationFrame(neb);if(document.hidden||now-lastN<STEP)return;lastN=now;gl.uniform1f(uT,(now-T0)/1000);gl.drawArrays(gl.TRIANGLES,0,3)}
+
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{nebula();if(REDUCE)neb(performance.now()+1e5)},200)});nebula();requestAnimationFrame(neb);
+// the stars, as on the index: a fine dust of points thickest where a faint haze lies, a scatter of medium stars, points that
+// twinkle (a few of them flaring now and then), and the brighter stars, each with its soft glow, pulsing gently. The field sits
+// still; only the nebula under it moves. It is drawn over the nebula in screen mode, so the gas shows through the dark.
+const sk=document.getElementById('sky'),g=sk.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W=0,H=0,dpr=1,lay=null,TWC={},big=[],seed=11;
+function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+function KEEP(i,f,s){return f<=0||(Math.imul(i+1+s*7919,2654435761)>>>0)/4294967296>=f}
+const COL={b:[200,214,255],w:[236,236,244],y:[255,226,170]};
+function noise2(w,h,cell){const gw=Math.ceil(w/cell)+2,gh=Math.ceil(h/cell)+2,gr=new Float32Array(gw*gh);for(let i=0;i<gr.length;i++)gr[i]=rnd();
+  const out=new Float32Array(w*h);for(let y=0;y<h;y++){const gy=y/cell,y0=gy|0,fy=gy-y0,sy=fy*fy*(3-2*fy);for(let x=0;x<w;x++){const gx=x/cell,x0=gx|0,fx=gx-x0,sx=fx*fx*(3-2*fx);
+    const a=gr[y0*gw+x0],b=gr[y0*gw+x0+1],c=gr[(y0+1)*gw+x0],d=gr[(y0+1)*gw+x0+1];out[y*w+x]=(a+(b-a)*sx)+((c+(d-c)*sx)-(a+(b-a)*sx))*sy}}return out}
+function glow(r,c,a){const s=Math.ceil(r*6.5),cc=document.createElement('canvas');cc.width=cc.height=s*2;const x=cc.getContext('2d');
+  const gr=x.createRadialGradient(s,s,0,s,s,s);const [R,G,B]=c;
+  gr.addColorStop(0,`rgba(255,255,255,${a})`);gr.addColorStop(.1,`rgba(255,255,255,${a})`);gr.addColorStop(.15,`rgba(${R},${G},${B},${a*.9})`);gr.addColorStop(.28,`rgba(${R},${G},${B},${a*.22})`);gr.addColorStop(.55,`rgba(${R},${G},${B},${a*.04})`);gr.addColorStop(1,`rgba(${R},${G},${B},0)`);
+  x.fillStyle=gr;x.fillRect(0,0,s*2,s*2);return cc}
+function build(){dpr=Math.min(1.5,devicePixelRatio||1);W=innerWidth;H=innerHeight;seed=11;sk.width=Math.round(W*dpr);sk.height=Math.round(H*dpr);
+  lay=document.createElement('canvas');lay.width=sk.width;lay.height=sk.height;const b=lay.getContext('2d');
+  const hw=Math.ceil(W/6),hh=Math.ceil(H/6),n1=noise2(hw,hh,30),n2=noise2(hw,hh,12),n3=noise2(hw,hh,70),n4=noise2(hw,hh,5);
+  const hz=document.createElement('canvas');hz.width=hw;hz.height=hh;const hx=hz.getContext('2d'),id=hx.createImageData(hw,hh),dens=new Float32Array(hw*hh);
+  for(let i=0;i<hw*hh;i++){let v=.45*n1[i]+.25*n2[i]+.3*n3[i]+.12*n4[i]-.42;v=Math.min(1,Math.max(0,v)*1.25);dens[i]=v;id.data[i*4]=20*v;id.data[i*4+1]=21*v;id.data[i*4+2]=26*v;id.data[i*4+3]=255}
+  hx.putImageData(id,0,0);b.fillStyle='#000';b.fillRect(0,0,lay.width,lay.height);b.imageSmoothingQuality='high';b.drawImage(hz,0,0,lay.width,lay.height);
+  b.setTransform(dpr,0,0,dpr,0,0);
+  for(let i=0,nf=Math.round(W*H/6);i<nf;i++){const x=rnd()*W,y=rnd()*H,d=dens[((y/6)|0)*hw+((x/6)|0)]||0;if(rnd()>.28+d*2.4)continue;
+    const a=.22+Math.pow(rnd(),1.5)*.75,c=rnd();b.fillStyle=c<.12?`rgba(255,226,180,${a})`:c<.3?`rgba(200,212,255,${a})`:`rgba(238,238,245,${a})`;
+    const s=rnd()<.8?.8:1.25;if(KEEP(i,0.42,1))b.fillRect(x,y,s,s)}
+  for(let i=0,nm=Math.round(W*H/700);i<nm;i++){const x=rnd()*W,y=rnd()*H,s=1.3+rnd()*.7,c=rnd();b.fillStyle=c<.15?'rgba(255,224,176,.9)':c<.4?'rgba(214,224,255,.9)':'rgba(248,248,252,.92)';if(KEEP(i,0.1,11)){b.beginPath();b.arc(x,y,s/2,0,6.283);b.fill()}}
+  TWC={};for(let i=0,nt=Math.round(W*H/160);i<nt;i++){const c=rnd(),o={x:rnd()*W,y:rnd()*H,s:rnd()<.8?1:1.5,a:.4+Math.pow(rnd(),1.2)*.6,sp:2+rnd()*9,ph:rnd()*6.28,j:rnd()},k=c<.1?'255,220,170':c<.35?'205,215,255':'245,245,250';if(KEEP(i,0.25,21))(TWC[k]=TWC[k]||[]).push(o)}
+  big=[];const k=Math.max(.75,Math.min(1.6,H/846*1.25));
+  for(let i=0,nb=Math.round(W*H/16000);i<nb;i++){const r=(.7+Math.pow(rnd(),3)*1.1)*k,c=rnd();big.push({x:rnd()*W,y:rnd()*H,img:glow(r,COL[c<.15?'y':c<.45?'b':'w'],.9),sp:1.5+rnd()*4,ph:rnd()*6.28})}}
+function draw(now){const tt=now/1000;g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.drawImage(lay,0,0);g.setTransform(dpr,0,0,dpr,0,0);
+  for(const c in TWC){g.fillStyle='rgb('+c+')';for(const o of TWC[c]){let a=o.a;if(!reduce){const f=Math.sin(tt*o.sp+o.ph)*.5+.5;a*=.15+.85*f*f;if(o.j>.8&&Math.sin(tt*o.sp*2.7+o.ph*3)>.92)a=Math.min(1,a*1.8)}
+    g.globalAlpha=a;g.fillRect(o.x,o.y,o.s,o.s)}}
+  g.globalAlpha=1;g.globalCompositeOperation='lighter';
+  for(const o of big){const f=reduce?1:.82+.18*Math.sin(tt*o.sp+o.ph)+.06*Math.sin(tt*o.sp*3.1+o.ph);const s=o.img.width/2;g.globalAlpha=Math.max(0,Math.min(1,f));g.drawImage(o.img,o.x-s,o.y-s)}
+  g.globalAlpha=1;g.globalCompositeOperation='source-over';if(!reduce)requestAnimationFrame(draw)}
+addEventListener('resize',()=>{build();if(reduce)draw(performance.now())});build();requestAnimationFrame(draw);
+/* sound, made in the page as on the index, starting with the first click, tap or key: a low slow chord that swells and
+   falls like breathing, now and then a soft high bell as if from a star, a note when the pointer finds one of the games,
+   and a rising pair as one opens. No noise and nothing sharp. */
+const SND=(()=>{let C=null,M=null,wet=null,on=true;try{on=localStorage.getItem('tcNebulaSound')!=='off'}catch(e){}
+  const btn=document.getElementById('snd');const show=()=>{btn.textContent=on?'Sound on':'Sound off';btn.setAttribute('aria-pressed',String(on))};show();
+  function start(){if(C){if(C.state==='suspended')C.resume();return}try{C=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return}
+    M=C.createGain();M.gain.value=0;M.connect(C.destination);M.gain.setTargetAtTime(on?.9:0,C.currentTime,1.2);
+    // a soft echo for the bells
+    const d=C.createDelay(2),fb=C.createGain(),lp=C.createBiquadFilter();d.delayTime.value=.42;fb.gain.value=.38;lp.type='lowpass';lp.frequency.value=1800;d.connect(lp);lp.connect(fb);fb.connect(d);wet=C.createGain();wet.gain.value=.5;lp.connect(wet);wet.connect(M);wet.input=d;
+    // the bed: four sines a fifth and an octave apart, each breathing on its own slow cycle, under a low-pass that opens and closes
+    const bed=C.createBiquadFilter();bed.type='lowpass';bed.frequency.value=600;bed.Q.value=.4;bed.connect(M);
+    const lf=C.createOscillator(),lg=C.createGain();lf.frequency.value=.031;lg.gain.value=260;lf.connect(lg);lg.connect(bed.frequency);lf.start();
+    [[55,.05,.043],[82.41,.035,.029],[110,.03,.051],[164.81,.016,.037],[220,.008,.023]].forEach(([f,v,r])=>{const o=C.createOscillator(),g=C.createGain(),b=C.createOscillator(),bg=C.createGain();
+      o.frequency.value=f*(1+(Math.random()-.5)*.003);g.gain.value=v*.6;b.frequency.value=r;bg.gain.value=v*.4;b.connect(bg);bg.connect(g.gain);o.connect(g);g.connect(bed);o.start();b.start()});
+    bells()}
+  function bell(f,v,at){if(!C)return;const t0=C.currentTime+(at||0);[[1,1],[2.01,.3],[3.02,.1]].forEach(([m,a])=>{const o=C.createOscillator(),g=C.createGain();o.type='sine';o.frequency.value=f*m;
+      g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v*a,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+3.2/m);o.connect(g);g.connect(M);g.connect(wet.input);o.start(t0);o.stop(t0+3.4)})}
+  const SC=[440,493.88,554.37,659.25,739.99,880,987.77,1108.73];
+  function bells(){setTimeout(()=>{if(C&&on&&!document.hidden){const f=SC[Math.random()*SC.length|0];bell(f,.022);if(Math.random()<.35)bell(SC[Math.random()*SC.length|0],.016,.6+Math.random()*.5)}bells()},4500+Math.random()*9000)}
+  function toggle(){on=!on;try{localStorage.setItem('tcNebulaSound',on?'on':'off')}catch(e){}show();if(!C){if(on)start();return}M.gain.setTargetAtTime(on?.9:0,C.currentTime,.3)}
+  btn.addEventListener('click',e=>{e.stopPropagation();if(!C&&on){start();return}toggle()});
+  const wake=()=>{if(on)start()};addEventListener('pointerdown',wake,{once:false});addEventListener('keydown',wake);
+  document.addEventListener('visibilitychange',()=>{if(C)M.gain.setTargetAtTime(document.hidden||!on?0:.9,C.currentTime,.3)});
+  for(const a of document.querySelectorAll('.g')){const f=a.id==='tetris'?659.25:554.37;
+    a.addEventListener('pointerenter',()=>{if(C&&on)bell(f,.03)});a.addEventListener('focus',()=>{if(C&&on)bell(f,.03)});
+    a.addEventListener('click',e=>{if(!C||!on)return;e.preventDefault();bell(f,.035);bell(f*1.5,.03,.16);M.gain.setTargetAtTime(0,C.currentTime+.25,.18);const to=a.href;setTimeout(()=>{location.href=to},650)})}
+  addEventListener('pageshow',ev=>{if(ev.persisted&&C)M.gain.setTargetAtTime(on?.9:0,C.currentTime,.4)});
+  return{start}})();
+})();
+</script>
+</body>
+</html>

@@ -70,6 +70,13 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0c0f13;color:var(--in
 #bag .hint,#map p{font:400 11px var(--pix);color:var(--ink-dim);margin:12px 0 0}
 #bag .journal p{font:400 13px/1.4 var(--pix);color:#e2dacb;margin:0 0 6px}
 #bag .journal em{color:var(--ink-dim);font-style:normal}
+#bag .pressed{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+#bag .pressed figure{margin:0;background:#c8d4b8;border:1px solid rgba(236,228,204,.2);padding:6px 6px 5px;text-align:center}
+#bag .pressed img,#bag .pressed figure span{display:block;width:96px;height:96px;margin:0 auto;image-rendering:pixelated}
+#bag .pressed figure.none{background:none;border-style:dashed;opacity:.5}
+#bag .pressed figcaption{font:500 11px var(--pix);color:#3a4a36;margin-top:4px}
+#bag .pressed figure.none figcaption{color:var(--ink-dim)}
+#bag .pressed small{display:block;font:400 10px var(--pix);color:#5a6a52}
 #dlg{position:fixed;left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(96px + env(safe-area-inset-bottom,0px));display:flex;gap:12px;align-items:center;max-width:min(440px,calc(100vw - 28px));background:#1c181b;border:1px solid rgba(236,228,204,.25);border-radius:12px;padding:10px 14px 10px 10px;z-index:3}
 #dlg canvas{width:96px;height:96px;image-rendering:pixelated;flex:none}
 #dlg h4{font-size:26px}
@@ -178,7 +185,7 @@ body.print .tag{color:#ece4cc}
       <dt>Walk</dt><dd>W A S D or the arrows, the left stick, or drag on a phone</dd>
       <dt>Shift</dt><dd>Run (or click down either stick)</dd>
       <dt>E</dt><dd>Whatever is at hand: take a tool, chop, hoe, plant, water, fish, carry wood, load the stove, cook, write, sleep, open the chest (✕)</dd>
-      <dt>1–9, Z C</dt><dd>Change what is in his hand (D-pad left and right; X puts it away)</dd>
+      <dt>1–9, Z C</dt><dd>Change what is in his hand (D-pad left and right); 0, X or the open-hand slot empties it</dd>
       <dt>Tab</dt><dd>Open the bag to see everything he carries (D-pad down)</dd>
       <dt>Q R</dt><dd>Turn the view a quarter round (L1 R1)</dd>
       <dt>Wheel</dt><dd>Zoom (L2 R2)</dd>
@@ -242,6 +249,15 @@ float sh2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float sn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(sh2(i),sh2(i+vec2(1.,0.)),f.x),mix(sh2(i+vec2(0.,1.)),sh2(i+vec2(1.,1.)),f.x),f.y);}
 float sfbm(vec2 p){return sn(p)*.55+sn(p*2.1+7.)*.28+sn(p*4.3+3.)*.17;}
 `;
+/* layered faces where the ground is steep (the pond banks, the hillsides, the cuts): bands of sand and gravel in their own
+   tones laid one over another, wavering a little, with a dark seam between some of them. And on the boulders: cracks, and
+   patches of grey-green lichen. Both stay still: nothing here moves. */
+const STRATA_GLSL=`{float st=1.-smoothstep(.5,.86,vSN.y);if(st>0.){float w=sfbm(vSW.xz*.045)*2.2+sfbm(vSW.xz*.2)*.35;float b=vSW.y*1.15+w;float band=fract(b),id=floor(b);
+   float hh=sh2(vec2(id,3.7));vec3 tone=mix(vec3(.58,.46,.32),vec3(.78,.66,.46),hh);tone=mix(tone,vec3(.46,.38,.3),step(.82,sh2(vec2(id,9.1)))*.7);
+   tone*=.9+.2*sh2(floor(vSW.xz*2.)+id);float seam=(1.-smoothstep(.0,.07,band))*step(.45,sh2(vec2(id,1.3)));tone*=1.-seam*.55;
+   diffuseColor.rgb=mix(diffuseColor.rgb,tone,st*.85);}}`;
+const CRACKS_GLSL=`{float n=sfbm(vSW.xz*.55+vSW.y*.4);float cr=1.-smoothstep(.0,.025,abs(n-.5));float n2=sfbm(vSW.zy*.6+vSW.x*.3+7.);float cr2=1.-smoothstep(.0,.02,abs(n2-.52));
+   diffuseColor.rgb*=1.-max(cr,cr2)*.5;float li=step(.68,sfbm(vSW.xz*.9+vSW.y*.7+3.))*step(.35,vSN.y);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.56,.62,.5),li*.45);}`;
 function makeMat(o){
   const p={color:o.color!==undefined?col(o.color):col(0xffffff),vertexColors:!!o.vc,side:o.side||THREE.FrontSide,shininess:4,specular:col(0x0c0c0c)};
   if(o.emissive!==undefined)p.emissive=col(o.emissive);
@@ -258,8 +274,8 @@ function makeMat(o){
   transformed.x+=w*hh*hh*${(+o.sway).toFixed(2)}*.0022;transformed.z+=w*hh*hh*${(+o.sway).toFixed(2)}*.0012;
   ${o.leaf?'transformed+=vec3(sin(uTime*7.3+position.x*2.1+position.y*1.7),sin(uTime*6.1+position.z*2.3)*.6,cos(uTime*6.7+position.y*2.)) *.09*uWind*gust;':''}}`)}
     sh.vertexShader='varying vec3 vSW;varying vec3 vSN;\n'+sh.vertexShader.replace('#include <fog_vertex>','#include <fog_vertex>\n  vec4 swp=vec4(transformed,1.);\n#ifdef USE_INSTANCING\n  swp=instanceMatrix*swp;\n#endif\n  vSW=(modelMatrix*swp).xyz;vSN=normalize((vec4(transformedNormal,0.)*viewMatrix).xyz);');
-    sh.fragmentShader='uniform float uSnowT;uniform vec3 uSnowCol;varying vec3 vSW;varying vec3 vSN;\n'+SNOW_GLSL+CLOUD_GLSL+sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n  {vec3 q=floor(vSW*1.6);float g=sh2(q.xz+q.y*17.31);diffuseColor.rgb*=.88+.24*g;\n   float up=smoothstep(.3,.78,vSN.y);float n=sfbm(vSW.xz*.075)+sfbm(vSW.xz*.33)*.2-.1+(sh2(floor(vSW.xz*1.3))-.5)*.1;float s=up*step(uSnowT,n+up*.14);\n   vec3 sc=uSnowCol*(.9+.1*sh2(floor(vSW.xz*2.1)+3.7))-vec3(.05,.03,0.)*(1.-smoothstep(uSnowT,uSnowT+.05,n+up*.14));diffuseColor.rgb=mix(diffuseColor.rgb,sc,s);diffuseColor.rgb*=cloudSh(vSW.xz);}');
-  };m.customProgramCacheKey=()=>'snow2'+(o.sway||0)+(o.leaf?'L':'')}
+    sh.fragmentShader='uniform float uSnowT;uniform vec3 uSnowCol;varying vec3 vSW;varying vec3 vSN;\n'+SNOW_GLSL+CLOUD_GLSL+sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n  {vec3 q=floor(vSW*1.6);float g=sh2(q.xz+q.y*17.31);diffuseColor.rgb*=.88+.24*g;\n   float up=smoothstep(.3,.78,vSN.y);float n=sfbm(vSW.xz*.075)+sfbm(vSW.xz*.33)*.2-.1+(sh2(floor(vSW.xz*1.3))-.5)*.1;float s=up*step(uSnowT,n+up*.14);\n   vec3 sc=uSnowCol*(.9+.1*sh2(floor(vSW.xz*2.1)+3.7))-vec3(.05,.03,0.)*(1.-smoothstep(uSnowT,uSnowT+.05,n+up*.14));'+(o.strata?STRATA_GLSL:'')+(o.cracks?CRACKS_GLSL:'')+'diffuseColor.rgb=mix(diffuseColor.rgb,sc,s);diffuseColor.rgb*=cloudSh(vSW.xz);}');
+  };m.customProgramCacheKey=()=>'snow2'+(o.sway||0)+(o.leaf?'L':'')+(o.strata?'S':'')+(o.cracks?'C':'')}
   return m}
 function applyMats(){for(const m of REG){if(!m.userData.mat)m.userData.mat=makeMat(m.userData.mo);m.material=m.userData.mat}}
 
@@ -337,7 +353,7 @@ function pathD(x,z){let m=1e9;for(const p of PATH)m=Math.min(m,Math.hypot(x-p[0]
       cols[i*3]=c.r;cols[i*3+1]=c.g;cols[i*3+2]=c.b}return cols});
   const cols=sets[3].slice();
   g.setAttribute('color',new THREE.BufferAttribute(cols,3));g.computeVertexNormals();
-  const m=new THREE.Mesh(g);reg(m,{vc:1,cast:false});scene.add(m);GROUND={g,cols,sets};
+  const m=new THREE.Mesh(g);reg(m,{vc:1,cast:false,strata:1});scene.add(m);GROUND={g,cols,sets};
 }
 function treeZone(x,z){
   if(Math.abs(x)>330||Math.abs(z)>330)return false;
@@ -351,12 +367,12 @@ function treeZone(x,z){
   return true;
 }
 // water
-const waterU={uCl:CLOUDU,uTime:{value:0},uSun:{value:new THREE.Vector3(0,1,0)},uSunCol:{value:new THREE.Color(1,1,1)},uSky:{value:new THREE.Color(0x8fb6d8)},uDeep:{value:new THREE.Color(0x1d4a5c)},uShallow:{value:new THREE.Color(0x4f8a7a)},uFog:{value:new THREE.Color()},uFogN:{value:140},uFogF:{value:760},uNight:{value:0},uIce:{value:0},uHole:{value:new THREE.Vector3(0,0,0)}};
+const waterU={uFreeze:{value:1},uCl:CLOUDU,uTime:{value:0},uSun:{value:new THREE.Vector3(0,1,0)},uSunCol:{value:new THREE.Color(1,1,1)},uSky:{value:new THREE.Color(0x8fb6d8)},uDeep:{value:new THREE.Color(0x1d4a5c)},uShallow:{value:new THREE.Color(0x4f8a7a)},uFog:{value:new THREE.Color()},uFogN:{value:140},uFogF:{value:760},uNight:{value:0},uIce:{value:0},uHole:{value:new THREE.Vector3(0,0,0)}};
 {
   const g=new THREE.PlaneGeometry(700,700,1,1);g.rotateX(-Math.PI/2);
   const m=new THREE.Mesh(g,new THREE.ShaderMaterial({uniforms:waterU,
     vertexShader:`varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
-    fragmentShader:CLOUD_GLSL+`uniform float uTime,uFogN,uFogF,uNight,uIce;uniform vec3 uSun,uSunCol,uSky,uDeep,uShallow,uFog,uHole;varying vec3 vW;
+    fragmentShader:CLOUD_GLSL+`uniform float uTime,uFogN,uFogF,uNight,uIce,uFreeze;uniform vec3 uSun,uSunCol,uSky,uDeep,uShallow,uFog,uHole;varying vec3 vW;
       float wh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
       float wn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(wh(i),wh(i+vec2(1.,0.)),f.x),mix(wh(i+vec2(0.,1.)),wh(i+vec2(1.,1.)),f.x),f.y);}
       float pd(vec2 p){vec2 a=(p-vec2(0.,95.))/vec2(120.,72.);vec2 b=(p-vec2(-92.,48.))/vec2(34.,22.);return min(dot(a,a),dot(b,b));}
@@ -373,6 +389,10 @@ const waterU={uCl:CLOUDU,uTime:{value:0},uSun:{value:new THREE.Vector3(0,1,0)},u
           float pp=pd(p)+(wn(p*.25)-.5)*.25;float foam=smoothstep(.8,.97,pp)*step(.45,wn(p*.9+vec2(t*.4,t*.2)));c=mix(c,vec3(.7,.78,.82)*(.4+.6*(1.-uNight)),foam*.45);}
         if(uIce>.5){float n=wn(p*.05)*.6+wn(p*.17)*.3+wn(p*.6)*.1;vec3 ice=mix(vec3(.5,.6,.68),vec3(.7,.77,.83),n);
           float cr=abs(sin(p.x*.045+sin(p.y*.031)*2.3+wn(p*.09)*2.))*abs(sin(p.y*.05+sin(p.x*.027)*2.+wn(p*.07+5.)*2.));ice*=1.-.35*smoothstep(.06,0.,cr);
+          // ice crystals: six-pointed stars from the superformula, set in the clear ice; plainest in the first days of the freeze
+          {vec2 q=p/7.;vec2 id=floor(q);vec2 o=vec2(wh(id),wh(id+7.3))-.5;vec2 f=(fract(q)-.5-o*.5)*7.;float rot=wh(id+3.1)*6.28,sz=1.8+wh(id+1.7)*2.;
+           float ph=atan(f.y,f.x)+rot,R=pow(pow(abs(cos(1.5*ph)),.6)+pow(abs(sin(1.5*ph)),.6)+1e-4,-1./.3)*sz;float rr=length(f);
+           float star=step(rr,R)*step(.2,wh(id+9.9));float edge=star*(1.-step(rr,R*.72));ice=mix(ice,vec3(.86,.92,.97),(star*.32+edge*.5)*uFreeze);}
           float sn=step(.58,wn(p*.06+9.)*.7+wn(p*.3)*.3);ice=mix(ice,vec3(.86,.89,.93),sn*.9);
           vec3 lit=uSky*.7+uSunCol*.6*max(uSun.y,0.)+vec3(.16,.18,.22);c=ice*lit;
           if(uHole.z>.5){float hd=distance(p,uHole.xy);c=mix(c,uDeep*.7,step(hd,1.3));c=mix(c,c*.6,step(hd,1.8)*step(1.3,hd));}}
@@ -631,13 +651,25 @@ const POLES=[];
   wg.setAttribute('position',new THREE.Float32BufferAttribute(W,3));const wl=new THREE.LineSegments(wg,new THREE.LineBasicMaterial({color:0x151719}));scene.add(wl);
 }
 
+/* ---------- stones of the supershape: Gielis's formula in three dimensions (one superformula round, one up and down), so each
+   kind of stone is a little different: rounded, blocky, knobbly, slabbed. Four kinds, shared out among the stones in turn ---------- */
+function supershapeGeo(A,B,seed){const sf=(ph,m,n1,n2,n3)=>Math.pow(Math.pow(Math.abs(Math.cos(m*ph/4)),n2)+Math.pow(Math.abs(Math.sin(m*ph/4)),n3)+1e-6,-1/n1);
+  const NT=16,NP=10,P=[];let mx=0;for(let j=0;j<=NP;j++){const ph=-Math.PI/2+Math.PI*j/NP,r2=sf(ph,...B);for(let i=0;i<=NT;i++){const th=-Math.PI+2*Math.PI*i/NT,r1=sf(th,...A);
+      const k=1+(h2(i%NT,j,seed)-.5)*.16;const x=r1*Math.cos(th)*r2*Math.cos(ph)*k,y=r2*Math.sin(ph)*k,z=r1*Math.sin(th)*r2*Math.cos(ph)*k;mx=Math.max(mx,Math.hypot(x,y,z));P.push([x,y,z])}}
+  const V=[];const at=(i,j)=>P[j*(NT+1)+i];for(let j=0;j<NP;j++)for(let i=0;i<NT;i++){const a=at(i,j),b=at(i+1,j),c=at(i+1,j+1),d=at(i,j+1);V.push(...a,...c,...b,...a,...d,...c)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(V.map(v=>v/mx),3));g.computeVertexNormals();return g}
+const ROCKSHAPES=[[[6,4,6,6],[5,4,6,6]],[[7,3,4,5],[6,3,5,5]],[[5,6,9,9],[4,5,8,8]],[[8,2.6,3.5,4],[6,3,4,4]]];
+function rockSet(N){const ms=ROCKSHAPES.map((p,i)=>{const im=new THREE.InstancedMesh(supershapeGeo(p[0],p[1],41+i),null,Math.ceil(N/4)+1);im.setColorAt(0,col(0xffffff));im.count=0;return im});
+  return{setMatrixAt(i,m){const im=ms[i%4],k=(i/4)|0;im.setMatrixAt(k,m);im.count=Math.max(im.count,k+1)},setColorAt(i,c){ms[i%4].setColorAt((i/4)|0,c)},
+    instanceMatrix:{set needsUpdate(v){ms.forEach(m=>m.instanceMatrix.needsUpdate=v)}},instanceColor:{set needsUpdate(v){ms.forEach(m=>{if(m.instanceColor)m.instanceColor.needsUpdate=v})}},
+    done(o){ms.forEach(m=>{reg(m,Object.assign({cracks:1},o));scene.add(m)})}}}
 /* ---------- old stone walls through the woods ---------- */
 {
   const walls=[[[-210,-40],[-150,-118],[-60,-150],[40,-142],[120,-110],[170,-40],[230,30]],[[96,-122],[118,-230]],[[150,-20],[250,-60]]];
   const P=[];for(const w of walls)for(let i=0;i<w.length-1;i++){const [ax,az]=w[i],[bx,bz]=w[i+1],L=Math.hypot(bx-ax,bz-az);for(let d=0;d<L;d+=1.5){const x=lerp(ax,bx,d/L)+(rnd()-.5)*.8,z=lerp(az,bz,d/L)+(rnd()-.5)*.8;if(Math.abs(x-RAILX)<9||pathD(x,z)<4||pondD(x,z)<1.15)continue;P.push([x,z,0]);if(rnd()<.7)P.push([x+(rnd()-.5),z+(rnd()-.5),1])}}
-  const im=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),null,P.length);const m4=new THREE.Matrix4();
+  const im=rockSet(P.length);const m4=new THREE.Matrix4();
   P.forEach((p,i)=>{const s=.9+rnd()*.7;m4.compose(new THREE.Vector3(p[0],groundH(p[0],p[1])+.5+p[2]*1.3,p[1]),new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd()*3,rnd()*3,rnd()*3)),new THREE.Vector3(s*1.2,s*.8,s));im.setMatrixAt(i,m4);im.setColorAt(i,col(0x6a6864).lerp(col(0x8a8680),rnd()))});
-  im.instanceMatrix.needsUpdate=true;im.instanceColor.needsUpdate=true;reg(im,{});scene.add(im);
+  im.instanceMatrix.needsUpdate=true;im.instanceColor.needsUpdate=true;im.done({});
 }
 
 /* ---------- flowers in the open ground, by season, drawn from the superformula ----------
@@ -684,7 +716,7 @@ float sfr(float phi,vec4 p){float a=pow(abs(cos(p.x*phi*.25)),p.z),b=pow(abs(sin
   float op=k1*(1.-k2),cl=uClose*op*(.8+.2*fract(aPh*91.7));spread*=mix(1.,.48,cl);rise=mix(rise,1.05,cl);dome=mix(dome,.14,cl);
   // the wind: a gentle nod on a still day, tossing in a gale
   float gust=.55+.45*sin(uTime*.37+aPh*13.);
-  float sway=(sin(uTime*1.7+aPh*40.)*.6+sin(uTime*3.3+aPh*17.)*.4)*(.03+.09*uWindF)*gust;
+  float sway=(sin(uTime*1.7+aPh*40.)*.6+sin(uTime*3.3+aPh*17.)*.4)*(.008+.1*uWindF)*gust;
   vec3 transformed=vec3(cos(aPT.x)*r*t*spread,(rise*t*t+dome*(1.-t*t))*r*.9,sin(aPT.x)*r*t*spread)*.72;
   transformed.x+=sway*(transformed.y*2.+.5);transformed.z+=sway*.4*(transformed.y+.3);transformed.y+=transformed.x*sway*.8;
   vT=t;vSt=st;vSp=float(sp);`);
@@ -757,8 +789,8 @@ const TILES=[];
   const stumps=pick((x,z)=>okOpen(x,z)&&Math.hypot(x-CABIN.x,z-CABIN.z)<170,70);
   const sg=new THREE.CylinderGeometry(1,1.25,1.6,8);sg.translate(0,.6,0);const si=new THREE.InstancedMesh(sg,null,stumps.length);
   stumps.forEach((p,i)=>{const s=.6+rnd()*.7;m4.compose(new THREE.Vector3(p[0],groundH(p[0],p[1]),p[1]),new THREE.Quaternion(),new THREE.Vector3(s,s*(.7+rnd()*.6),s));si.setMatrixAt(i,m4);si.setColorAt(i,col(0x5a4636).lerp(col(0x7a6450),rnd()))});si.instanceColor.needsUpdate=true;reg(si,{});scene.add(si);
-  const rocks=pick(okOpen,90);const rg=new THREE.DodecahedronGeometry(1,0);const ri=new THREE.InstancedMesh(rg,null,rocks.length);
-  rocks.forEach((p,i)=>{const s=1+rnd()*rnd()*4;m4.compose(new THREE.Vector3(p[0],groundH(p[0],p[1])-s*.1,p[1]),new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd()*3,rnd()*3,rnd()*3)),new THREE.Vector3(s*1.3,s*.7,s));ri.setMatrixAt(i,m4);ri.setColorAt(i,col(0x5e5c58).lerp(col(0x7e7a74),rnd()))});ri.instanceColor.needsUpdate=true;reg(ri,{});scene.add(ri);
+  const rocks=pick(okOpen,90);const ri=rockSet(rocks.length);
+  rocks.forEach((p,i)=>{const s=1+rnd()*rnd()*4;m4.compose(new THREE.Vector3(p[0],groundH(p[0],p[1])-s*.1,p[1]),new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd()*3,rnd()*3,rnd()*3)),new THREE.Vector3(s*1.3,s*.7,s));ri.setMatrixAt(i,m4);ri.setColorAt(i,col(0x5e5c58).lerp(col(0x7e7a74),rnd()))});ri.instanceMatrix.needsUpdate=true;ri.instanceColor.needsUpdate=true;ri.done({});
   // fallen trunks lie along the ground: each is laid on the slope it falls across, and steep spots are passed over
   const fl=pick((x,z)=>okOpen(x,z)&&(treeZone(x,z)||x<-330),70);const lg=new THREE.CylinderGeometry(.6,.85,16,7,3);lg.rotateZ(Math.PI/2);
   {const p=lg.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i);p.setY(i,p.getY(i)+Math.sin(x*.4)*.12)}}
@@ -808,6 +840,8 @@ REG_NOSNOW=true;
   add(new THREE.CylinderGeometry(.84,1.0,2.5,14),COAT,0,4.3,0);
   add(new THREE.BoxGeometry(.78,2.2,.12),VEST,0,4.35,.84);
   for(let k=0;k<5;k++)add(new THREE.SphereGeometry(.055,6,4),BRASS,0,3.55+k*.36,.92);
+  // a watch chain across the waistcoat, and the two buttons at the back of the coat's waist
+  {const ch=add(new THREE.TorusGeometry(.24,.025,4,10,Math.PI),BRASS,.2,3.92,.95);ch.rotation.z=Math.PI}for(const s of [-1,1])add(new THREE.SphereGeometry(.06,5,4),COAT2,s*.24,3.55,-1.0);
   add(new THREE.BoxGeometry(.42,.7,.1),SHIRT,0,5.22,.88);
   for(const s of [-1,1]){const lp=add(new THREE.BoxGeometry(.32,1.5,.08),COAT2,s*.42,4.95,.86);lp.rotation.z=s*.32;lp.rotation.y=s*.22}
   for(const s of [-1,1]){const c=add(new THREE.BoxGeometry(.2,.32,.06),SHIRT,s*.16,5.66,.62);c.rotation.z=-s*.5;c.rotation.x=-.2}
@@ -981,7 +1015,7 @@ const FLAKE_N=5000;const flakeU={uTime:{value:0},uC:{value:new THREE.Vector3()},
   const g=new THREE.BufferGeometry(),a=new Float32Array(FLAKE_N*4);for(let i=0;i<FLAKE_N;i++){a[i*4]=Math.random();a[i*4+1]=Math.random();a[i*4+2]=Math.random();a[i*4+3]=Math.random()}
   g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(FLAKE_N*3),3));g.setAttribute('a',new THREE.BufferAttribute(a,4));
   const p=new THREE.Points(g,new THREE.ShaderMaterial({uniforms:flakeU,transparent:true,depthWrite:false,
-    vertexShader:`attribute vec4 a;uniform float uTime,uAmt,uPx,uMode;uniform vec3 uC;uniform vec4 uL[6];varying float vK;varying vec3 vCol;varying float vG;
+    vertexShader:`attribute vec4 a;uniform float uTime,uAmt,uPx,uMode;uniform vec3 uC;uniform vec4 uL[6];varying float vK;varying vec3 vCol;varying float vG;varying float vBig,vRot;
       void main(){vK=step(a.w,uAmt);vec3 box=vec3(300.,150.,300.);
         float fall=uMode<.5?4.+a.w*5.:uMode<1.5?1.5+a.w*1.6:0.;float sway=uMode<.5?2.5:uMode<1.5?6.:4.;
         vec3 p=vec3(a.x*box.x,mod(a.y*box.y-uTime*fall,box.y),a.z*box.z);
@@ -991,8 +1025,14 @@ const FLAKE_N=5000;const flakeU={uTime:{value:0},uC:{value:new THREE.Vector3()},
         float blink=step(.6,fract(uTime*.3+a.x*7.31));
         vCol=uMode<.5?vec3(.92,.95,1.):uMode<1.5?(a.z<.3?vec3(.78,.28,.1):a.z<.6?vec3(.9,.58,.16):a.z<.8?vec3(.62,.4,.18):vec3(.86,.74,.22)):vec3(1.,.92,.4);
         vG=0.;for(int i=0;i<6;i++){float d=distance(p,uL[i].xyz);vG+=uL[i].w*pow(clamp(1.-d/18.,0.,1.),1.6);}vG=min(vG,1.4);
-        gl_Position=projectionMatrix*viewMatrix*vec4(p,1.);gl_PointSize=uPx*(uMode<.5?(.7+a.y*.8):uMode<1.5?1.7:1.3)*vK*(uMode>1.5?blink:1.)*(1.+vG*.6);}`,
-    fragmentShader:`uniform float uLit,uMode;varying float vK;varying vec3 vCol;varying float vG;void main(){if(vK<.5)discard;vec2 q=gl_PointCoord-.5;if(dot(q,q)>.25)discard;vec3 c=vCol*(uMode>1.5?1.2:uLit);c=mix(c,vec3(1.,.9,.66)*1.6,clamp(vG,0.,1.)*(uMode>1.5?0.:1.));gl_FragColor=vec4(c,.9);}`}));
+        gl_Position=projectionMatrix*viewMatrix*vec4(p,1.);vBig=uMode<.5&&a.y>.86?1.:0.;vRot=uTime*(a.z-.5)*1.4+a.x*6.;
+        gl_PointSize=uPx*(uMode<.5?(.7+a.y*.8)*(1.+vBig*2.6):uMode<1.5?1.7:1.3)*vK*(uMode>1.5?blink:1.)*(1.+vG*.6);}`,
+    fragmentShader:`uniform float uLit,uMode;varying float vK;varying vec3 vCol;varying float vG;varying float vBig,vRot;
+      // the larger snowflakes are six-pointed stars from the superformula (m 6, n1 .3, n2 n3 .6), turning slowly as they fall
+      float sfr(float ph){return pow(pow(abs(cos(1.5*ph)),.6)+pow(abs(sin(1.5*ph)),.6)+1e-4,-1./.3);}
+      void main(){if(vK<.5)discard;vec2 q=gl_PointCoord-.5;
+        if(vBig>.5){float r=length(q)*2.,ph=atan(q.y,q.x)+vRot;float R=sfr(ph)/sfr(0.);if(r>R*.98||r>1.)discard;}
+        else if(dot(q,q)>.25)discard;vec3 c=vCol*(uMode>1.5?1.2:uLit);c=mix(c,vec3(1.,.9,.66)*1.6,clamp(vG,0.,1.)*(uMode>1.5?0.:1.));gl_FragColor=vec4(c,.9);}`}));
   p.frustumCulled=false;scene.add(p);
 }
 
@@ -1264,7 +1304,7 @@ function bed(){const c=au();if(!c)return;
   const now=c.currentTime,hd=Math.abs(H.x-(RAILX-9));
   AU.drone.g.gain.setTargetAtTime(0,now,.8);AU.wind.g.gain.setTargetAtTime((.009+(1-DAY)*.008)*(SEASON===3?1+SNOW*.5:SEASON===1?.5:.8)*(.35+WX.cur.wind*1.5),now,1.5);
   AU.harp.g.gain.setTargetAtTime(0,now,1.2)}
-const amb={owl:rr(8,20),bird:rr(3,8),crow:rr(10,30),bell:rr(60,120),lap:0,song:rr(4,10),peep:0,crick:0,whip:rr(10,20),frog:rr(5,12),geese:rr(40,90),boom:rr(15,30),loon:rr(30,60)};
+const amb={owl:rr(8,20),bird:rr(3,8),crow:rr(10,30),bell:rr(60,120),lap:0,song:rr(4,10),peep:0,crick:0,whip:rr(10,20),frog:rr(5,12),geese:rr(40,90),boom:rr(15,30),loon:rr(60,140)};let loonLast=-1e9;function loonCall(v){const n=performance.now();if(n-loonLast<120000)return false;loonLast=n;sfx.loon(v);return true}
 function ambience(dt){if(!AU.ctx||!AU.on||!started)return;bed();AMBK=2.6;try{ambience2(dt)}finally{AMBK=1}}
 function ambience2(dt){const night=DAY<.1,eve=HOUR>SEASONS[SEASON].set-.5||HOUR<SEASONS[SEASON].rise,pd=pondD(H.x,H.z),nearPond=clamp(1.9-pd,0,1);
 
@@ -1272,9 +1312,10 @@ function ambience2(dt){const night=DAY<.1,eve=HOUR>SEASONS[SEASON].set-.5||HOUR<
   if(HOUR>9&&HOUR<17.5){amb.bell-=dt;if(amb.bell<0){sfx.bell();amb.bell=rr(150,260)}}
   if(SEASON===0){if(DAY>.5){amb.song-=dt;if(amb.song<0){sfx.robin();amb.song=rr(6,16)}}if(eve){amb.peep-=dt;if(amb.peep<0){sfx.peeper(.4+nearPond);amb.peep=rr(.08,.5)}}}
   if(SEASON===1){if(DAY>.5){amb.song-=dt;if(amb.song<0){sfx.thrush();amb.song=rr(9,22)}}if(eve||DAY<.6){amb.crick-=dt;if(amb.crick<0){sfx.cricket(1);amb.crick=rr(.3,.9)}}
-    if(night){amb.whip-=dt;if(amb.whip<0){for(let i=0;i<3+(Math.random()*4|0);i++)setTimeout(sfx.whip,i*900);amb.whip=rr(20,40)}amb.frog-=dt;if(amb.frog<0){sfx.bullfrog(.3+nearPond);amb.frog=rr(5,13)}}}
+    if(night){amb.whip-=dt;if(amb.whip<0){for(let i=0;i<3+(Math.random()*4|0);i++)setTimeout(sfx.whip,i*900);amb.whip=rr(20,40)}amb.frog-=dt;if(amb.frog<0){sfx.bullfrog(.3+nearPond);amb.frog=rr(14,35)}}}
   if(SEASON===2){if(DAY>.4){amb.geese-=dt;if(amb.geese<0){geeseGo();amb.geese=rr(90,180)}}}
-  if(SEASON===0||SEASON===2){amb.loon-=dt;if(amb.loon<0&&nearPond>.2){sfx.loon(.5+nearPond*.5);amb.loon=rr(40,90)}}
+  // the loon: now and then, not often; and never twice within two minutes, whether the call is from far off or as it comes up
+  if(SEASON===0||SEASON===2){amb.loon-=dt;if(amb.loon<0&&nearPond>.2){loonCall(.5+nearPond*.5);amb.loon=rr(150,320)}}
   if(SEASON===3){amb.boom-=dt;if(amb.boom<0){sfx.boom(.3+nearPond);amb.boom=rr(25,60)}}
   else if(pd<1.6){amb.lap-=dt;if(amb.lap<0){sfx.lap(clamp(1.6-pd,0,1));amb.lap=rr(.6,1.6)}}}
 function setVol(v){VOL=clamp(v,0,3);try{localStorage.setItem('walden-snow-vol',VOL)}catch(e){}if(AU.out)AU.out.gain.setTargetAtTime(.8*VOL,AU.ctx.currentTime,.05);const r=document.getElementById('vol');if(document.activeElement!==r)r.value=VOL;document.getElementById('volv').textContent=Math.round(VOL*100)+'%'}
@@ -1361,6 +1402,7 @@ const ICON={
   chain:['..gg......','.g..g.....','..gg.gg...','.....g.g..','......gg.g','........g.','.......g.g','........g.','..........','..........'],
   apple:['.....G....','....bGG...','..rrbrrr..','.rrrrrrrr.','.rwrrrrrr.','.rwrrrrrr.','.rrrrrrrr.','..rrrrrr..','...rrrr...','..........'],
   letter:['..........','.wwwwwwww.','.wrwwwwrw.','.wwrwwrww.','.wwwrrwww.','.wwwwwwww.','.wwwwwwww.','.wwwwwwww.','..........','..........'],
+  hand:['....n.....','..n.nn....','..nnnnn...','..nnnnn.n.','..nnnnnnn.','..nnnnnn..','...nnnnn..','...nnnn...','...nnnn...','..........'],
   notebook:['..........','.cccccccc.','.cnnnnnnc.','.cnddddnc.','.cnnnnnnc.','.cnddddnc.','.cnnnnnnc.','.cndddnnc.','.ccccccccy','.........y']};
 const PAL={g:'#a6acb4',b:'#8a6a48',d:'#3a3a3a',s:'#7e8c8c',w:'#eeeae0',r:'#c23a2a',k:'#a08a62',G:'#4e8a34',y:'#d8c060',p:'#a8845a',P:'#7a5a3a',L:'#d0b080',l:'#8a6a48',c:'#5a4a3a',n:'#e8e0cc',e:'#101010'};
 const iconCache={};
@@ -1379,8 +1421,9 @@ const DESC={emerson:'From Ralph Waldo Emerson. Read it anywhere; answer it at th
   'seed:beans':'Plant in a hoed row.','seed:potato':'Plant in a hoed row.','seed:corn':'Plant in a hoed row.','crop:beans':'Cook on the stove.','crop:potato':'Cook on the stove.','crop:corn':'Cook on the stove.'};
 const invEl=document.getElementById('inv'),bagEl=document.getElementById('bag');
 function drawInv(){const L=slots();if(HELD&&!L.find(s=>s.id===HELD))setHeld(null,true);
-  invEl.innerHTML=L.map((s,i)=>`<button class="slot${s.id===HELD?' on':''}" data-id="${s.id}" title="${s.name}" aria-label="${s.name}${s.count?', '+s.count:''}"><img src="${iconURL(s.icon,s.x)}" alt=""><i>${i<9?i+1:''}</i>${s.count?`<b>${s.count}</b>`:''}</button>`).join('')+(HELD?`<span class="held" data-n="In his hand: ${L.find(s=>s.id===HELD).name}"></span>`:'');
-  invEl.hidden=!L.length;for(const b of invEl.querySelectorAll('.slot'))b.onclick=()=>{setHeld(b.dataset.id===HELD?null:b.dataset.id)};
+  // the first slot is the empty hand: choosing it puts away whatever he holds (0 or X on the keys)
+  invEl.innerHTML=`<button class="slot hand${!HELD?' on':''}" data-hand="1" title="Empty hand" aria-label="Empty hand"><img src="${iconURL('hand')}" alt=""><i>0</i></button>`+L.map((s,i)=>`<button class="slot${s.id===HELD?' on':''}" data-id="${s.id}" title="${s.name}" aria-label="${s.name}${s.count?', '+s.count:''}"><img src="${iconURL(s.icon,s.x)}" alt=""><i>${i<9?i+1:''}</i>${s.count?`<b>${s.count}</b>`:''}</button>`).join('')+(HELD?`<span class="held" data-n="In his hand: ${L.find(s=>s.id===HELD).name}"></span>`:'');
+  invEl.hidden=false;for(const b of invEl.querySelectorAll('.slot'))b.onclick=()=>{if(b.dataset.hand){if(HELD)setHeld(null);return}setHeld(b.dataset.id===HELD?null:b.dataset.id)};
   if(!bagEl.hidden)drawBag()}
 function drawBagOld(){const L=slots();bagEl.innerHTML=`<h3>What he carries</h3>`+(L.length?L.map(s=>`<button class="row${s.id===HELD?' on':''}" data-id="${s.id}"><img src="${iconURL(s.icon,s.x)}" alt=""><span><b>${s.name}${s.count?' · '+s.count:''}</b><small>${s.id.startsWith('fish:')?'Fry it on the stove.':DESC[s.id]||''}</small></span></button>`).join(''):'<p>Nothing yet.</p>')+`<p class="hint">1–9 or Z and C to change what is in his hand · Tab to close</p>`;
   for(const b of bagEl.querySelectorAll('.row'))b.onclick=()=>setHeld(b.dataset.id)}
@@ -1414,12 +1457,14 @@ const ALEK={g:new THREE.Group(),legs:[],arms:[],x:CABIN.x+60,z:CABIN.z-40,tx:0,t
   const plaid=new THREE.MeshLambertMaterial({map:plaidTex});
   const G=ALEK.g,add=(geo,c,x,y,z,par=G)=>{const m=c==='plaid'?new THREE.Mesh(geo,plaid):new THREE.Mesh(geo,matFor(c));m.position.set(x,y,z);m.castShadow=true;par.add(m);return m};
   const TROU=0x4a4438,SKIN=0xd8b090,BEARD=0x3a2a1e,BOOT=0x2a2018,TUQ=0xb03028;
-  for(const s of [-1,1]){const leg=new THREE.Group();leg.position.set(s*.42,3.0,0);G.add(leg);add(new THREE.CylinderGeometry(.34,.3,2.8,10),TROU,0,-1.4,0,leg);add(new THREE.BoxGeometry(.56,.42,1.05),BOOT,0,-2.84,.2,leg);ALEK.legs.push(leg)}
+  for(const s of [-1,1]){const leg=new THREE.Group();leg.position.set(s*.42,3.0,0);G.add(leg);add(new THREE.CylinderGeometry(.34,.3,2.8,10),TROU,0,-1.4,0,leg);add(new THREE.BoxGeometry(.56,.42,1.05),BOOT,0,-2.84,.2,leg);add(new THREE.BoxGeometry(.58,.08,1.1),0x16120e,0,-3.06,.2,leg);add(new THREE.BoxGeometry(.42,.2,.26),0x16120e,0,-3.0,-.22,leg);add(new THREE.CylinderGeometry(.33,.33,.14,10),0x5a4a3a,0,-2.5,0,leg);ALEK.legs.push(leg)}
   add(new THREE.CylinderGeometry(1.0,1.1,1.0,12),TROU,0,3.2,0);
   add(new THREE.CylinderGeometry(.98,1.08,2.6,12),'plaid',0,4.4,0);
+  // a leather belt with an iron buckle, and the buttons of the shirt
+  add(new THREE.CylinderGeometry(1.1,1.12,.24,14),0x3a2a1e,0,3.25,0);add(new THREE.BoxGeometry(.3,.26,.08),0x6a6a68,0,3.25,1.1);for(let k=0;k<4;k++)add(new THREE.SphereGeometry(.05,5,4),0xd8d0b8,0,3.8+k*.4,1.0);
   for(const s of [-1,1]){const b=add(new THREE.BoxGeometry(.16,2.4,.06),0x3a2a1e,s*.42,4.4,.98);b.rotation.z=s*.06;add(new THREE.BoxGeometry(.16,2.2,.06),0x3a2a1e,s*.42,4.4,-1.0)}
   for(const s of [-1,1])add(new THREE.SphereGeometry(.44,10,8),'plaid',s*1.0,5.35,0);
-  for(const s of [-1,1]){const arm=new THREE.Group();arm.position.set(s*1.12,5.4,0);G.add(arm);add(new THREE.CylinderGeometry(.3,.26,2.4,10),'plaid',0,-1.2,0,arm);add(new THREE.SphereGeometry(.28,8,6),SKIN,0,-2.5,0,arm);ALEK.arms.push(arm)}
+  for(const s of [-1,1]){const arm=new THREE.Group();arm.position.set(s*1.12,5.4,0);G.add(arm);add(new THREE.CylinderGeometry(.3,.26,2.4,10),'plaid',0,-1.2,0,arm);add(new THREE.CylinderGeometry(.27,.27,.18,10),0x5a1814,0,-2.3,0,arm);add(new THREE.SphereGeometry(.28,8,6),SKIN,0,-2.5,0,arm);for(let f=0;f<4;f++)add(new THREE.BoxGeometry(.06,.18,.06),0xc89c7c,-.1+f*.067,-2.74,.06,arm);ALEK.arms.push(arm)}
   add(new THREE.CylinderGeometry(.26,.3,.4,10),SKIN,0,5.85,0);
   const head=new THREE.Group();head.position.set(0,6.4,0);G.add(head);
   add(new THREE.SphereGeometry(.6,14,12),SKIN,0,0,0,head);
@@ -1430,6 +1475,7 @@ const ALEK={g:new THREE.Group(),legs:[],arms:[],x:CABIN.x+60,z:CABIN.z-40,tx:0,t
   add(new THREE.SphereGeometry(.62,14,10,0,Math.PI*2,0,Math.PI*.55),TUQ,0,.12,0,head);add(new THREE.CylinderGeometry(.64,.64,.24,14),0xd8d0b8,0,.2,0,head);
   const tip=add(new THREE.ConeGeometry(.3,.7,10),TUQ,0,.85,-.1,head);tip.rotation.x=-.5;add(new THREE.SphereGeometry(.16,8,6),0xd8d0b8,0,1.1,-.35,head);
   const axe=new THREE.Group();{add(new THREE.CylinderGeometry(.09,.1,3.4,6),0x8a6a48,0,-1.7,0,axe);add(new THREE.BoxGeometry(.12,.6,1),0xa6acb4,0,-3.2,.38,axe)}axe.rotation.x=-1.2;axe.position.set(0,-2.3,.3);ALEK.arms[1].add(axe);
+  {const p=new THREE.Group();add(new THREE.CylinderGeometry(.5,.42,.8,12),0xa8acb0,0,.4,0,p);add(new THREE.CylinderGeometry(.52,.52,.08,12),0x8a8e92,0,.82,0,p);const h=add(new THREE.TorusGeometry(.42,.03,4,12,Math.PI),0x6a6e72,0,.85,0,p);scene.add(p);p.visible=false;ALEK.pail=p}
   G.scale.setScalar(.82);scene.add(G);
 }
 const alekTag=document.createElement('div');alekTag.className='tag';alekTag.textContent='Alek Therien';alekTag.style.color='#d6a28e';document.body.appendChild(alekTag);
@@ -1441,18 +1487,33 @@ const ALEK_LINES=[
   'He points out a woodchuck’s hole by the stump and says it was there last year too.'];
 function alekPick(){const c=TREES.filter(t=>!t.felled&&Math.hypot(t.x-CABIN.x,t.z-CABIN.z)<150&&Math.hypot(t.x-CABIN.x,t.z-CABIN.z)>30);if(!c.length)return;const t=c[(Math.random()*c.length)|0];const a=Math.random()*6.3;ALEK.tx=t.x+Math.sin(a)*(t.r+2.2);ALEK.tz=t.z+Math.cos(a)*(t.r+2.2);ALEK.tree=t;ALEK.state='walk'}
 alekPick();
-function alekNear(){return Math.hypot(ALEK.x-H.x,ALEK.z-H.z)<6.5&&!CAB.inside}
+function alekNear(){return ALEK.state!=='home'&&Math.hypot(ALEK.x-H.x,ALEK.z-H.z)<6.5&&!CAB.inside}
 function alekTalk(){ALEK.talk=7;ALEK.yaw=Math.atan2(H.x-ALEK.x,H.z-ALEK.z);ALEK.g.rotation.y=ALEK.yaw;ALEK.g.updateMatrixWorld(true);showDialogue('Alek Therien',ALEK_LINES[ALEK.line%ALEK_LINES.length],ALEK.g,6.4,ALEK.yaw);ALEK.line++;sfx.laugh()}
+/* Alek's day, as in "Visitors": he boards at a house toward the village and comes along early, crossing the bean-field, to
+   the woodlot; at noon he sits on a log and eats his dinner from a tin pail; toward evening he walks home. At night he is
+   not in the woods at all. */
+const ALEK_HOME={x:VX+60,z:VZ-30};
+function alekAway(){const S=SEASONS[SEASON];return HOUR<S.rise+.4||HOUR>S.set-.6}
 function alekFrame(dt,t){const A=ALEK;
+  if(alekAway()&&A.talk<=0&&A.state!=='home'&&A.state!=='gohome'){A.state='gohome';A.tx=ALEK_HOME.x;A.tz=ALEK_HOME.z;A.arms[0].rotation.x=A.arms[1].rotation.x=0}
+  if(A.state==='home'){if(!alekAway()){A.x=ALEK_HOME.x;A.z=ALEK_HOME.z;A.tx=PLOT.x0+30;A.tz=PLOT.z0+20;A.via=1;A.state='walk';A.dined=0}else{A.g.visible=false;alekTag.hidden=true;return}}
+  A.g.visible=true;
+  // dinner: once a day, at noon, sitting on a log by his work
+  if(A.state==='chop'&&!A.dined&&HOUR>=12&&HOUR<13&&A.talk<=0){A.state='dinner';A.dined=1;A.arms[0].rotation.x=A.arms[1].rotation.x=0}
+  if(A.state!=='dinner'&&A.pail)A.pail.visible=false;
+  if(A.state==='dinner'){if(HOUR>=13||alekAway()){A.state='chop';A.pail.visible=false;A.t=3;A.g.position.y=hy(A.x,A.z);A.legs[0].rotation.x=A.legs[1].rotation.x=0}else if(A.talk<=0){
+      A.legs[0].rotation.x=A.legs[1].rotation.x=-1.45;A.arms[0].rotation.x=-.6;A.arms[1].rotation.x=-.9-Math.max(0,Math.sin(t*.9))*1.1;A.sp=0;
+      A.g.position.set(A.x,hy(A.x,A.z)-1.25,A.z);A.g.rotation.y=A.yaw;A.pail.visible=true;A.pail.position.set(A.x+Math.cos(A.yaw)*1.6,hy(A.x,A.z),A.z-Math.sin(A.yaw)*1.6);sayOnce('alekdinner','Alek Therien sits on a log and eats his dinner from a tin pail.',true);
+      const v=new THREE.Vector3(A.x,A.g.position.y+7.6,A.z).project(camera);const on=v.z<1&&Math.abs(v.x)<1.05&&Math.abs(v.y)<1.05;alekTag.hidden=!on;if(on){alekTag.style.left=((v.x+1)/2*innerWidth)+'px';alekTag.style.top=((1-v.y)/2*innerHeight)+'px'}return}}
   if(A.talk>0){A.talk-=dt;A.yaw=Math.atan2(H.x-A.x,H.z-A.z);A.sp=lerp(A.sp,0,dt*8)}
-  else if(A.state==='walk'){const dx=A.tx-A.x,dz=A.tz-A.z,d=Math.hypot(dx,dz);if(d<.6){A.state='chop';A.t=4+Math.random()*6;A.chopT=0}else{const s=6*dt;const inH=(x,z)=>Math.abs(x-CABIN.x)<10.5&&Math.abs(z-CABIN.z)<8;let ux=dx/d,uz=dz/d;
+  else if(A.state==='walk'||A.state==='gohome'){const dx=A.tx-A.x,dz=A.tz-A.z,d=Math.hypot(dx,dz);if(d<.6){if(A.state==='gohome'){A.state='home'}else if(A.via){A.via=0;alekPick()}else{A.state='chop';A.t=4+Math.random()*6;A.chopT=0}}else{const s=6*dt;const inH=(x,z)=>Math.abs(x-CABIN.x)<10.5&&Math.abs(z-CABIN.z)<8;let ux=dx/d,uz=dz/d;
     if(inH(A.x+ux*s*4,A.z+uz*s*4)){for(const r of [.9,-.9,1.57,-1.57,2.3,-2.3]){const c=Math.cos(r),sn=Math.sin(r),vx=ux*c-uz*sn,vz=ux*sn+uz*c;if(!inH(A.x+vx*s*4,A.z+vz*s*4)){ux=vx;uz=vz;break}}}
     if(!inH(A.x+ux*s,A.z+uz*s)){A.x+=ux*Math.min(s,d);A.z+=uz*Math.min(s,d)}else{const ox=A.x-CABIN.x,oz=A.z-CABIN.z,ol=Math.hypot(ox,oz)||1;A.x+=ox/ol*s;A.z+=oz/ol*s}A.yaw=Math.atan2(ux,uz);A.sp=lerp(A.sp,1,dt*6)}}
   else{A.sp=lerp(A.sp,0,dt*8);if(A.tree)A.yaw=Math.atan2(A.tree.x-A.x,A.tree.z-A.z);A.t-=dt;A.chopT+=dt;
     const s=(A.chopT%1.1)/1.1;A.arms[1].rotation.x=s<.45?lerp(0,-2.6,s/.45):s<.65?lerp(-2.6,.6,(s-.45)/.2):lerp(.6,0,(s-.65)/.35);A.arms[0].rotation.x=A.arms[1].rotation.x*.8;
     if(A.lastS!==undefined&&A.lastS<.6&&s>=.6){const d=Math.hypot(A.x-H.x,A.z-H.z);const v=clamp(1-d/140,0,1);if(v>.02&&AU.ctx&&AU.on&&started){tone({f:150,f2:70,d:.14,v:.25*v*v,pan:clamp((A.x-H.x)/80,-1,1)});tone({f:rr(280,300),d:.2,v:.07*v*v,type:'triangle',lp:2000,pan:clamp((A.x-H.x)/80,-1,1)})}if(A.tree)A.tree.shake=.15}
     A.lastS=s;if(A.t<=0){A.arms[0].rotation.x=A.arms[1].rotation.x=0;alekPick()}}
-  if(A.state==='walk'||A.talk>0){A.ph+=dt*A.sp*8;const sw=Math.sin(A.ph)*.55*A.sp;A.legs[0].rotation.x=sw;A.legs[1].rotation.x=-sw;if(A.state==='walk'){A.arms[0].rotation.x=-sw*.6;A.arms[1].rotation.x=sw*.4}}
+  if(A.state==='walk'||A.state==='gohome'||A.talk>0){A.ph+=dt*A.sp*8;const sw=Math.sin(A.ph)*.55*A.sp;A.legs[0].rotation.x=sw;A.legs[1].rotation.x=-sw;if(A.state==='walk'||A.state==='gohome'){A.arms[0].rotation.x=-sw*.6;A.arms[1].rotation.x=sw*.4}}
   A.g.position.set(A.x,hy(A.x,A.z)+Math.abs(Math.sin(A.ph))*.1*A.sp,A.z);A.g.rotation.y=A.yaw;
   const v=new THREE.Vector3(A.x,A.g.position.y+7.6,A.z).project(camera);const on=v.z<1&&Math.abs(v.x)<1.05&&Math.abs(v.y)<1.05;alekTag.hidden=!on;if(on){alekTag.style.left=((v.x+1)/2*innerWidth)+'px';alekTag.style.top=((1-v.y)/2*innerHeight)+'px'}}
 
@@ -1502,14 +1563,15 @@ function portrait(fig,headY,yaw,cv){const hv=H.g.visible;H.g.visible=false;const
 /* ---------- the bag, in two leaves: everything he carries, and what is in his hand ---------- */
 let BAGTAB='inv';
 function drawBag(){const L=slots();const hs=L.find(s=>s.id===HELD);
-  bagEl.innerHTML=`<div class="tabs"><button class="tk${BAGTAB==='inv'?' on':''}" data-t="inv">Inventory</button><button class="tk${BAGTAB==='hand'?' on':''}" data-t="hand">Hand</button><button class="tk${BAGTAB==='journal'?' on':''}" data-t="journal">Journal</button></div>`+
-  (BAGTAB==='journal'?`<div class="journal">${JOURNAL.length?JOURNAL.slice().reverse().map(j=>`<p><em>${j.date}.</em> ${j.label[0].toUpperCase()+j.label.slice(1)}.</p>`).join(''):'<p>Nothing noted yet. Walk, watch, and things will find their way in.</p>'}${Object.keys(ACH).length?`<p><em>Achievements:</em> ${Object.keys(ACH).map(k=>ACH_DEF[k].name+' ('+ACH_DEF[k].desc.replace(/\.$/,'')+')').join('; ')}.</p>`:''}${SOUNDINGS.length?`<p><em>Soundings:</em> ${SOUNDINGS.length}, deepest ${Math.max(...SOUNDINGS.map(s=>s.d))} feet.</p>`:''}</div>`:BAGTAB==='inv'?`<div class="grid">${L.length?L.map((s,i)=>`<button class="cell${s.id===HELD?' on':''}" data-id="${s.id}" title="${s.name}"><img src="${iconURL(s.icon,s.x)}" alt=""><span>${s.name}</span>${s.count?`<b>${s.count}</b>`:''}${i<9?`<i>${i+1}</i>`:''}</button>`).join(''):'<p>Nothing yet.</p>'}</div>`
+  bagEl.innerHTML=`<div class="tabs"><button class="tk${BAGTAB==='inv'?' on':''}" data-t="inv">Inventory</button><button class="tk${BAGTAB==='hand'?' on':''}" data-t="hand">Hand</button><button class="tk${BAGTAB==='journal'?' on':''}" data-t="journal">Journal</button><button class="tk${BAGTAB==='pressed'?' on':''}" data-t="pressed">Pressed</button></div>`+
+  (BAGTAB==='pressed'?`<div class="pressed">${PRESS_KINDS.map(K=>SEEN['press:'+K[0]]?`<figure><img src="${pressDraw(K)}" alt="${K[1]}"><figcaption>${K[1]}<small>${SEEN['press:'+K[0]]}</small></figcaption></figure>`:`<figure class="none"><span></span><figcaption>Not yet found</figcaption></figure>`).join('')}</div>`:'')+
+  (BAGTAB==='pressed'?'':BAGTAB==='journal'?`<div class="journal">${JOURNAL.length?JOURNAL.slice().reverse().map(j=>`<p><em>${j.date}.</em> ${j.label[0].toUpperCase()+j.label.slice(1)}.</p>`).join(''):'<p>Nothing noted yet. Walk, watch, and things will find their way in.</p>'}${Object.keys(ACH).length?`<p><em>Achievements:</em> ${Object.keys(ACH).map(k=>ACH_DEF[k].name+' ('+ACH_DEF[k].desc.replace(/\.$/,'')+')').join('; ')}.</p>`:''}${SOUNDINGS.length?`<p><em>Soundings:</em> ${SOUNDINGS.length}, deepest ${Math.max(...SOUNDINGS.map(s=>s.d))} feet.</p>`:''}</div>`:BAGTAB==='inv'?`<div class="grid">${L.length?L.map((s,i)=>`<button class="cell${s.id===HELD?' on':''}" data-id="${s.id}" title="${s.name}"><img src="${iconURL(s.icon,s.x)}" alt=""><span>${s.name}</span>${s.count?`<b>${s.count}</b>`:''}${i<9?`<i>${i+1}</i>`:''}</button>`).join(''):'<p>Nothing yet.</p>'}</div>`
    :hs?`<div class="hand"><canvas width="128" height="128" id="handcv"></canvas><div><h4>${hs.name}</h4><em>${hs.count?hs.count+' carried':'In his right hand'}</em><p>${hs.id.startsWith('fish:')?'Fry it on the stove when the fire is lit.':DESC[hs.id]||''}</p></div></div>`:`<div class="hand empty"><h4>Empty Hand</h4><p>Nothing in his hand. Choose something from the inventory.</p></div>`)+
   `<p class="hint">Tab: next leaf, then close · 1–9, Z and C: what is in his hand</p>`;
   for(const b of bagEl.querySelectorAll('.tk'))b.onclick=()=>{BAGTAB=b.dataset.t;drawBag()};
   for(const b of bagEl.querySelectorAll('.cell'))b.onclick=()=>{setHeld(b.dataset.id);BAGTAB='hand';drawBag()};
   const cv=document.getElementById('handcv');if(cv&&hs)itemPicture(hs.id,cv)}
-function toggleBag(){if(bagEl.hidden){bagEl.hidden=false;BAGTAB='inv'}else if(BAGTAB==='inv')BAGTAB='hand';else if(BAGTAB==='hand')BAGTAB='journal';else{bagEl.hidden=true}if(!bagEl.hidden)drawBag();sfx.pickup()}
+function toggleBag(){if(bagEl.hidden){bagEl.hidden=false;BAGTAB='inv'}else if(BAGTAB==='inv')BAGTAB='hand';else if(BAGTAB==='hand')BAGTAB='journal';else if(BAGTAB==='journal')BAGTAB='pressed';else{bagEl.hidden=true}if(!bagEl.hidden)drawBag();sfx.pickup()}
 
 /* ---------- someone speaking: a round portrait, a name and a line ---------- */
 const dlgEl=document.getElementById('dlg');let dlgT=0;
@@ -1661,7 +1723,8 @@ function sfFrame(dt){const T=sfTarget(),u=SFU.uBloom;u.value+=(T-u.value)*Math.m
   // night and rain close the meadow flowers (the lilies already close at evening, so for them only the rain); the wind tosses them all
   const w=(typeof WX!=='undefined'&&WX.cur)?WX.cur:{rain:0,hail:0,wind:.3},wet=clamp((w.rain+w.hail)*1.3,0,1),night=1-sstep(.12,.45,DAY);
   SFW.uClose.value+=(Math.max(night,wet)-SFW.uClose.value)*Math.min(1,dt*.35);SFL.uClose.value+=(wet-SFL.uClose.value)*Math.min(1,dt*.35);
-  SFW.uWindF.value+=(w.wind*1.1-SFW.uWindF.value)*Math.min(1,dt);fernFrame(dt)}
+  SFW.uWindF.value+=(w.wind*1.1-SFW.uWindF.value)*Math.min(1,dt);fernFrame(dt);
+  if(SEASON===2)FLOWERS.count=Math.min(FLOWERS.userData.r.length,Math.round(500-Math.max(0,CAL.day-7)*50))}
 /* ---------- butterflies and bees among the open flowers, on fine days from late spring through summer ----------
    The butterflies' wings are drawn from the superformula too: a four-lobed shape (m 4) turned forty-five degrees gives the
    fore and hind wings, split down the body into a left and a right half that beat. They wander from flower to flower,
@@ -1714,6 +1777,199 @@ function bugsFrame(dt,t){const ok=started&&bugWeather()&&!CAB.inside;
   BUGS.hum=(BUGS.hum||0)-dt;if(nearest<7&&AU.ctx&&AU.on&&BUGS.hum<0){BUGS.hum=rr(.7,1.6);const v=clamp(1.2-nearest/7,0,1);
     tone({f:rr(205,240),f2:rr(215,250),d:.9,a:.25,v:.012*v,type:'sawtooth',lp:520,vib:7,vibr:rr(24,32)});sayOnce('bees','Bees in the flowers, and the butterflies going from one to the next.')}
   if(ok&&BUGS.fl.some(b=>b.st==='rest'&&Math.hypot(b.x-H.x,b.z-H.z)<14))note('bfly','watched butterflies at the flowers in the clearing')}
+
+/* ---------- autumn in motion: leaves coming down from the oaks, maples and birches, more in a wind, and lying where they fall;
+   the seed heads giving up their down to the wind late in the season. The leaves are superformula shapes like the flowers:
+   a five-pointed maple, a long lobed oak, a small toothed oval for the birch. ---------- */
+const AUT={live:[],lit:0,litN:900,acc:0,downAcc:0};
+{const sfr=(ph,m,n1,n2,n3)=>Math.pow(Math.pow(Math.abs(Math.cos(m*ph/4)),n2)+Math.pow(Math.abs(Math.sin(m*ph/4)),n3)+1e-6,-1/n1);
+  const leafGeo=(P,sx,sy,size)=>{const N=40,pts=[];let mx=0;for(let i=0;i<=N;i++){const a=i/N*6.2832,r=sfr(a,...P);mx=Math.max(mx,r);pts.push([a,r])}
+    const V=[];for(let i=0;i<N;i++){const [a0,r0]=pts[i],[a1,r1]=pts[i+1];V.push(0,0,0,Math.cos(a1)*r1/mx*sx*size,0,Math.sin(a1)*r1/mx*sy*size,Math.cos(a0)*r0/mx*sx*size,0,Math.sin(a0)*r0/mx*sy*size)} // wound to face up
+    // a little stalk
+    V.push(-.03*size,0,0,.03*size,0,0,0,0,-1.25*size*sy);
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(V,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(V.map((v,i)=>i%3===1?1:0),3));return g};
+  AUT.geo={maple:leafGeo([5,.6,1,1],1,1,1.3),oak:leafGeo([9,3,6,6],.55,1,1.4),birch:leafGeo([24,10,4,4],.62,1,.95)};
+  AUT.cols={maple:[0xd8402a,0xe86a2a,0xf0a030,0xc02a2a],oak:[0x8a5a2a,0xa0683a,0x7a4a26,0xb07a40],birch:[0xe8c040,0xd8b030,0xf0d060,0xc8a030]};
+  const mat=makeMat({color:0xffffff,nosnow:1,side:THREE.DoubleSide});
+  // a leaf in the air turns over and over: lit the same on both faces, by the light of the hour
+  const fmat=new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide});AUT.fmat=fmat;
+  AUT.fall={};AUT.litM={}; // setColorAt comes before count=0: the colour buffer is sized by the count when first made
+  for(const k of ['maple','oak','birch']){const f=new THREE.InstancedMesh(AUT.geo[k],fmat,90);f.setColorAt(0,col(0xffffff));f.count=0;f.frustumCulled=false;f.castShadow=false;f.receiveShadow=true;scene.add(f);AUT.fall[k]=f;
+    const l=new THREE.InstancedMesh(AUT.geo[k],fmat,300);l.setColorAt(0,col(0xffffff));l.count=0;l.frustumCulled=false;l.castShadow=false;l.receiveShadow=true;scene.add(l);AUT.litM[k]=l;l.userData.next=0;
+}}
+const autM4=new THREE.Matrix4(),autQ=new THREE.Quaternion(),autE=new THREE.Euler(),autV=new THREE.Vector3(),autS=new THREE.Vector3();
+function autTrees(){const out=[];for(const tr of TREES){if(tr.felled||tr.kind==='pine')continue;const d=Math.hypot(tr.x-H.x,tr.z-H.z);if(d<70)out.push(tr)}return out}
+function leafLitter(L){const m=AUT.litM[L.k],i=m.userData.next;m.userData.next=(i+1)%300;m.count=Math.max(m.count,i+1);
+  const y=groundH(L.x,L.z),wet=y<WATER_Y-.1;autQ.setFromEuler(autE.set((Math.random()-.5)*.3,Math.random()*6.28,(Math.random()-.5)*.3));
+  // on land they lie on the grass, not under it
+  autM4.compose(autV.set(L.x,(wet?WATER_Y+.04:y+.7+Math.random()*.3),L.z),autQ,autS.set(1,1,1));m.setMatrixAt(i,autM4);m.setColorAt(i,col(L.c).multiplyScalar(.8+Math.random()*.15));
+  m.instanceMatrix.needsUpdate=true;m.instanceColor.needsUpdate=true}
+// coming into autumn partway through, or loading a saved autumn: the leaves already down are put under the trees nearby
+function prefillLitter(){if(SEASON!==2&&!(SEASON===3&&CAL.day<4))return;const n=Math.min(850,(SEASON===2?CAL.day:13)*55);const trees=autTrees();if(!trees.length)return;
+  for(let i=0;i<n;i++){const tr=trees[(Math.random()*trees.length)|0];const k=tr.kind==='oak'?'oak':tr.kind==='maple'?'maple':'birch';autS.setFromMatrixScale(tr.m);const r=Math.sqrt(Math.random())*9*(autS.y||1),a=Math.random()*6.28,cs=AUT.cols[k];
+    leafLitter({k,x:tr.x+Math.cos(a)*r+rr(-2,2),z:tr.z+Math.sin(a)*r+rr(-2,2),c:cs[(Math.random()*cs.length)|0]})}}
+function clearLitter(){for(const k in AUT.litM){AUT.litM[k].count=0;AUT.litM[k].userData.next=0}AUT.live.length=0;for(const k in AUT.fall)AUT.fall[k].count=0}
+function autumnFrame(dt,t){const w=WX.cur,wind=w.wind;AUT.fmat.color.setScalar(.3+.62*DAY);
+  // how many leaves come down: a few on a still autumn day, a shower in a gale; the last of them in the first winter days
+  const rate=SEASON===2?(.6+CAL.day*.12)*(.4+wind*2.6)*(.7+.6*Math.max(0,Math.sin(t*.23)))*(DAY>.05?1:.4):SEASON===3&&CAL.day<3&&!w.snow?.4:0;
+  AUT.acc+=rate*dt;const trees=AUT.acc>=1?autTrees():null;
+  while(AUT.acc>=1){AUT.acc-=1;if(!trees||!trees.length||AUT.live.length>=240)break;const tr=trees[(Math.random()*trees.length)|0];const k=tr.kind==='oak'?'oak':tr.kind==='maple'?'maple':'birch';
+    autS.setFromMatrixScale(tr.m);const sc=autS.y||1,cs=AUT.cols[k];
+    AUT.live.push({k,x:tr.x+(Math.random()-.5)*7*sc,z:tr.z+(Math.random()-.5)*7*sc,y:groundH(tr.x,tr.z)+(7+Math.random()*7)*sc,ph:Math.random()*6.28,f:1.5+Math.random()*1.5,rx:Math.random()*6,ry:Math.random()*6,c:cs[(Math.random()*cs.length)|0],vy:-(1+Math.random()*.8)})}
+  // the wind turns slowly; the leaves flutter, swing and spin as they fall, and lie where they land
+  const wa=t*.013+1.1,wx=Math.cos(wa)*(.3+wind*3.2),wz=Math.sin(wa)*(.3+wind*3.2);
+  const per={maple:[],oak:[],birch:[]};
+  for(let i=AUT.live.length-1;i>=0;i--){const L=AUT.live[i];const sw=Math.sin(t*L.f+L.ph);
+    L.x+=(wx+Math.cos(t*L.f*.5+L.ph)*1.1)*dt;L.z+=(wz+sw*1.1)*dt;L.y+=(L.vy+Math.abs(sw)*.45)*dt;L.rx+=dt*(1.8+wind*2);L.ry+=dt*1.2;
+    const g=groundH(L.x,L.z),floor=g<WATER_Y-.1?WATER_Y+.04:g+.8;if(L.y<=floor){if(SEASON!==3||!w.snow)leafLitter(L);AUT.live.splice(i,1);continue}
+    if(Math.hypot(L.x-H.x,L.z-H.z)>150){AUT.live.splice(i,1);continue}per[L.k].push(L)}
+  for(const k in per){const m=AUT.fall[k],a=per[k];m.count=Math.min(90,a.length);for(let i=0;i<m.count;i++){const L=a[i];autQ.setFromEuler(autE.set(Math.sin(L.rx)*1.1,L.ry,Math.cos(L.rx*.7)*.9));
+    autM4.compose(autV.set(L.x,L.y,L.z),autQ,autS.set(1,1,1));m.setMatrixAt(i,autM4);m.setColorAt(i,col(L.c))}if(m.count){m.instanceMatrix.needsUpdate=true;m.instanceColor.needsUpdate=true}}
+  if(SEASON===2&&AUT.live.some(L=>Math.hypot(L.x-H.x,L.z-H.z)<12))sayOnce('leaves','The leaves are coming down, turning over as they fall.');
+  downFrame(dt,t,wind)}
+// the down: in the last weeks of autumn, a gust lifts specks of down off the seed heads and carries them off
+const DOWN={n:220,p:null,v:[],k:0};
+{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(DOWN.n*3).fill(-9999),3));
+  DOWN.p=new THREE.Points(g,new THREE.PointsMaterial({color:0xf4f0e6,size:2,sizeAttenuation:false,transparent:true,opacity:.9,depthWrite:false}));DOWN.p.frustumCulled=false;scene.add(DOWN.p);
+  for(let i=0;i<DOWN.n;i++)DOWN.v.push({life:0,x:0,y:0,z:0,ph:Math.random()*6.28})}
+function downFrame(dt,t,wind){const seeds=SEASON===2&&SFU.uBloom.value>1.5&&DAY>.1&&!WX.cur.rain;
+  DOWN.acc=(DOWN.acc||0)+(seeds?wind*14*dt:0);const a=FLOWERS.userData.m0,n=FLOWERS.count;
+  while(DOWN.acc>=1){DOWN.acc-=1;for(let k=0;k<12;k++){const i=(Math.random()*n)|0,fx=a[i*16+12],fz=a[i*16+14];if(!a[i*16+15]||Math.hypot(fx-H.x,fz-H.z)>45)continue;
+      const d=DOWN.v[DOWN.k];DOWN.k=(DOWN.k+1)%DOWN.n;Object.assign(d,{life:6+Math.random()*5,x:fx,y:a[i*16+13]+.6,z:fz});break}}
+  const P=DOWN.p.geometry.attributes.position,wa=t*.013+1.1,wx=Math.cos(wa)*(.5+wind*4),wz=Math.sin(wa)*(.5+wind*4);
+  for(let i=0;i<DOWN.n;i++){const d=DOWN.v[i];if(d.life<=0){P.setXYZ(i,0,-9999,0);continue}d.life-=dt;d.x+=(wx+Math.sin(t*1.3+d.ph)*.6)*dt;d.z+=(wz+Math.cos(t*1.1+d.ph)*.6)*dt;d.y+=(.35+Math.sin(t*2+d.ph)*.4)*dt;P.setXYZ(i,d.x,d.y,d.z)}
+  P.needsUpdate=true}
+
+/* ---------- not from Walden: the broken gravestone and the dead man who walks the village the night after.
+   Any of the slate stones in the burying ground can be struck with the axe; three blows break it. When the next night falls,
+   a dead man climbs out and shambles about the streets, groaning, and comes for Henry if he sees him. Three blows of the axe
+   put him down for good. If Henry leaves him be, he is back in the ground at dawn and out again the next night. ---------- */
+const ZB={state:'none',due:0,hp:3,x:0,z:0,yaw:0,ph:0,t:0,grave:null,hitT:0,groan:3,down:0};
+{const p=person({coat:0x3a4034,trou:0x2a2824,skin:0x8a9a78,hair:0x2a2a20,build:.95,tall:1.02});ZB.p=p;p.g.visible=false;
+  // torn and earthy: a few dark patches on the coat
+  for(let i=0;i<5;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(.5,.4,.08),matFor(0x2a2418));m.position.set(rr(-.7,.7),rr(3,5),1.05);p.g.add(m)}
+  critterTag('A dead man','#b8c8a0',p.g,9.5,60)}
+const dayNo=()=>CAL.cycle*100+SEASON*20+CAL.day;
+function graveNear(){if(!VIL.here)return null;let b=null,bd=2.8;for(const g of GRAVES){if(g.broken)continue;const d=Math.hypot(g.x-H.x,g.z-H.z);if(d<bd){bd=d;b=g}}return b}
+function stoneHit(g){sfx.chop('stone');tone({f:rr(1300,1700),d:.12,v:.05,type:'triangle'});tone({f:rr(500,620),f2:300,d:.18,v:.05,type:'square',lp:1800});rumble(90,.8,.3);g.hp--;g.m.rotation.z+=rr(-.06,.06);
+  if(g.hp>0){say(g.hp===2?'The slate rings under the axe. A chip flies off.':'A crack runs down the stone.');return}
+  g.broken=1;g.m.scale.y=.38;g.m.position.y=VH+.42;g.m.rotation.z=rr(-.25,.25);
+  for(let i=0;i<4;i++){const s=new THREE.Mesh(new THREE.BoxGeometry(rr(.4,.9),.2,rr(.3,.6)),g.m.material);s.position.set(g.x+rr(-1.4,1.4),VH+.12,g.z+rr(-1.4,1.4));s.rotation.set(rr(-.3,.3),rr(0,3),rr(-.3,.3));g.m.parent.add(s)}
+  // the next night: if it is night now, not this one but the one after the day
+  ZB.state='due';ZB.due=DAY<.15?dayNo()+1:dayNo();ZB.grave=g;tone({f:70,f2:45,d:1.6,v:.12,type:'sawtooth',lp:300});
+  say('The stone breaks and falls. Something under the ground seems to settle, and wait.')}
+function zbNear(){return ZB.state==='walk'&&Math.hypot(ZB.x-H.x,ZB.z-H.z)<3.4}
+function zombieHit(){ZB.hp--;ZB.hitT=.5;sfx.chop('flesh');tone({f:120,f2:60,d:.3,v:.12,type:'sawtooth',lp:500});rumble(140,.9,.5);
+  const a=Math.atan2(ZB.x-H.x,ZB.z-H.z);ZB.x+=Math.sin(a)*2.2;ZB.z+=Math.cos(a)*2.2;
+  if(ZB.hp>0){say(ZB.hp===2?'The axe bites. The dead man staggers, and comes on.':'He reels back. One more.');return}
+  ZB.state='falling';ZB.t=0;tone({f:90,f2:40,d:2.2,a:.1,v:.14,type:'sawtooth',lp:420,vib:6,vibr:5});say('The dead man falls, and lies still, and is dust. The village sleeps on.');achieve('nightwatch')}
+function groan(v){if(!AU.ctx||!AU.on)return;const f=rr(70,95);tone({f,f2:f*.7,g:1.4,d:1.6,a:.35,v:.07*v,type:'sawtooth',lp:380,vib:4,vibr:rr(3,6)});tone({f:f*1.5,f2:f*1.1,d:1.2,a:.4,v:.025*v,type:'triangle',lp:600,delay:.1})}
+function zombieFrame(dt,t){const P=ZB.p,night=DAY<.15;
+  if(ZB.state==='due'&&night&&dayNo()>=ZB.due){ZB.state='walk';ZB.hp=3;const g=ZB.grave;ZB.x=g.x+1.5;ZB.z=g.z;ZB.rise=0;sayOnce('zbrise','A sound from the burying ground, of earth moving.',true)}
+  if(ZB.state==='walk'&&!night){ZB.state='due';ZB.due=dayNo()+1;P.g.visible=false;return}
+  if(ZB.state==='falling'){ZB.t+=dt;P.g.rotation.x=Math.min(1.5,ZB.t*2);P.g.position.y=hy(ZB.x,ZB.z)+Math.min(1,ZB.t)*.2-Math.max(0,ZB.t-1.5)*1.5;if(ZB.t>3.2){ZB.state='done';P.g.visible=false}return}
+  if(ZB.state!=='walk'){P.g.visible=false;return}
+  P.g.visible=true;ZB.rise=Math.min(1,(ZB.rise||0)+dt*.4);
+  const d=Math.hypot(H.x-ZB.x,H.z-ZB.z),hunting=d<26&&!CAB.inside;
+  if(!hunting){ZB.t-=dt;if(ZB.t<0||!ZB.tx){const a=Math.random()*6.28;ZB.tx=VX+rr(-60,60);ZB.tz=VZ+rr(-60,60);ZB.t=rr(8,16)}}else{ZB.tx=H.x;ZB.tz=H.z}
+  const dx=ZB.tx-ZB.x,dz=ZB.tz-ZB.z,dd=Math.hypot(dx,dz),sp=(hunting?3.4:1.8)*ZB.rise*(ZB.hitT>0?.2:1);ZB.hitT-=dt;
+  if(dd>1.6){const nx=ZB.x+dx/dd*sp*dt,nz=ZB.z+dz/dd*sp*dt;if(!villageBlocked(nx,nz)){ZB.x=nx;ZB.z=nz}else{ZB.x+=dz/dd*sp*dt;ZB.z-=dx/dd*sp*dt}ZB.yaw=Math.atan2(dx,dz)}
+  // his hands on Henry: a shove and a cold fright, nothing worse
+  if(hunting&&d<1.9&&ZB.hitT<=0){ZB.hitT=1.4;const a=Math.atan2(H.x-ZB.x,H.z-ZB.z);for(let k=0;k<6;k++){const nx=H.x+Math.sin(a)*.6,nz=H.z+Math.cos(a)*.6;if(!blocked(nx,nz)){H.x=nx;H.z=nz}}rumble(220,1,.8);groan(1.2);say('Cold hands on his collar. He wrenches free.')}
+  ZB.ph+=dt*sp*1.6;const sw=Math.sin(ZB.ph)*.35;P.legs[0].rotation.x=sw;P.legs[1].rotation.x=-sw;P.arms[0].rotation.x=-1.45+Math.sin(t*1.3)*.1;P.arms[1].rotation.x=-1.35+Math.sin(t*1.1+1)*.1;
+  P.g.position.set(ZB.x,hy(ZB.x,ZB.z)-(1-ZB.rise)*6,ZB.z);P.g.rotation.set(.08,ZB.yaw,Math.sin(ZB.ph*.5)*.08);
+  ZB.groan-=dt;if(ZB.groan<0){ZB.groan=rr(3,7);if(d<90)groan(clamp(1.2-d/80,.15,1.1))}
+  if(d<30)sayOnce('zbsee','A figure in the street, walking wrong, arms out. It has seen him.',true)}
+
+/* ---------- frost on the window panes on winter mornings: feathery fronds grown up from the bottom of each pane and a few
+   six-pointed crystals, drawn once into a small picture; it comes with the cold dawn and is gone by mid-morning ---------- */
+const FROST={tex:null,on:-1};
+{const c=document.createElement('canvas');c.width=72;c.height=44;const g=c.getContext('2d');g.fillStyle='#8fa6b8';g.fillRect(0,0,72,44);
+  let s=7;const R=()=>{s=(s*16807)%2147483647;return s/2147483647};
+  g.strokeStyle='rgba(240,246,250,.85)';g.lineWidth=1;
+  // fronds: a stem that wanders up, with side branches that branch again
+  const frond=(x,y,a,len,d)=>{if(len<2||d>3)return;let px=x,py=y;const n=Math.ceil(len/3);for(let i=0;i<n;i++){const nx=px+Math.cos(a)*3,ny=py-Math.sin(a)*3;g.beginPath();g.moveTo(px,py);g.lineTo(nx,ny);g.stroke();
+      if(i%2===1){frond(nx,ny,a+.9+R()*.3,len*.45,d+1);frond(nx,ny,a-.9-R()*.3,len*.45,d+1)}px=nx;py=ny;a+=(R()-.5)*.3}};
+  for(let k=0;k<7;k++)frond(R()*72,44,Math.PI/2+(R()-.5)*1.2,18+R()*16,0);for(let k=0;k<4;k++)frond(k%2?72:0,R()*44,k%2?Math.PI-(R()*.6):R()*.6,12+R()*10,1);
+  // crystals from the superformula, six-pointed
+  g.fillStyle='rgba(248,252,255,.9)';for(let k=0;k<6;k++){const cx=6+R()*60,cy=4+R()*30,sz=2+R()*3,rot=R()*6;g.beginPath();
+    for(let i=0;i<=48;i++){const ph=i/48*6.2832,r=Math.pow(Math.pow(Math.abs(Math.cos(1.5*ph)),.6)+Math.pow(Math.abs(Math.sin(1.5*ph)),.6),-1/.3)*sz;const x=cx+Math.cos(ph+rot)*r,y=cy+Math.sin(ph+rot)*r;i?g.lineTo(x,y):g.moveTo(x,y)}g.fill()}
+  const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;FROST.tex=t}
+function frostFrame(){const S=SEASONS[SEASON];const on=SEASON===3&&HOUR>S.rise-2.5&&HOUR<S.rise+2.2&&!(CAB.fire>2&&HOUR>S.rise+1)?1:0;if(on===FROST.on)return;FROST.on=on;
+  for(const p of WIN){const m=p.material;if(!m)continue;m.map=on?FROST.tex:null;m.color.set(on?0xffffff:0x8fa6b8);m.needsUpdate=true}
+  if(on&&started&&CAB.inside)sayOnce('frost','Frost on the window panes this morning, ferns and stars of it.',true)}
+
+/* ---------- small things: mushrooms after rain, lily pads that part for the boat and bob, crops that fill out as they grow ---------- */
+// mushrooms: a day after a good rain they come up in the woods, small caps on short stems, and are gone again two days on.
+// Each cap is a superformula dome: a smooth round one, a scalloped one, a split-edged one. Not in winter.
+const MUSH={lastRain:-1e9,list:[],shown:-1};
+{const sfr=(ph,m,n1,n2,n3)=>Math.pow(Math.pow(Math.abs(Math.cos(m*ph/4)),n2)+Math.pow(Math.abs(Math.sin(m*ph/4)),n3)+1e-6,-1/n1);
+  const cap=(P)=>{const N=24,R=[0,.5,1],V=[];let mx=0;const rs=[];for(let i=0;i<=N;i++){const r=sfr(i/N*6.2832,...P);mx=Math.max(mx,r);rs.push(r)}
+    const pt=(i,t)=>{const a=i/N*6.2832,r=rs[i]/mx*t;return[Math.cos(a)*r,.55*(1-t*t)+.05,Math.sin(a)*r]};
+    for(let k=0;k<R.length-1;k++)for(let i=0;i<N;i++){const a=pt(i,R[k]),b=pt(i+1,R[k]),c=pt(i+1,R[k+1]),d=pt(i,R[k+1]);V.push(...a,...b,...c,...a,...c,...d)}
+    // the stem under it
+    for(let i=0;i<6;i++){const a0=i/6*6.28,a1=(i+1)/6*6.28,r=.13;V.push(Math.cos(a0)*r,-.55,Math.sin(a0)*r,Math.cos(a1)*r,.08,Math.sin(a1)*r,Math.cos(a1)*r,-.55,Math.sin(a1)*r,Math.cos(a0)*r,-.55,Math.sin(a0)*r,Math.cos(a0)*r,.08,Math.sin(a0)*r,Math.cos(a1)*r,.08,Math.sin(a1)*r)}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(V,3));g.computeVertexNormals();return g};
+  const kinds=[{P:[8,10,8,8],c:[0xc8a878,0xb08a5a]},{P:[12,4,6,6],c:[0xd04a2a,0xc8402a]},{P:[16,3,2,2],c:[0xe8e0d0,0xd8ceb8]}];
+  MUSH.meshes=kinds.map((k,ki)=>{const im=new THREE.InstancedMesh(cap(k.P),makeMat({color:0xffffff,nosnow:1,side:THREE.DoubleSide}),90);im.setColorAt(0,col(0xffffff));im.count=0;im.frustumCulled=false;scene.add(im);return im});
+  // where they come up: under the trees, in rings and clusters
+  let n=0;for(let i=0;i<4000&&n<240;i++){const x=(h2(i,1,601)-.5)*420-20,z=(h2(i,2,601)-.5)*360-20;if(!treeZone(x,z)||pondD(x,z)<1.15||inVillage(x,z,4)||pathD(x,z)<2)continue;
+    const kind=Math.floor(vn(x*.05,z*.05,603)*2.999);const cl=1+Math.floor(h2(i,3,601)*4);for(let c=0;c<cl&&n<240;c++){const a=h2(i,4+c,601)*6.28,r=h2(i,9+c,601)*1.6;MUSH.list.push({x:x+Math.cos(a)*r,z:z+Math.sin(a)*r,k:kind,s:.9+h2(i,15+c,601)*.9,ph:h2(i,21+c,601)});n++}}}
+function mushFrame(){const w=WX.cur;if(w.rain>.3||w.hail>.3)MUSH.lastRain=CLOCK;
+  // a day after the rain they are up, full by the next, and gone two days after that
+  const age=(CLOCK-MUSH.lastRain)/60,g=SEASON===3?0:age<14?0:age<26?(age-14)/12:age<62?1:age<74?1-(age-62)/12:0;const q=Math.round(g*20);if(q===MUSH.shown)return;MUSH.shown=q;
+  const m4=new THREE.Matrix4(),qq=new THREE.Quaternion(),v=new THREE.Vector3(),sc=new THREE.Vector3(),e=new THREE.Euler();const cnt=[0,0,0];
+  for(const M of MUSH.list){const s=M.s*clamp(g*1.3-M.ph*.3,0,1);if(s<.05)continue;const im=MUSH.meshes[M.k],i=cnt[M.k]++;if(i>=90)continue;
+    m4.compose(v.set(M.x,groundH(M.x,M.z)+.55*s+.6,M.z),qq.setFromEuler(e.set((M.ph-.5)*.3,M.ph*6,0)),sc.set(s,s,s));im.setMatrixAt(i,m4);im.setColorAt(i,col(M.ph<.5?0xc8a878:0xb08a5a))}
+  MUSH.meshes.forEach((im,k)=>{const c=[[0xc8a878,0xb08a5a],[0xd04a2a,0xc8402a],[0xe8e0d0,0xd8ceb8]][k];for(let i=0;i<cnt[k]&&i<90;i++)im.setColorAt(i,col(c[i%2]));im.count=Math.min(90,cnt[k]);im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true});
+  if(g>.5&&started&&MUSH.list.some(M=>Math.hypot(M.x-H.x,M.z-H.z)<25))sayOnce('mush','Mushrooms up under the trees, after the rain.',true)}
+// lily pads: they bob a little on the water, and part ahead of the boat and drift back behind it
+function lilyFrame(t){if(!LILY.pads.visible)return;const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),v=new THREE.Vector3(),s=new THREE.Vector3();
+  const bx=boat.position.x,bz=boat.position.z,afloat=BOAT.state!=='none';let any=false;
+  LILY.P.forEach((p,i)=>{if(p.ox===undefined){p.ox=0;p.oz=0}const d=Math.hypot(p.x+p.ox-bx,p.z+p.oz-bz);
+    if(afloat&&d<4.2){const a=Math.atan2(p.z+p.oz-bz,p.x+p.ox-bx);const push=(4.2-d)*.2;p.ox+=Math.cos(a)*push;p.oz+=Math.sin(a)*push}else{p.ox*=.985;p.oz*=.985}
+    if(Math.hypot(p.x-H.x,p.z-H.z)>90&&Math.abs(p.ox)+Math.abs(p.oz)<.01)return;any=true;
+    const bob=Math.sin(t*1.1+i*1.7)*.04;m4.compose(v.set(p.x+p.ox,WATER_Y+.07+i*.0004+bob,p.z+p.oz),q.setFromEuler(e.set(Math.sin(t*.9+i)*.04,p.a+Math.sin(t*.3+i)*.05,Math.cos(t*.8+i)*.04)),s.set(p.r,1,p.r));LILY.pads.setMatrixAt(i,m4)});
+  if(any)LILY.pads.instanceMatrix.needsUpdate=true}
+// crops: between the stages the plants fill out steadily, rather than jumping from one size to the next
+let cropT=0;function cropFrame(dt){cropT-=dt;if(cropT>0)return;cropT=.5;for(const tl of TILES){if(tl.s!=='sown'||!tl.plants)continue;const st=stageOf(tl),f=st>=4?1:(tl.growth/STAGE_MIN)%1,k=.72+.28*f;for(const g of tl.plants.children)g.scale.setScalar(k)}}
+
+/* ---------- the pressed pages: the first time Henry is close to each kind of flower, leaf or creature, he adds a page for it to
+   his journal, drawn in two tones of ink on pale green paper, the dots of the drawing set by an ordered pattern. The shapes come
+   from the same numbers as the things in the world. ---------- */
+const PRESS_KINDS=[
+  ['daisy','Twelve-pointed daisy','flower',0],['rose','Wild rose','flower',1],['bluet','Bluet','flower',2],['star','Starflower','flower',3],
+  ['lily','Water lily','lily'],['fern','Fern frond','fern'],['maple','Maple leaf','leaf',[5,.6,1,1],1,1],['oak','Oak leaf','leaf',[9,3,6,6],.55,1],
+  ['birch','Birch leaf','leaf',[24,10,4,4],.62,1],['butterfly','Butterfly','butterfly'],['snow','Snowflake','snow'],['mushroom','Mushroom','mushroom']];
+const PRESS_IMG={};
+function pressDraw(K){if(PRESS_IMG[K[0]])return PRESS_IMG[K[0]];const W=72,c=document.createElement('canvas');c.width=c.height=W;const g=c.getContext('2d');
+  const sfr=(ph,m,n1,n2,n3)=>Math.pow(Math.pow(Math.abs(Math.cos(m*ph/4)),n2)+Math.pow(Math.abs(Math.sin(m*ph/4)),n3)+1e-6,-1/n1);
+  const shape=(P,sx,sy,R,cx,cy,rot)=>{let mx=0;const pts=[];for(let i=0;i<=120;i++){const a=i/120*6.2832,r=sfr(a,...P);mx=Math.max(mx,r);pts.push([a,r])}g.beginPath();pts.forEach(([a,r],i)=>{const x=cx+Math.cos(a+rot)*r/mx*R*sx,y=cy+Math.sin(a+rot)*r/mx*R*sy;i?g.lineTo(x,y):g.moveTo(x,y)});g.closePath()};
+  // a soft light from the upper left, so the dots fall thicker in the shade
+  const fillLit=(cx,cy,R,lo,hi)=>{const gr=g.createRadialGradient(cx-R*.4,cy-R*.4,R*.1,cx,cy,R*1.2);gr.addColorStop(0,`rgb(${hi},${hi},${hi})`);gr.addColorStop(1,`rgb(${lo},${lo},${lo})`);g.fillStyle=gr;g.fill()};
+  g.fillStyle='#fff';g.fillRect(0,0,W,W);const C=W/2,k=K[2];
+  if(k==='flower'||k==='lily'){const P=SF_OPEN[k==='lily'?4:K[3]];shape(P,1,1,k==='lily'?30:27,C,C,.3);fillLit(C,C,28,100,205);g.beginPath();g.arc(C,C,k==='lily'?7:6,0,6.3);fillLit(C,C,7,40,150)}
+  else if(k==='leaf'){shape(K[3],K[4],K[5],27,C,C-2,Math.PI/2);fillLit(C,C,28,80,185);g.strokeStyle='#000';g.lineWidth=1.5;g.beginPath();g.moveTo(C,C+28);g.lineTo(C,C-24);g.stroke()}
+  else if(k==='fern'){g.strokeStyle='#000';g.lineWidth=1.6;g.beginPath();g.moveTo(C,W-4);g.quadraticCurveTo(C+6,C,C-2,6);g.stroke();for(let i=1;i<12;i++){const t=i/12,y=W-4-t*(W-10),x=C+Math.sin(t*2)*4,len=(1-t)*20+5;
+      for(const s of [-1,1]){g.beginPath();g.ellipse(x+s*len*.5,y,len*.5,2.2,s*.25,0,6.3);fillLit(x,y,len,60,200)}}}
+  else if(k==='butterfly'){for(const s of [-1,1]){g.save();g.beginPath();g.rect(s<0?0:C,0,C,W);g.clip();shape([4,.75,1.3,1.7],1,1,30,C,C,Math.PI/4);fillLit(C,C,30,95,200);g.restore()}g.fillStyle='#000';g.fillRect(C-1.5,C-14,3,28)}
+  else if(k==='snow'){shape([6,.3,.6,.6],1,1,30,C,C,0);fillLit(C,C,30,120,215)}
+  else if(k==='mushroom'){g.beginPath();g.rect(C-4,C,8,24);fillLit(C,C+10,12,120,220);g.beginPath();g.ellipse(C,C+2,26,18,0,Math.PI,0);g.closePath();fillLit(C,C-6,24,60,200)}
+  // two tones: each pixel, by its grey, is ink or paper under a 4 by 4 ordered pattern
+  const id=g.getImageData(0,0,W,W),d=id.data,B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+  for(let y=0;y<W;y++)for(let x=0;x<W;x++){const o=(y*W+x)*4,l=d[o]/255,ink=l<(B[(y%4)*4+x%4]+.5)/16*1.02;const c0=ink?[58,74,54]:[200,212,184];d[o]=c0[0];d[o+1]=c0[1];d[o+2]=c0[2];d[o+3]=255}
+  g.putImageData(id,0,0);return PRESS_IMG[K[0]]=c.toDataURL()}
+function press(key){if(SEEN['press:'+key])return;const K=PRESS_KINDS.find(k=>k[0]===key);if(!K)return;SEEN['press:'+key]=dateLine();sfx.pencil();
+  say(`He presses ${/^[aeiou]/i.test(K[1])?'an':'a'} ${K[1].toLowerCase()} between the pages of his journal.`);if(!bagEl.hidden&&BAGTAB==='pressed')drawBag()}
+let pressT=0;
+function pressFrame(dt){pressT-=dt;if(pressT>0||!started||CAB.inside)return;pressT=1;const near=(x,z,r)=>Math.hypot(x-H.x,z-H.z)<r;
+  if(SFU.uBloom.value>.85&&SFU.uBloom.value<1.3&&SFW.uClose.value<.5){const a=FLOWERS.userData.m0,sp=FLOWERS.geometry.attributes.aSp.array;for(let i=0;i<FLOWERS.count;i++){if(a[i*16+15]&&near(a[i*16+12],a[i*16+14],3.5)){press(['daisy','rose','bluet','star'][sp[i]|0]);break}}}
+  if(SFL.uBloom.value>.8&&LILY.flowers.visible){const a=LILY.flowers.instanceMatrix.array;for(let i=0;i<LILY.flowers.count;i++)if(near(a[i*16+12],a[i*16+14],7)){press('lily');break}}
+  if((SEASON===0||SEASON===1)&&FERNU.uUnroll.value>.9){const f=PLANTS.fern.im,a=f.instanceMatrix.array;for(let i=0;i<f.count;i+=1)if(near(a[i*16+12],a[i*16+14],3.5)){press('fern');break}}
+  if(SEASON===2)for(const k in AUT.litM){const m=AUT.litM[k],a=m.instanceMatrix.array;for(let i=0;i<m.count;i++)if(near(a[i*16+12],a[i*16+14],3)){press(k);break}}
+  for(const b of BUGS.fl)if(b.st==='rest'&&near(b.x,b.z,6)){press('butterfly');break}
+  if(WX.cur.snow>.3)press('snow');
+  if(MUSH.shown>10)for(const M of MUSH.list)if(near(M.x,M.z,4)){press('mushroom');break}}
 
 /* ---------- the mail: letters written at the desk, a post box by the line, and the train that stops for it ---------- */
 INV.letters=0;
@@ -1842,21 +2098,24 @@ function person(o){const G=new THREE.Group(),legs=[],arms=[];const M=c=>matFor(c
   const darker=c=>new THREE.Color(c).multiplyScalar(.8).getHex();const TR=o.trou||0x3a3430,CT=o.coat,CT2=darker(CT);
   for(const s of [-1,1]){const l=new THREE.Group();l.position.set(s*.37*W,3,0);G.add(l);
     mk(C_(.31,.27,1.5,8),TR,0,-.6,0,l);mk(C_(.27,.25,1.3,8),TR,0,-1.95,0,l);
-    mk(B_(.48,.36,.98),0x2a2018,0,-2.84,.18,l);mk(B_(.5,.08,1.02),0x16120e,0,-3.0,.18,l);legs.push(l);if(o.dress)l.visible=false}
+    mk(B_(.48,.36,.98),0x2a2018,0,-2.84,.18,l);mk(B_(.5,.08,1.02),0x16120e,0,-3.0,.18,l);mk(B_(.38,.18,.24),0x16120e,0,-2.95,-.22,l);legs.push(l);if(o.dress)l.visible=false}
   if(o.dress){mk(C_(.86*W,1.5*W,3.3,14),o.dress,0,1.8,0);mk(C_(1.5*W,1.52*W,.22,14),darker(o.dress),0,.22,0);
     mk(C_(.8*W,.9*W,1.6,12),o.dress,0,4.6,0);if(!o.apron)mk(C_(.9*W,1.05*W,.5,12,1,true),o.shawl||0x6a5a4a,0,5.1,0)}
   else{const sk=mk(new THREE.CylinderGeometry(.98*W,1.18*W,1.4,12,1,true,.45,Math.PI*2-.9),CT,0,2.85,0);sk.material=M(CT);sk.material.side=THREE.DoubleSide;
     for(const s of [-1,1])mk(B_(.5,1.5,.08),CT2,s*.3,2.45,-1.0).rotation.x=.1;
+    // pocket flaps at the hips, and the two buttons at the back of the waist
+    for(const s of [-1,1]){mk(B_(.48,.12,.08),CT2,s*.82*W,3.08,.6*W).rotation.y=s*.7;mk(S_(.06,5,4),CT2,s*.22,3.55,-.98*W)}
     mk(C_(.84*W,1.0*W,2.5,12),CT,0,4.3,0)}
-  if(o.vest)mk(B_(.78*W,2,.12),o.vest,0,4.4,.86*W);
+  if(o.vest){mk(B_(.78*W,2,.12),o.vest,0,4.4,.86*W);const ch=mk(new THREE.TorusGeometry(.22,.025,4,10,Math.PI),0xc8a850,.18,3.95,.94*W);ch.rotation.z=Math.PI}
   if(o.apron)mk(B_(1.4*W,3.4,.1),o.apron,0,3.4,1.0*W);
   for(let k=0;k<4;k++)mk(S_(.05,5,4),o.vest?0xb89a52:0x1e1a16,0,3.7+k*.38,.92*W);
   if(!o.dress)for(const s of [-1,1]){const lp=mk(B_(.3,1.4,.08),CT2,s*.4*W,4.95,.86*W);lp.rotation.z=s*.3;lp.rotation.y=s*.2}
   mk(B_(.42,.5,.1),0xeeeae0,0,5.25,.86*W);mk(C_(.3,.32,.24,8),o.dress?0xeeeae0:0x1a1a1a,0,5.58,.06);
+  if(!o.dress){for(const s of [-1,1]){const c=mk(B_(.18,.3,.06),0xeeeae0,s*.15,5.66,.6);c.rotation.z=-s*.5;c.rotation.x=-.2}mk(S_(.07,6,4),0x1a1a1a,0,5.48,.66)}
   for(const s of [-1,1])mk(S_(.36,8,6),o.sleeve||CT,s*.86*W,5.26,0);
   for(const s of [-1,1]){const a=new THREE.Group();a.position.set(s*1.0*W,5.3,0);G.add(a);
     mk(C_(.25,.22,1.2,8),o.sleeve||(o.dress||CT),0,-.6,0,a);mk(C_(.22,.2,1.05,8),o.sleeve||(o.dress||CT),0,-1.68,0,a);
-    mk(C_(.21,.21,.16,8),0xeeeae0,0,-2.2,0,a);mk(B_(.28,.34,.22),SK,0,-2.43,.02,a);mk(B_(.08,.2,.1),SK2,-s*.13,-2.36,.1,a);arms.push(a)}
+    mk(C_(.21,.21,.16,8),0xeeeae0,0,-2.2,0,a);mk(B_(.28,.34,.22),SK,0,-2.43,.02,a);mk(B_(.08,.2,.1),SK2,-s*.13,-2.36,.1,a);for(let f=0;f<4;f++)mk(B_(.055,.16,.055),SK2,-.09+f*.06,-2.66,.05,a);arms.push(a)}
   mk(C_(.21,.25,.42,8),SK,0,5.78,0);const hd=new THREE.Group();hd.position.set(0,6.28,0);G.add(hd);
   const face=mk(S_(.56,14,12),SK,0,0,0,hd);face.scale.set(.92,1.06,.95);mk(S_(.33,10,8),SK,0,-.34,.15,hd).scale.set(1,.7,1);
   const nose=mk(K_(.1,.32,6),SK2,0,-.03,.58,hd);nose.rotation.x=Math.PI/2+.35;
@@ -1906,7 +2165,7 @@ function readEmerson(){showDialogue('Ralph Waldo Emerson',EMERSON_TEXT,H.g,6.3,H
 function replyEmerson(){EMERSON.state='replied';INV.emerson=0;INV.letters++;sfx.pencil();advance(1);drawInv();if(HELD==='emerson')setHeld(null);
   say('He answers Mr. Emerson: yes to Sunday, a word about the beans, and an argument saved for the Persian poems. The letter is ready to post.',true);note('emerson','answered a letter from Mr. Emerson');achieve('dearwaldo')}
 /* ---------- achievements ---------- */
-const ACH_DEF={dearwaldo:{name:'Dear Waldo',desc:'Answered a letter from Ralph Waldo Emerson.'}};const ACH={};
+const ACH_DEF={dearwaldo:{name:'Dear Waldo',desc:'Answered a letter from Ralph Waldo Emerson.'},nightwatch:{name:'The Night Watch',desc:'Laid the dead man of the burying ground back to rest.'},loongame:{name:'A Man Against a Loon',desc:'Guessed where the diving loon would come up.'}};const ACH={};
 function achieve(k){if(ACH[k])return;ACH[k]={date:dateLine()};const D=ACH_DEF[k];const el=document.getElementById('ach');el.innerHTML=`<small>Achievement</small><b>${D.name}</b><span>${D.desc}</span>`;el.hidden=false;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');
   [523.3,659.3,784,1046.5].forEach((f,i)=>{tone({f,d:1.2,a:.01,v:.035,delay:i*.12,type:'triangle',lp:2200});tone({f:f*2,d:.6,v:.008,delay:i*.12})});setTimeout(()=>{el.classList.remove('on');setTimeout(()=>el.hidden=true,900)},6000);if(!bagEl.hidden&&BAGTAB==='journal')drawBag()}
 function readLetter(){showDialogue('A letter',LETTER_LINES[PO.lines%LETTER_LINES.length],H.g,6.3,H.yaw);PO.lines++;INV.recv--;drawInv();sfx.pickup()}
@@ -2102,10 +2361,11 @@ function orchardFrame(dt,t){const near=Math.hypot(H.x-(ORCH.x0+ORCH.x1)/2,H.z-(O
 function orchardBlocked(x,z){for(const T of APPLE_TREES)if(Math.hypot(T.x-x,T.z-z)<1.4)return true;return false}
 
 /* ---------- more of the village: the burying ground, kitchen gardens, a wash line ---------- */
+const GRAVES=[];
 {const G=new THREE.Group();scene.add(G);
   // the old burying ground beside the meeting house: a low stone wall and slate stones
   for(const [a,b] of [[[-118,50],[-94,50]],[[-94,50],[-94,74]],[[-94,74],[-118,74]],[[-118,74],[-118,50]]]){const n=40;for(let i=0;i<n;i++){if(i===20&&a[0]===-94)continue;const p=tL(lerp(a[0],b[0],i/n),lerp(a[1],b[1],i/n));const s=new THREE.Mesh(new THREE.DodecahedronGeometry(.75,0),vmat(0x8a8680));s.position.set(p.x,VH+.4,p.z);s.rotation.set(rr(0,3),rr(0,3),0);s.scale.y=.7;G.add(s)}}
-  for(let i=0;i<5;i++)for(let j=0;j<4;j++){if(Math.random()<.2)continue;const p=tL(-114+i*4.6+rr(-.4,.4),54+j*5.2);const sl=new THREE.Mesh(new THREE.BoxGeometry(1.8,2.2+rr(-.3,.5),.25),vmat([0x4a4e54,0x5a5e62,0x6a6660][(i+j)%3]));sl.position.set(p.x,VH+1.1,p.z);sl.rotation.y=Math.PI/2+rr(-.12,.12);sl.rotation.z=rr(-.08,.08);sl.castShadow=true;G.add(sl)}
+  for(let i=0;i<5;i++)for(let j=0;j<4;j++){if(Math.random()<.2)continue;const p=tL(-114+i*4.6+rr(-.4,.4),54+j*5.2);const sl=new THREE.Mesh(new THREE.BoxGeometry(1.8,2.2+rr(-.3,.5),.25),vmat([0x4a4e54,0x5a5e62,0x6a6660][(i+j)%3]));sl.position.set(p.x,VH+1.1,p.z);sl.rotation.y=Math.PI/2+rr(-.12,.12);sl.rotation.z=rr(-.08,.08);sl.castShadow=true;G.add(sl);GRAVES.push({m:sl,x:p.x,z:p.z,hp:3,broken:0})}
   critterTag('Burying ground','#e8d8b0',vObj(-106,62),5,70);
   // kitchen gardens behind the north row, with their own fences
   for(const [lx0,lz0] of [[2,-46],[76,-46]]){pickets(lx0,lz0,lx0+16,lz0);pickets(lx0,lz0+10,lx0+16,lz0+10);pickets(lx0,lz0,lx0,lz0+10);pickets(lx0+16,lz0,lx0+16,lz0+10);
@@ -2461,7 +2721,7 @@ const SEASON_COL=[
   {b0:[.17,.3,.12],b1:[.23,.36,.14],t0:[.42,.6,.24],t1:[.56,.66,.3],len:1.9,fl:[0xf4f0e0,0xf0c840,0xd890b0,0xe8e0f0],fog:0x34465a},
   {b0:[.32,.3,.18],b1:[.4,.36,.22],t0:[.72,.62,.4],t1:[.8,.7,.46],len:1.5,fl:[0x8a6ac0,0xb090d0,0xd8b840],fog:0x3a3c48},
   {b0:[.3,.27,.19],b1:[.38,.34,.24],t0:[.66,.6,.44],t1:[.76,.7,.52],len:1,fl:null,fog:0x2a3448}];
-function setSeason(S,quiet){const prevS=SEASON;SEASON=((S%4)+4)%4;if(quiet&&typeof SFU!=='undefined'){SFU.uBloom.value=sfTarget();SFL.uBloom.value=lilyTarget();const ft=fernTargets();FERNU.uUnroll.value=ft[0];FERNU.uDroop.value=ft[1]}lilySeason(SEASON);FLZ=-1;const C=SEASON_COL[SEASON];if(WXREADY)onSeason(prevS,quiet);
+function setSeason(S,quiet){const prevS=SEASON;SEASON=((S%4)+4)%4;if(quiet&&typeof SFU!=='undefined'){SFU.uBloom.value=sfTarget();SFL.uBloom.value=lilyTarget();const ft=fernTargets();FERNU.uUnroll.value=ft[0];FERNU.uDroop.value=ft[1]}lilySeason(SEASON);if(typeof AUT!=='undefined'){if(SEASON===0||SEASON===1)clearLitter();else if(SEASON===2&&(quiet||prevS!==2)&&started)prefillLitter()}FLZ=-1;const C=SEASON_COL[SEASON];if(WXREADY)onSeason(prevS,quiet);
   GROUND.g.attributes.color.array.set(GROUND.sets[SEASON]);GROUND.g.attributes.color.needsUpdate=true;
   grassU.uB0.value.set(...C.b0);grassU.uB1.value.set(...C.b1);grassU.uT0.value.set(...C.t0);grassU.uT1.value.set(...C.t1);grassU.uLen.value=C.len;GRASS.count=SEASON===1?15000:SEASON===3?7000:11000;GRASS.visible=true;
   FLOWERS.visible=!!C.fl;if(C.fl){const r=FLOWERS.userData.r;for(let i=0;i<FLOWERS.count;i++)FLOWERS.setColorAt(i,col(C.fl[(r[i]*C.fl.length)|0]));FLOWERS.instanceColor.needsUpdate=true;FLOWERS.count=Math.min(r.length,SEASON===2?500:r.length)}
@@ -2483,13 +2743,14 @@ function turnView(d){turn=(turn+d+4)%4}
 addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();if(STUDY){if(k==='escape'||k==='e'||k===' ')closeStudy();return}keys[k]=true;if(k==='shift'&&0)RUN=!RUN;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
   if(!started&&(k==='enter'||k===' ')){start();return}
   if(k==='e'||k===' ')act();if(k==='g')cycleWeather();if(k==='q')turnView(-1);if(k==='r')turnView(1);if(k==='t')toggleAuto();if(k==='y'){CAL.day=0;setSeason(SEASON+1);showDay()}if(k==='b'&&BOAT.state==='afloat')rowBack();if(k==='n'&&SEASON===3)setSnow(SNOW===1?2:1);if(k==='m')setSound(!AU.on);if(k==='p')toggleMap();if(k==='escape'&&!mapEl.hidden)toggleMap();if(k==='f')callTrain();
-  if(k==='tab'||k==='i'){e.preventDefault();toggleBag()}if(k==='escape'&&!bagEl.hidden)toggleBag();if(/^[1-9]$/.test(k))pickSlot(+k-1);if(k==='z')cycleHeld(-1);if(k==='c')cycleHeld(1);if(k==='x')setHeld(null)});
+  if(k==='tab'||k==='i'){e.preventDefault();toggleBag()}if(k==='escape'&&!bagEl.hidden)toggleBag();if(/^[1-9]$/.test(k))pickSlot(+k-1);if(k==='0'&&HELD)setHeld(null);if(k==='z')cycleHeld(-1);if(k==='c')cycleHeld(1);if(k==='x')setHeld(null)});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
 canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);au();if(e.pointerType==='touch'){touchMove={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0}}});
 canvas.addEventListener('pointermove',e=>{if(touchMove&&e.pointerId===touchMove.id){touchMove.dx=clamp((e.clientX-touchMove.x)/50,-1,1);touchMove.dy=clamp((e.clientY-touchMove.y)/50,-1,1)}});
 const endPtr=e=>{if(touchMove&&e.pointerId===touchMove.id){if(Math.hypot(touchMove.dx,touchMove.dy)<.1)act();touchMove=null}};
 canvas.addEventListener('pointerup',endPtr);canvas.addEventListener('pointercancel',endPtr);
-function zoom(k){if(CAB.inside)VIEW_OUT=clamp(VIEW_OUT*k,44,280);else if(FISHING||BOAT.state!=='none')VIEW_FISH=clamp(VIEW_FISH*k,90,280);else VIEW_OUT=clamp(VIEW_OUT*k,90,280)}
+// the closest the view can come is 15% further out than it was (22 Oct 2026): 51 inside the house, 104 outdoors and on the water
+function zoom(k){if(CAB.inside)VIEW_OUT=clamp(VIEW_OUT*k,51,280);else if(FISHING||BOAT.state!=='none')VIEW_FISH=clamp(VIEW_FISH*k,104,280);else VIEW_OUT=clamp(VIEW_OUT*k,104,280)}
 canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?1.1:.9)},{passive:false});
 const padPrev=[];
 function pollPad(dt){const gps=navigator.getGamepads?navigator.getGamepads():[];let gp=null;for(const g of gps)if(g&&g.connected){gp=g;break}if(!gp)return null;
@@ -2506,7 +2767,7 @@ const play=document.getElementById('play');
 function toggleAuto(){AUTO=!AUTO;play.setAttribute('aria-pressed',AUTO?'true':'false');play.textContent=AUTO?'Stop the day':'Let the day run'}
 play.onclick=toggleAuto;document.getElementById('wxb').onclick=cycleWeather;document.getElementById('snowb').onclick=()=>setSnow(SNOW===1?2:1);document.getElementById('seasonb').onclick=()=>{CAL.day=0;setSeason(SEASON+1);showDay()};document.getElementById('turn').onclick=()=>turnView(1);document.getElementById('snd').onclick=()=>setSound(!AU.on);document.getElementById('mapb').onclick=toggleMap;mapEl.onclick=toggleMap;document.getElementById('train').onclick=()=>{au();callTrain()};
 document.getElementById('tod').addEventListener('input',e=>setTime(+e.target.value));
-function start(){document.getElementById('title').hidden=true;au();if(!started){started=true;if(!AUTO)toggleAuto();showDay();CAL.dawnShown=CAL.day+CAL.cycle*100+SEASON*1000;say('Walden Pond, in '+SEASONS[SEASON].name.toLowerCase()+'.');setTimeout(()=>say('The axe is in the chopping block; the hoe, the watering can and the seed bags are by the house on the pond side; the pole is on the shore of the cove.'),2400)}}
+function start(){document.getElementById('title').hidden=true;au();if(!started){started=true;if(typeof prefillLitter==='function')prefillLitter();if(!AUTO)toggleAuto();showDay();CAL.dawnShown=CAL.day+CAL.cycle*100+SEASON*1000;say('Walden Pond, in '+SEASONS[SEASON].name.toLowerCase()+'.');setTimeout(()=>say('The axe is in the chopping block; the hoe, the watering can and the seed bags are by the house on the pond side; the pole is on the shore of the cove.'),2400)}}
 document.getElementById('go').onclick=start;
 
 /* ---------- what he can do where he stands ---------- */
@@ -2529,6 +2790,8 @@ function currentAction(){if(!started||swing>0||busyT>0||FF.on)return null;const 
   if(nearBoat())return{label:'Use the boat',fn:boardBoat};
   {const j=jobAction();if(j)return j}
   {const l=lifeAction();if(l)return l}
+  if(typeof ZB!=='undefined'&&zbNear())return need('axe','Strike the dead man',()=>{target=ZB;swingKind='zombie';swing=.55;H.yaw=Math.atan2(ZB.x-H.x,ZB.z-H.z)})||{label:'Get away from him',fn:()=>say('Without the axe there is nothing to do but run.')};
+  {const g=typeof GRAVES!=='undefined'?graveNear():null;if(g&&owns('axe'))return need('axe','Strike the gravestone with the axe',()=>{target=g;swingKind='stone';swing=.55;H.yaw=Math.atan2(g.x-H.x,g.z-H.z)})}
   if(VIL.here){const a=villageAction();if(a!==undefined)return a}
   if(CAB.inside){let best=null,bd=1.5;const opt=(o,a)=>{const d=near(o);if(d<bd&&a){bd=d;best=a}};
     if(CAB.carry>0&&CAB.basket<12)opt(it.basket,need('logs','Put the logs in the basket',toBasket));
@@ -2538,7 +2801,6 @@ function currentAction(){if(!started||swing>0||busyT>0||FF.on)return null;const 
     else if(CAB.fire>0&&af)st={label:`Take out the ${af.name.toLowerCase()} to cook it`,fn:()=>setHeld(af.id)};
     opt(CAB.hasStove?it.stove:it.hearth,st);
     opt(it.desk,EMERSON.state==='read'||EMERSON.state==='have'?{label:'Answer Mr. Emerson’s letter',fn:()=>{if(EMERSON.state==='have'){readEmerson();return}replyEmerson()}}:HELD==='notebook'?{label:'Write in the notebook',fn:write}:{label:'Write a letter home',fn:writeLetter});
-    opt(it.shelf,{label:'Open the book on the shelf',fn:openStudy});
     if(typeof CHEST!=='undefined')opt(CHEST,CHEST.open?{label:'Close the chest',fn:closeChest}:{label:'Open the chest',fn:openChest});
     opt(it.bed,{label:(HOUR>=19||HOUR<5)?'Sleep until morning':'Lie down for an hour',fn:sleep});
     return best}
@@ -2590,7 +2852,9 @@ function hit(t){sfx.chop(t.kind);t.hp--;t.shake=.2;rumble(90,.7,.3);
 function setCut(on){CAB.roofG.visible=!on;for(const w of CAB.walls){if(w.userData.lintel){w.visible=!on;continue}w.scale.y=on?Math.min(w.userData.h,CAB.cutH):w.userData.h}
   for(const m of CAB.tall)m.visible=!on||m.userData.top<=.7+CAB.cutH+.05}
 const FADING=[];const STUMPG=new THREE.CylinderGeometry(.9,1.15,1.3,8);STUMPG.translate(0,.5,0);
-function fadeTree(tr){const ic=new THREE.Color();tr.parts.forEach(p=>{const m4=new THREE.Matrix4();p.im.getMatrixAt(p.i,m4);p.im.getColorAt(p.i,ic);
+// a felled tree fades out where it lies; a part hidden for the season (the leaves of a bare winter tree) stays hidden, and is
+// not brought back for the fade, which had made a bare tree turn green as it went
+function fadeTree(tr){const ic=new THREE.Color();tr.parts.forEach(p=>{const m4=new THREE.Matrix4();if(!p.im.visible){m4.makeScale(0,0,0);p.im.setMatrixAt(p.i,m4);p.im.instanceMatrix.needsUpdate=true;return}p.im.getMatrixAt(p.i,m4);p.im.getColorAt(p.i,ic);
     const mat=new THREE.MeshLambertMaterial({vertexColors:true,color:ic.clone(),transparent:true,opacity:1,depthWrite:false});
     const m=new THREE.Mesh(p.im.geometry,mat);m.applyMatrix4(m4);scene.add(m);FADING.push({m,t:0});
     m4.makeScale(0,0,0);p.im.setMatrixAt(p.i,m4);p.im.instanceMatrix.needsUpdate=true});
@@ -2624,6 +2888,17 @@ function cabinFrame(dt,t){const {lx,lz}=cl();const inside=Math.abs(lx)<7.3&&Math
   const lampOn=DAY<.45;CAB.g.localToWorld(vv.set(-1.2,4.4,3.9));deskL.position.copy(vv);deskL.intensity=lampOn?.55:0;CAB.lampGlass.material.color.set(lampOn?0xffe0a0:0x6a6050);
   if(AU.ctx&&AU.on&&CAB.fire>0){const d=Math.hypot(lx-4.6,lz-.6),v=clamp(1-d/24,0,1)*(inside?1:.35);crackT-=dt;if(crackT<0){crackT=rr(.06,.5);if(v>.02)sfx.crackle(v*(.5+f))}}}
 const tag=document.getElementById('tag');const q4=new THREE.Quaternion(),e4=new THREE.Euler(),v4=new THREE.Vector3(),s4=new THREE.Vector3(),m4b=new THREE.Matrix4();
+/* the loon game, from "Brute Neighbors": when Henry rows near the loon in spring or autumn it dives, and stays under a long
+   while, and comes up somewhere else; he rows to where he guesses it will rise. Come up within a few lengths of the boat and
+   he has outguessed it; come up far off and it laughs its long, unearthly laugh at him. */
+const LOONG={next:null,cool:0,won:0,lost:0,rounds:0};
+function loonDiveFrom(h){let best=null;for(let k=0;k<30;k++){const a=Math.atan2(loon.position.x-h.x,loon.position.z-h.z)+rr(-1.4,1.4),r=rr(22,58);const x=loon.position.x+Math.sin(a)*r,z=loon.position.z+Math.cos(a)*r;if(pondD(x,z)<.8){best={x,z};break}}
+  if(!best)return;LOONG.next=best;loonDive=rr(6,11);loon.visible=false;LOONG.rounds++;tone({f:rr(500,700),f2:200,d:.25,v:.03,type:'sine'});
+  if(!LOONG.said){LOONG.said=1;say('The loon dives. Where will it come up? Row to where you think.')}}
+function loonRise(){const d=Math.hypot(loon.position.x-H.x,loon.position.z-H.z);LOONG.cool=rr(3,6);
+  if(BOAT.state!=='afloat'){return}
+  if(d<15){LOONG.won++;say(LOONG.won===1?'Up it comes, close by the boat. He guessed right.':`Close by again. ${LOONG.won} to the loon's ${LOONG.lost}.`);achieve('loongame');note('loongame','played a game with the loon on the pond, a man against a loon')}
+  else{LOONG.lost++;if(AU.ctx&&AU.on){sfx.loon(1)}say(LOONG.lost===1?'It comes up far off, and laughs, a long unearthly laugh, as if at him.':`Far off again, laughing. ${LOONG.won} to the loon's ${LOONG.lost}.`)}}
 let last=performance.now(),tLoon=0,loonDive=0,loonT={x:30,z:110},lastPhase='',lastStep=0;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
@@ -2639,7 +2914,7 @@ function frame(now){
   else H.sp=lerp(H.sp,0,dt*8);
   H.ph+=dt*H.sp*9;const sw=Math.sin(H.ph)*.6*Math.min(H.sp,1.4);H.legs[0].rotation.x=sw;H.legs[1].rotation.x=-sw;H.arms[0].rotation.x=-sw*.5;if(BOAT.state!=='none'){H.legs[0].rotation.x=H.legs[1].rotation.x=-1.45}
   if(Math.floor(H.ph/Math.PI)!==lastStep){lastStep=Math.floor(H.ph/Math.PI);if(H.sp>.2){if(CAB.inside)sfx.board();else if(onIce())tone({f:rr(1100,1500),f2:700,d:.05,v:.012,type:'triangle'});else{sfx.step(SEASON===3&&SNOW>0);if(BOOTS.wear>=4&&(WX.cur.rain>.2||SEASON===3))tone({f:rr(420,520),f2:220,d:.08,v:.012,type:'triangle',lp:900,delay:.03})}}}
-  if(swing>0){const b4=swing;swing-=dt;const s=1-swing/.55;H.arms[1].rotation.x=s<.45?lerp(0,-2.6,s/.45):s<.7?lerp(-2.6,.6,(s-.45)/.25):lerp(.6,0,(s-.7)/.3);if(b4>.22&&swing<=.22&&target){if(swingKind==='hoe')hoeHit(target);else hit(target)}}else if(busyT>0){busyT-=dt;H.arms[1].rotation.x=lerp(H.arms[1].rotation.x,H.hold==='can'?-.9:-.4,dt*8);if(H.hold==='can')HAND.can.rotation.x=-.5}else{H.arms[1].rotation.x=sw*.8;HAND.can.rotation.x=0}
+  if(swing>0){const b4=swing;swing-=dt;const s=1-swing/.55;H.arms[1].rotation.x=s<.45?lerp(0,-2.6,s/.45):s<.7?lerp(-2.6,.6,(s-.45)/.25):lerp(.6,0,(s-.7)/.3);if(b4>.22&&swing<=.22&&target){if(swingKind==='hoe')hoeHit(target);else if(swingKind==='stone')stoneHit(target);else if(swingKind==='zombie')zombieHit();else hit(target)}}else if(busyT>0){busyT-=dt;H.arms[1].rotation.x=lerp(H.arms[1].rotation.x,H.hold==='can'?-.9:-.4,dt*8);if(H.hold==='can')HAND.can.rotation.x=-.5}else{H.arms[1].rotation.x=sw*.8;HAND.can.rotation.x=0}
   showHand();
   LANT.rotation.x=-H.arms[0].rotation.x;
   {const q=cl();CAB.onFloor=Math.abs(q.lx)<7.6&&Math.abs(q.lz)<5.2}H.g.position.set(H.x,(onBridge(H.x,H.z)?BRIDGE.y+1.75+Math.sin(clamp((H.x-BRIDGE.cx)/BRIDGE.L+.5,0,1)*Math.PI)*.8:BOAT.state!=='none'?boat.position.y-2.05:CAB.onFloor?CABIN.y+.76:hy(H.x,H.z))+Math.abs(Math.sin(H.ph))*.12*H.sp,H.z);H.g.rotation.set(0,H.yaw,0);if(FF.on&&FF.bed&&CAB.inside!==undefined){H.g.position.set(CABIN.x-1.1,CABIN.y+2.75,CABIN.z-3.5);H.g.rotation.set(0,0,Math.PI/2)}
@@ -2656,18 +2931,21 @@ function frame(now){
   const L=sun.userData.dir||new THREE.Vector3(0,1,0);sun.position.copy(tgt).addScaledVector(L,600);sun.target.position.copy(tgt);sun.target.updateMatrixWorld();
   const night=1-DAY;const lit=night>.4;porch.intensity=lit?1.1:0;porch.userData.bulb.visible=lit;for(const w of WSPOT)w.intensity=lit?1.6:0;
   lantern.intensity=night>.5&&!CAB.inside?1.3:0;LANT.userData.glass.material.color.set(night>.5?0xffd08a:0x5a5040);LANT.getWorldPosition(lantern.position);lantern.position.y+=.6;
-  SNOWU.uTime.value=t;CLOUDU.value.set(t,DAY*(SEASON===1?.8:1)*(1+WX.cur.cover*.6),WX.cur.cover);SNOWU.uWind.value=[.8,.6,1.1,1.25][SEASON]*(.45+WX.cur.wind*.9);leafU.uWind.value=.5+WX.cur.wind*.9;grassU.uWindG.value=.5+WX.cur.wind*.9;postU.uNight.value=night;waterU.uTime.value=t;grassU.uTime.value=t;postU.uTime.value=t;leafU.uTime.value=t;FOL.bellU.uTime.value=t;
+  SNOWU.uTime.value=t;CLOUDU.value.set(t,DAY*(SEASON===1?.8:1)*(1+WX.cur.cover*.6),WX.cur.cover);SNOWU.uWind.value=[.8,.6,1.1,1.25][SEASON]*(.12+WX.cur.wind*1.05);leafU.uWind.value=.1+WX.cur.wind*1.1;grassU.uWindG.value=.12+WX.cur.wind*1.1; // a still day is still: the sway follows the wind nearly to nothing
+  postU.uNight.value=night;waterU.uTime.value=t;grassU.uTime.value=t;postU.uTime.value=t;leafU.uTime.value=t;FOL.bellU.uTime.value=t;
   for(const k of ['uSun','uSunCol','uAmb','uFog'])leafU[k].value.copy(grassU[k].value);for(const k of ['uSun','uSunCol','uAmb','uFog'])FOL.bellU[k].value.copy(grassU[k].value);
   {const U=CHIMNEY.userData.U;U.uTime.value=t;U.uO.value.copy(CABIN.chim);U.uAmt.value=CAB.fire>0?.45+CAB.fire/10:0;U.uPx.value=clamp(2*PR/PIXE*1.2,1,3);const dk=lerp(.35,1,DAY);U.uC0.value.setRGB(.35*dk,.39*dk,.47*dk);U.uC1.value.setRGB(.72*dk,.75*dk,.8*dk)}
   {const U=TRAINSMOKE.userData.U;U.uTime.value=t;U.uAmt.value=TRAIN.run?1:0;U.uPx.value=clamp(2*PR/PIXE*1.2,1,3);if(TRAIN.run){TRAIN.g.localToWorld(U.uO.value.set(0,12.4,6.4));U.uTrail.value.set(0,0,-TRAIN.dir*TRAIN.speed*1.6)}const dk=lerp(.4,1,DAY);U.uC1.value.setRGB(.6*dk,.63*dk,.66*dk)}
   flakeU.uAmt.value=particleAmt();{const L=flakeU.uL.value,lit=1-DAY>.4;const src=[[porch.position,lit?1:0],[lantern.position,lantern.intensity>0?.8:0],[WSPOT[0].position,lit?.7:0],[WSPOT[1].position,lit?.7:0],[head.position,head.intensity>0?1.2:0],[stoveL.position,0]];src.forEach(([p,w],i)=>L[i].set(p.x,p.y,p.z,w))}flakeU.uTime.value=t;flakeU.uC.value.copy(tgt);flakeU.uPx.value=clamp(1.3*PR/PIXE*2,1,3);flakeU.uLit.value=lerp(.7,1,DAY);
   const ph=HOUR<6.4?'night':HOUR<7.7?'dawn':HOUR<15.9?'day':HOUR<17.3?'dusk':'night';if(ph!==lastPhase){if(lastPhase&&started&&(ph==='dawn'||ph==='dusk'))sfx.motif(ph==='dawn');lastPhase=ph}
   for(const s of SMOKE){s.userData.t=(s.userData.t+dt*.08)%1;const k=s.userData.t;s.position.set(CABIN.chim.x+k*12+Math.sin(t+k*6)*1.2,CABIN.chim.y+k*18,CABIN.chim.z-k*4);s.visible=false}
-  trainStep(dt,t);puffs(dt,t);boatFrame(dt,t);fishFrame(dt,t);geeseFrame(dt,t);alekFrame(dt,t);pathFrame();dialogueFrame(dt);fadeFrame(dt);jobFrame();lifeFrame(dt,t);sundayBell(Math.min(dt,.05));villageFrame(dt,t);townFrame(dt,t);orchardFrame(dt,t);riverFrame(dt,t);WASH.forEach((w,i)=>{w.rotation.z=Math.sin(t*2.1+i)*.12*SNOWU.uWind.value;w.visible=SEASON!==3||i<2});studyFrame(dt);owlFrame(dt,t);deerFrame(dt,t);foxFrame(dt,t);sfFrame(dt);bugsFrame(dt,t);chuckFrame(dt,t);squirrelFrame(dt,t);mailFrame();critterTags();
+  trainStep(dt,t);puffs(dt,t);boatFrame(dt,t);fishFrame(dt,t);geeseFrame(dt,t);alekFrame(dt,t);pathFrame();dialogueFrame(dt);fadeFrame(dt);jobFrame();lifeFrame(dt,t);sundayBell(Math.min(dt,.05));villageFrame(dt,t);townFrame(dt,t);orchardFrame(dt,t);riverFrame(dt,t);WASH.forEach((w,i)=>{w.rotation.z=Math.sin(t*2.1+i)*.12*SNOWU.uWind.value;w.visible=SEASON!==3||i<2});studyFrame(dt);owlFrame(dt,t);deerFrame(dt,t);foxFrame(dt,t);zombieFrame(dt,t);frostFrame();mushFrame();lilyFrame(t);cropFrame(dt);pressFrame(dt);waterU.uFreeze.value=SEASON===3?clamp(1-CAL.day/10,.35,1):0;sfFrame(dt);bugsFrame(dt,t);autumnFrame(Math.min(dt,.1),t);chuckFrame(dt,t);squirrelFrame(dt,t);mailFrame();critterTags();
   {const show=BOAT.state==='afloat'&&!FISHING&&INV.pole;act2.hidden=!show;if(show){const k=(pin&&pin.gp)?'○':'B';if(act2.dataset.k!==k){act2.dataset.k=k;act2.innerHTML='<kbd>'+k+'</kbd>Row back to shore'}}}
   boat.position.y=WATER_Y+.9+Math.sin(t*1.1)*.08;boat.rotation.z=Math.sin(t*.9)*.03;if(BOAT.state!=='none')boat.rotation.x=Math.sin(t*.7)*.02;
-  tLoon+=dt;if(!(SEASON===0||SEASON===2))loon.visible=false;else if(loonDive>0){loonDive-=dt;loon.visible=false;if(loonDive<=0){loon.position.x=lerp(-60,80,Math.random());loon.position.z=lerp(70,140,Math.random());loon.visible=true;if(started&&Math.random()<.7)sfx.loon(.8)}}
-  else{const dx=loonT.x-loon.position.x,dz=loonT.z-loon.position.z,d=Math.hypot(dx,dz);if(d<2){loonT={x:lerp(-70,90,Math.random()),z:lerp(60,150,Math.random())};if(pondD(loonT.x,loonT.z)>.7)loonT={x:20,z:100}}else{loon.position.x+=dx/d*dt*2.2;loon.position.z+=dz/d*dt*2.2;loon.rotation.y=Math.atan2(-dz,dx)}loon.position.y=WATER_Y+.25+Math.sin(t*1.6)*.05;if(tLoon>18+Math.random()*30){tLoon=0;loonDive=5}}
+  tLoon+=dt;if(!(SEASON===0||SEASON===2))loon.visible=false;else if(loonDive>0){loonDive-=dt;loon.visible=false;if(loonDive<=0){
+      if(LOONG.next){loon.position.x=LOONG.next.x;loon.position.z=LOONG.next.z;LOONG.next=null;loon.visible=true;loonRise()}
+      else{loon.position.x=lerp(-60,80,Math.random());loon.position.z=lerp(70,140,Math.random());loon.visible=true;if(started&&Math.random()<.2)loonCall(.8)}}}
+  else{LOONG.cool-=dt;if(BOAT.state==='afloat'&&started&&Math.hypot(loon.position.x-H.x,loon.position.z-H.z)<34&&LOONG.cool<=0)loonDiveFrom(H);const dx=loonT.x-loon.position.x,dz=loonT.z-loon.position.z,d=Math.hypot(dx,dz);if(d<2){loonT={x:lerp(-70,90,Math.random()),z:lerp(60,150,Math.random())};if(pondD(loonT.x,loonT.z)>.7)loonT={x:20,z:100}}else{loon.position.x+=dx/d*dt*2.2;loon.position.z+=dz/d*dt*2.2;loon.rotation.y=Math.atan2(-dz,dx)}loon.position.y=WATER_Y+.25+Math.sin(t*1.6)*.05;if(tLoon>18+Math.random()*30){tLoon=0;loonDive=5}}
   ambience(dt);wxFrame(clamp(dt,0,.05),t,tgt);
   const ca=currentAction();if(ca){actEl.hidden=false;const k=((pin&&pin.gp)?'✕':'E')+'|'+ca.label;if(actEl.dataset.k!==k){actEl.dataset.k=k;actEl.innerHTML='<kbd>'+k.split('|')[0]+'</kbd>'+ca.label}}else actEl.hidden=true;
   if(effPix()!==PIXE)resize();
@@ -2791,7 +3069,9 @@ function wxFrame(dt,t,tgt){
   WX.flash=Math.max(0,WX.flash-dt*4.5);postU.uFlash.value=PRINT?WX.flash*.5:WX.flash;wxU.uFlash.value=WX.flash;
   for(const th of WX.thunder)th.t-=dt;while(WX.thunder.length&&WX.thunder[0].t<=0){const th=WX.thunder.shift();thunder(th.v,th.near)}
   wxSound(dt)}
-let PIXE=0;function effPix(){return VIEW<60?Math.max(Math.min(PIX,2),PIX-1):PIX}
+// the closer the view, the finer the pixels: one step finer under 150, two under 75 (indoors), never finer than 2 unless the
+// slider is set finer still. Far off the world keeps its coarse print; close to, Henry and his things show their detail
+let PIXE=0;function effPix(){const steps=(VIEW<150?1:0)+(VIEW<75?1:0);return Math.max(Math.min(PIX,2),PIX-steps)}
 let FLZ=-1;function flowerZoom(){const s=Math.min(2.4,Math.max(1,ZPX.value/.3)),b=Math.round(s*5);if(b===FLZ)return;FLZ=b;
   const im=FLOWERS,m0=im.userData.m0,a=im.instanceMatrix.array,r=im.userData.r,keep=1.1/(s*s);
   for(let i=0,n=m0.length/16;i<n;i++){const o=i*16;if((r[i]*7.13+.21)%1>keep){for(let j=0;j<16;j++)a[o+j]=0;continue}
@@ -2862,7 +3142,7 @@ function snapshot(){
     felled:TREES.map((tr,i)=>tr.felled?i:-1).filter(i=>i>=0),
     emerson:{state:EMERSON.state,hrs:EMERSON.hrs},ach:ACH,journal:JOURNAL,seen:SEEN,soundings:SOUNDINGS.map(s=>({x:s.x,z:s.z,d:s.d})),
     boots:BOOTS.wear,wx:WX.kind,po:{due:PO.due,at:PO.at,lines:PO.lines},mailbox:MAILBOX.letters,
-    job:{done:JOB.done},vil:{askedStove:VIL.askedStove||0,jailDone:VIL.jailDone||0,metStaples:VIL.metStaples||0,buyK:VIL.buyK||0},said}}
+    graves:GRAVES.map((g,i)=>g.broken?i:-1).filter(i=>i>=0),zb:{state:ZB.state==='walk'||ZB.state==='falling'?(ZB.state==='falling'?'done':'due'):ZB.state,due:ZB.state==='walk'?dayNo()+1:ZB.due,g:ZB.grave?GRAVES.indexOf(ZB.grave):-1},job:{done:JOB.done},vil:{askedStove:VIL.askedStove||0,jailDone:VIL.jailDone||0,metStaples:VIL.metStaples||0,buyK:VIL.buyK||0},said}}
 function saveGame(){if(!started)return;try{localStorage.setItem(SAVEKEY,JSON.stringify(snapshot()))}catch(e){}}
 function loadSave(){let s=null;try{s=JSON.parse(localStorage.getItem(SAVEKEY)||'null')}catch(e){s=null}if(!s||s.v!==1)return false;
   try{
@@ -2874,6 +3154,8 @@ function loadSave(){let s=null;try{s=JSON.parse(localStorage.getItem(SAVEKEY)||'
     EMERSON.state=s.emerson.state;EMERSON.hrs=s.emerson.hrs;if(EMERSON.state==='waiting')MAILBOX.flag.rotation.x=0;
     Object.assign(ACH,s.ach);JOURNAL.length=0;JOURNAL.push(...s.journal);Object.assign(SEEN,s.seen);SOUNDINGS.length=0;SOUNDINGS.push(...s.soundings);
     BOOTS.wear=s.boots;PO.due=s.po.due;PO.at=s.po.at;PO.lines=s.po.lines;MAILBOX.letters=s.mailbox;if(MAILBOX.letters)MAILBOX.flag.rotation.x=0;
+    if(s.graves)for(const i of s.graves){const g=GRAVES[i];if(!g)continue;g.broken=1;g.hp=0;g.m.scale.y=.38;g.m.position.y=VH+.42;g.m.rotation.z=.15}
+    if(s.zb){ZB.state=s.zb.state;ZB.due=s.zb.due;ZB.grave=GRAVES[s.zb.g]||null;if(ZB.state==='due'&&!ZB.grave)ZB.state='none'}
     JOB.done=s.job.done;Object.assign(VIL,s.vil);Object.assign(said,s.said||{});
     H.x=s.H.x;H.z=s.H.z;H.yaw=s.H.yaw;camera.userData.init=0;
     setTime(s.HOUR);updateDate();setWeather(s.wx,true);WX.cur=Object.assign({},WXKIND[WX.kind]);
@@ -2886,7 +3168,7 @@ const SAVED=loadSave();
   fresh.onclick=()=>{if(fresh.dataset.sure!=='1'){fresh.dataset.sure='1';fresh.textContent='Erase the saved game? Click again';return}try{localStorage.removeItem(SAVEKEY)}catch(e){}location.reload()}}
 setInterval(saveGame,30000);
 addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveGame()});addEventListener('pagehide',saveGame);
-window.__pd=pondD;window.__cam=()=>({sub:[postU.uSub.value.x.toFixed(2),postU.uSub.value.y.toFixed(2)],cam:[camera.position.x.toFixed(2),camera.position.z.toFixed(2)],h:rt.height,view:VIEW.toFixed(1)});window.groundH=groundH;window.__postU=postU;window.__wxU=wxU;window.__realState=()=>({ready:REAL.ready,n:Object.fromEntries(Object.entries(REAL.buf).map(([k,v])=>[k,v.filter(Boolean).map(b=>+b.duration.toFixed(2))])),ctx:AU.ctx&&AU.ctx.state});window.__snow={realPlay:real,sfxT:sfx,saveGame,snapshot,TILES,BOOTS,bootsSeason,mendBoots,dressHenry,setWeather,WX,strike:()=>boltStrike(new THREE.Vector3(H.x,H.g.position.y+3,H.z)),EMERSON,ACH,emersonArrives,takeEmerson,readEmerson,replyEmerson,landNow,setTime,setSnow,turnView,H,start,act,TREES,callTrain,TRAIN,CAB,currentAction,setPix,ALEK,SUNBELL,CAL,ICE,VIS,visitorsCome,SOUNDINGS,JOURNAL,lifeAction,JOB,FARMER,SMITH,payStove,takeJob,measureStake,getPaid,jobAction,CAL,FF,startSleep,newDay,APPLE_TREES,ORCH,camSnap:()=>{camera.userData.init=0},VIL,VX,VZ,JAIL,travel,FOLK,PO,openStudy,closeStudy,MAILBOX,OWL,DEER,writeLetter,BOAT,boat,setLook,toggleMap,alekTalk,setHeld,cycleHeld,toggleBag,held:()=>HELD,slots,run:()=>RUN,setSeason,INV,TILES,GT,advance,stageOf,FISHING:()=>FISHING,season:()=>SEASON,setView:v=>{VIEW_OUT=v;VIEW=v}};window.__snow.fox=()=>({FOX,foxBark});window.__snow.flowers=()=>({FLOWERS,SFU,sfTarget,LILY,SFL,SFW,FERNU,BUGS,PLANTS});window.__snow.chest=()=>({CHEST,inv:INV.chest,openChest,closeChest,chestPut,chestTake,onHim});ledger();setPix(PIX);
+window.__pd=pondD;window.__cam=()=>({sub:[postU.uSub.value.x.toFixed(2),postU.uSub.value.y.toFixed(2)],cam:[camera.position.x.toFixed(2),camera.position.z.toFixed(2)],h:rt.height,view:VIEW.toFixed(1)});window.groundH=groundH;window.__postU=postU;window.__wxU=wxU;window.__realState=()=>({ready:REAL.ready,n:Object.fromEntries(Object.entries(REAL.buf).map(([k,v])=>[k,v.filter(Boolean).map(b=>+b.duration.toFixed(2))])),ctx:AU.ctx&&AU.ctx.state});window.__snow={realPlay:real,sfxT:sfx,saveGame,snapshot,TILES,BOOTS,bootsSeason,mendBoots,dressHenry,setWeather,WX,strike:()=>boltStrike(new THREE.Vector3(H.x,H.g.position.y+3,H.z)),EMERSON,ACH,emersonArrives,takeEmerson,readEmerson,replyEmerson,landNow,setTime,setSnow,turnView,H,start,act,TREES,callTrain,TRAIN,CAB,currentAction,setPix,ALEK,SUNBELL,CAL,ICE,VIS,visitorsCome,SOUNDINGS,JOURNAL,lifeAction,JOB,FARMER,SMITH,payStove,takeJob,measureStake,getPaid,jobAction,CAL,FF,startSleep,newDay,APPLE_TREES,ORCH,camSnap:()=>{camera.userData.init=0},VIL,VX,VZ,JAIL,travel,FOLK,PO,openStudy,closeStudy,MAILBOX,OWL,DEER,writeLetter,BOAT,boat,setLook,toggleMap,alekTalk,setHeld,cycleHeld,toggleBag,held:()=>HELD,slots,run:()=>RUN,setSeason,INV,TILES,GT,advance,stageOf,FISHING:()=>FISHING,season:()=>SEASON,setView:v=>{VIEW_OUT=v;VIEW=v}};window.__snow.fox=()=>({FOX,foxBark});window.__snow.zb=()=>({ZB,GRAVES});window.__press=press;window.__snow.flowers=()=>({FLOWERS,SFU,sfTarget,LILY,SFL,SFW,FERNU,BUGS,PLANTS,AUT,DOWN,leafLitter,MUSH});window.__snow.chest=()=>({CHEST,inv:INV.chest,openChest,closeChest,chestPut,chestTake,onHim});ledger();setPix(PIX);
 /* ---------- the way back to the Temporary Custody index. In the index's frame, the game saves, fades its sound and asks
    the index to close the frame; on its own, it saves and goes to the index ---------- */
 {const FRAMED=window.parent!==window&&/[#?&]frame/.test(location.href);const home=document.getElementById('home');
