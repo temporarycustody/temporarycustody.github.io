@@ -2304,6 +2304,8 @@ const WAGON={g:new THREE.Group(),lx:90,dir:-1,wait:0,ph:0,legs:[]};
   const drv=person({coat:0x4a4038,trou:0x3a3430,hat:'wide',hatC:0x5a4a38,hair:0x4a3a2a,beard:1});scene.remove(drv.g);drv.g.position.set(0,2.5,3.2);drv.g.scale.setScalar(1);for(const l of drv.legs)l.rotation.x=-1.4;for(const a of drv.arms)a.rotation.x=-.9;G.add(drv.g);
   G.scale.setScalar(.8);scene.add(G)}
 critterTag('Teamster and wagon','#e6d6b8',WAGON.g,9,60);
+// the wagon stands in the street from the start; until the village's frame first moves it, it had stood at the world's origin, by the house, with its name on the ground
+{const p=tL(WAGON.lx,-3.2);WAGON.g.position.set(p.x,VH,p.z)}
 // a yellow dog, and hens behind the houses
 const DOG=(()=>{const G=new THREE.Group(),legs=[],mk=(geo,c,x,y,z,p=G)=>{const m=new THREE.Mesh(geo,matFor(c));m.position.set(x,y,z);m.castShadow=true;p.add(m);return m};
   mk(new THREE.SphereGeometry(.6,10,8),0xb08a4a,0,1.5,0).scale.set(.85,.8,1.8);const hd=mk(new THREE.SphereGeometry(.45,10,8),0xb08a4a,0,2.1,1.2);mk(new THREE.BoxGeometry(.3,.3,.6),0x9a7440,0,1.95,1.6);
@@ -3922,14 +3924,14 @@ if(ROLE==='hunter'){
   const RUN={on:0,a:0,loops:0,x:0,z:0,dead:0,t:0,shot:0,cry:0};
   const loopAt=a=>({x:20+Math.cos(a)*175,z:70+Math.sin(a)*145});
   function bay(x,z,k){const d=Math.hypot(x-H.x,z-H.z);if(d>420||!AU.ctx||!AU.on)return;const v=clamp(1.2-d/360,.12,1),pn=clamp((x-H.x)/120,-1,1);tone({f:rr(400,470),f2:rr(290,330),g:.8,d:1.1,a:.06,v:.035*v*k,type:'sawtooth',lp:1100,vib:7,vibr:5,pan:pn});tone({f:rr(200,235),f2:150,g:.8,d:1,a:.06,v:.02*v*k,type:'triangle',lp:700,pan:pn})}
-  function startHunt(){RUN.on=1;RUN.loops=0;RUN.dead=0;RUN.shot=0;const p=loopAt(0);RUN.a=Math.atan2((H.z-70)/145,(H.x-20)/175)+.9;const q=loopAt(RUN.a);RUN.x=q.x;RUN.z=q.z;FX.visible=true;
+  function startHunt(){RUN.on=1;RUN.loops=0;RUN.dead=0;RUN.shot=0;RUN.t=0;RUN.earth=0;RUN.reload=0;FX.rotation.z=0;const p=loopAt(0);RUN.a=Math.atan2((H.z-70)/145,(H.x-20)/175)+.9;const q=loopAt(RUN.a);RUN.x=q.x;RUN.z=q.z;FX.visible=true;
     for(const d of DOGS){if(d.state==='lost')continue;d.state='run'}say('He slips the hounds. They cast about, strike the scent and are gone, crying. A fox runs a wide circle; wait where it will come round.',true);R.hunts++;errDirty=1}
   function endHunt(line){RUN.on=0;FX.visible=false;for(const d of DOGS)if(d.state==='run')d.state='heel';if(line)say(line,true)}
   QF.push(dt=>{const t=performance.now()/1000;
     if(RUN.on&&!RUN.dead){RUN.a+=dt*22/165;const p=loopAt(RUN.a);const dx=p.x-RUN.x,dz=p.z-RUN.z;RUN.x=p.x;RUN.z=p.z;FX.position.set(RUN.x,groundH(RUN.x,RUN.z)-.1+Math.abs(Math.sin(t*13))*.4,RUN.z);FX.rotation.y=Math.atan2(dx,dz);
       const s=Math.sin(t*13)*.9;FXL[0].rotation.x=FXL[3].rotation.x=s;FXL[1].rotation.x=FXL[2].rotation.x=-s;FXT.rotation.x=.35;
       RUN.cry-=dt;if(RUN.cry<0){RUN.cry=rr(1.2,2.4);const dg=DOGS.find(d=>d.state==='run');if(dg)bay(dg.x,dg.z,1)}
-      RUN.t+=dt;if(RUN.t>150){endHunt('The cry dies away. The fox has gone to earth somewhere toward Fair Haven, and the hounds come back one by one.')}}
+      RUN.t+=dt;if(RUN.t>150){RUN.earth=1;endHunt('The cry dies away. The fox has gone to earth somewhere toward Fair Haven, and the hounds come back one by one.')}}
     if(RUN.dead){RUN.dead-=dt;FX.rotation.z=Math.min(1.5,FX.rotation.z+dt*3);if(RUN.dead<=0){RUN.dead=0;endHunt('')}}
     for(const [i,d] of DOGS.entries()){let tx=H.x+Math.sin(H.yaw+Math.PI+(i?.6:-.6))*4,tz=H.z+Math.cos(H.yaw+Math.PI+(i?.6:-.6))*4,sp=12;
       if(d.state==='run'&&RUN.on){const p=loopAt(RUN.a-.05-i*.03);tx=p.x;tz=p.z;sp=26}
@@ -3954,7 +3956,7 @@ if(ROLE==='hunter'){
   ROLE_ACT.push(()=>{if(!RUN.on||foxNearby())return null;if(!nearPt(HOMES.door,7))return null;return{label:'Call the hounds in',fn:()=>endHunt('He winds his horn and the hounds come in, tongues out.')}});
   // a hound lost: after the second hunt Bell does not come back
   const LOSTAT=(()=>{for(let k=0;k<300;k++){const a=Math.random()*6.283,r=rr(60,140);const x=-40+Math.cos(a)*r*1.3,z=200+Math.sin(a)*r*.4;if(groundH(x,z)>WATER_Y+1&&treeZone(x,z))return{x,z}}return{x:60,z:200}})();
-  {const _eh=endHunt;endHunt=function(line){_eh(line);if(R.hunts>=2&&!R.lost){R.lost=1;DOGS[1].state='lost';setTimeout(()=>say('Ranger comes in alone. Bell has not come back.',true),2500);errDirty=1}}}
+  {const _eh=endHunt;endHunt=function(line){const earth=RUN.earth;RUN.earth=0;_eh(line);if(earth&&R.hunts>=2&&!R.lost){R.lost=1;DOGS[1].state='lost';PIN='hhound';setTimeout(()=>say('Ranger comes in alone. Bell has stayed out on the fox’s track, somewhere past the pond. Henry Thoreau may have heard her; she is in the errands, in his bag.',true),2500);errDirty=1}}}
   HENRY_HOOK.push(()=>{if(R.lost===1&&!R.asked){R.asked=1;errDirty=1;henrySays('Henry has heard a hound. Off on the far side of the pond, south, past the shore, it was running alone all morning on an old track, giving tongue. It will be there yet.');return true}
     if(R.hits>0&&!R.laws){openMenu('Henry Thoreau','Henry sees the fox pelt. He says he hunted himself as a boy, and is glad he did: there is no better way into the woods. But a man who goes on going there may find he is after something else, and leave the gun behind.',[
       {label:'Say he will keep the gun; it is his living',fn:()=>{R.laws='keep';henrySays('Henry nods. Every man to his own road, he says. Mind the fox’s den in the bank, though; he would not see it dug out.');finish('hlaws','','higherlaws')}},
@@ -3975,7 +3977,7 @@ if(ROLE==='hunter'){
     steps:()=>[{t:'Slip the hounds at the cabin door',short:'Slip the hounds',ok:R.hunts>0},{t:'Wait on the fox’s circle, and fire when it comes by',short:'Wait for the fox, and fire',ok:R.hits>0}],
     target:()=>RUN.on?{x:RUN.x,z:RUN.z,label:'the fox',dy:3}:{x:HOMES.door.x,z:HOMES.door.z,label:'the cabin'}});
   errand({id:'hhound',role:'hunter',title:'A hound gone astray',when:'After a hunt or two',avail:()=>R.lost>=1||R.hunts>=1,blurb:'In the book a hunter comes by Henry’s house asking whether he has seen his hound, which has gone off hunting on its own.',
-    steps:()=>[{t:'Run the fox twice',short:'Run the fox twice',ok:R.lost>=1},{t:'Ask Henry Thoreau if he has heard the hound',short:'Ask Henry about Bell',ok:!!R.asked||R.lost===2},{t:'Find Bell, and call her home',short:'Find Bell',ok:R.lost===2}],
+    steps:()=>[{t:'Run the fox until a hound stays out on the track',short:'A hound stays out',ok:R.lost>=1},{t:'Ask Henry Thoreau if he has heard the hound',short:'Ask Henry about Bell',ok:!!R.asked||R.lost===2},{t:'Find Bell, and call her home',short:'Find Bell',ok:R.lost===2}],
     target:()=>R.lost===1?(R.asked?{x:LOSTAT.x,z:LOSTAT.z,label:'the hound’s cry'}:{x:HB.x,z:HB.z,label:'Henry Thoreau'}):null});
   errand({id:'htraps',role:'hunter',title:'Muskrat traps',when:'Autumn to spring',avail:()=>SEASON!==1,blurb:'Along the shore the muskrats come out on the bank. Their skins sell in the village.',
     steps:()=>[{t:'Buy traps at the store in the village',short:'Buy traps',ok:!!R.trapsHave},{t:`Set four at the water’s edge below the cabin (${Math.min(4,R.traps.length+(R.checked||0))}/4)`,short:`Set traps ${Math.min(4,R.traps.length+(R.checked||0))}/4`,ok:R.traps.length+(R.checked||0)>=4},{t:`Look at them the next day (${Math.min(4,R.checked||0)}/4)`,short:`Look at the traps ${Math.min(4,R.checked||0)}/4`,ok:(R.checked||0)>=4}],

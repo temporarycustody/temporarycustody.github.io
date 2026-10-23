@@ -140,34 +140,30 @@ function draw(now){const tt=now/1000;g.setTransform(1,0,0,1,0,0);g.globalComposi
   for(const o of big){const f=reduce?1:.82+.18*Math.sin(tt*o.sp+o.ph)+.06*Math.sin(tt*o.sp*3.1+o.ph);const s=o.img.width/2;g.globalAlpha=Math.max(0,Math.min(1,f));g.drawImage(o.img,o.x-s,o.y-s)}
   g.globalAlpha=1;g.globalCompositeOperation='source-over';if(!reduce)requestAnimationFrame(draw)}
 addEventListener('resize',()=>{build();if(reduce)draw(performance.now())});build();requestAnimationFrame(draw);
-/* sound, made in the page as on the index, starting with the first click, tap or key: a low slow chord that swells and
-   falls like breathing, now and then a soft high bell as if from a star, a note when the pointer finds one of the games,
-   and a rising pair as one opens. No noise and nothing sharp. */
-const SND=(()=>{let C=null,M=null,wet=null,on=true;try{on=localStorage.getItem('tcNebulaSound')!=='off'}catch(e){}
+/* sound: the index's own, the same engine as its About, note for note. A low, slow-beating pad of five detuned pairs
+   (D, A, D, A, E) under a low-pass, in a long soft reverb, and now and then a high bell from the pentatonic above it,
+   as from a star. It starts with the first click, tap or key; the button turns it off and on. */
+const SND=(()=>{const AC=window.AudioContext||window.webkitAudioContext;let ac=null,master=null,verb=null,dry=null,on=true,gT=null;try{on=localStorage.getItem('tcNebulaSound')!=='off'}catch(e){}
   const btn=document.getElementById('snd');const show=()=>{btn.textContent=on?'Sound on':'Sound off';btn.setAttribute('aria-pressed',String(on))};show();
-  function start(){if(C){if(C.state==='suspended')C.resume();return}try{C=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return}
-    M=C.createGain();M.gain.value=0;M.connect(C.destination);M.gain.setTargetAtTime(on?.9:0,C.currentTime,1.2);
-    // a soft echo for the bells
-    const d=C.createDelay(2),fb=C.createGain(),lp=C.createBiquadFilter();d.delayTime.value=.42;fb.gain.value=.38;lp.type='lowpass';lp.frequency.value=1800;d.connect(lp);lp.connect(fb);fb.connect(d);wet=C.createGain();wet.gain.value=.5;lp.connect(wet);wet.connect(M);wet.input=d;
-    // the bed: four sines a fifth and an octave apart, each breathing on its own slow cycle, under a low-pass that opens and closes
-    const bed=C.createBiquadFilter();bed.type='lowpass';bed.frequency.value=600;bed.Q.value=.4;bed.connect(M);
-    const lf=C.createOscillator(),lg=C.createGain();lf.frequency.value=.031;lg.gain.value=260;lf.connect(lg);lg.connect(bed.frequency);lf.start();
-    [[55,.05,.043],[82.41,.035,.029],[110,.03,.051],[164.81,.016,.037],[220,.008,.023]].forEach(([f,v,r])=>{const o=C.createOscillator(),g=C.createGain(),b=C.createOscillator(),bg=C.createGain();
-      o.frequency.value=f*(1+(Math.random()-.5)*.003);g.gain.value=v*.6;b.frequency.value=r;bg.gain.value=v*.4;b.connect(bg);bg.connect(g.gain);o.connect(g);g.connect(bed);o.start();b.start()});
-    bells()}
-  function bell(f,v,at){if(!C)return;const t0=C.currentTime+(at||0);[[1,1],[2.01,.3],[3.02,.1]].forEach(([m,a])=>{const o=C.createOscillator(),g=C.createGain();o.type='sine';o.frequency.value=f*m;
-      g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v*a,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+3.2/m);o.connect(g);g.connect(M);g.connect(wet.input);o.start(t0);o.stop(t0+3.4)})}
-  const SC=[440,493.88,554.37,659.25,739.99,880,987.77,1108.73];
-  function bells(){setTimeout(()=>{if(C&&on&&!document.hidden){const f=SC[Math.random()*SC.length|0];bell(f,.022);if(Math.random()<.35)bell(SC[Math.random()*SC.length|0],.016,.6+Math.random()*.5)}bells()},4500+Math.random()*9000)}
-  function toggle(){on=!on;try{localStorage.setItem('tcNebulaSound',on?'on':'off')}catch(e){}show();if(!C){if(on)start();return}M.gain.setTargetAtTime(on?.9:0,C.currentTime,.3)}
-  btn.addEventListener('click',e=>{e.stopPropagation();if(!C&&on){start();return}toggle()});
-  const wake=()=>{if(on)start()};addEventListener('pointerdown',wake,{once:false});addEventListener('keydown',wake);
-  document.addEventListener('visibilitychange',()=>{if(C)M.gain.setTargetAtTime(document.hidden||!on?0:.9,C.currentTime,.3)});
-  for(const a of document.querySelectorAll('.g')){const f=a.id==='tetris'?659.25:554.37;
-    a.addEventListener('pointerenter',()=>{if(C&&on)bell(f,.03)});a.addEventListener('focus',()=>{if(C&&on)bell(f,.03)});
-    a.addEventListener('click',e=>{if(!C||!on)return;e.preventDefault();bell(f,.035);bell(f*1.5,.03,.16);M.gain.setTargetAtTime(0,C.currentTime+.25,.18);const to=a.href;setTimeout(()=>{location.href=to},650)})}
-  addEventListener('pageshow',ev=>{if(ev.persisted&&C)M.gain.setTargetAtTime(on?.9:0,C.currentTime,.4)});
-  return{start}})();
+  const hz=m=>440*Math.pow(2,(m-69)/12);
+  function ir(sec,decay){const n=Math.round(ac.sampleRate*sec),b=ac.createBuffer(2,n,ac.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);let lp=0;for(let i=0;i<n;i++){const w=Math.random()*2-1;lp=lp*.6+w*.4;d[i]=lp*Math.pow(1-i/n,decay)}}return b}
+  function bell(m,amp,when){if(!ac)return;const t=ac.currentTime+(when||0),f=hz(m);
+    [[1,1,3.6],[2.0,.18,2.2],[2.76,.22,1.6],[5.4,.07,.8]].forEach(([r,a,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f*r;
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp*a,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(dry);g.connect(verb);o.start(t);o.stop(t+d+.05)})}
+  function level(){if(!ac||!master)return;const v=on&&!document.hidden;if(v&&ac.state==='suspended')ac.resume();master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(v?.9:0,ac.currentTime,v?.8:.15)}
+  function glint(){clearTimeout(gT);gT=setTimeout(()=>{if(on&&ac&&!document.hidden)bell(86+[0,2,5,7,9][Math.floor(Math.random()*5)],.018);glint()},9000+Math.random()*14000)}
+  function start(){if(ac){if(ac.state==='suspended'&&on)ac.resume();return}if(!AC)return;try{ac=new AC()}catch(e){return}master=ac.createGain();master.gain.value=0;master.connect(ac.destination);
+    verb=ac.createConvolver();verb.buffer=ir(5.5,2.6);const vg=ac.createGain();vg.gain.value=.55;verb.connect(vg);vg.connect(master);dry=ac.createGain();dry.gain.value=.7;dry.connect(master);
+    const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;const pg=ac.createGain();pg.gain.value=.055;lp.connect(pg);pg.connect(dry);pg.connect(verb);
+    [[38,1],[45,.8],[50,.5],[57,.32],[64,.12]].forEach(([m,a],k)=>{for(const det of [-.0025,.0025]){const o=ac.createOscillator();o.type='sine';o.frequency.value=hz(m)*(1+det);
+      const g=ac.createGain();g.gain.value=a*.5;const l=ac.createOscillator();l.frequency.value=.03+k*.017+(det>0?.009:0);const lg=ac.createGain();lg.gain.value=a*.35;l.connect(lg);lg.connect(g.gain);o.connect(g);g.connect(lp);o.start();l.start()}});
+    level();glint()}
+  function toggle(){on=!on;try{localStorage.setItem('tcNebulaSound',on?'on':'off')}catch(e){}show();if(!ac){if(on)start();return}level()}
+  btn.addEventListener('click',e=>{e.stopPropagation();if(!ac&&on){start();return}toggle()});
+  const wake=()=>{if(on)start()};addEventListener('pointerdown',wake);addEventListener('keydown',wake);
+  document.addEventListener('visibilitychange',level);
+  addEventListener('pageshow',ev=>{if(ev.persisted)level()});
+  return{start,state:()=>({on,state:ac?ac.state:null})}})();
 })();
 </script>
 </body>
