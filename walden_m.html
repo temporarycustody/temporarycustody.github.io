@@ -1506,9 +1506,7 @@ function alekFrame(dt,t){const A=ALEK;
       A.g.position.set(A.x,hy(A.x,A.z)-1.25,A.z);A.g.rotation.y=A.yaw;A.pail.visible=true;A.pail.position.set(A.x+Math.cos(A.yaw)*1.6,hy(A.x,A.z),A.z-Math.sin(A.yaw)*1.6);sayOnce('alekdinner','Alek Therien sits on a log and eats his dinner from a tin pail.',true);
       const v=new THREE.Vector3(A.x,A.g.position.y+7.6,A.z).project(camera);const on=v.z<1&&Math.abs(v.x)<1.05&&Math.abs(v.y)<1.05;alekTag.hidden=!on;if(on){alekTag.style.left=((v.x+1)/2*innerWidth)+'px';alekTag.style.top=((1-v.y)/2*innerHeight)+'px'}return}}
   if(A.talk>0){A.talk-=dt;A.yaw=Math.atan2(H.x-A.x,H.z-A.z);A.sp=lerp(A.sp,0,dt*8)}
-  else if(A.state==='walk'||A.state==='gohome'){const dx=A.tx-A.x,dz=A.tz-A.z,d=Math.hypot(dx,dz);if(d<.6){if(A.state==='gohome'){A.state='home'}else if(A.via){A.via=0;alekPick()}else{A.state='chop';A.t=4+Math.random()*6;A.chopT=0}}else{const s=6*dt;const inH=(x,z)=>Math.abs(x-CABIN.x)<10.5&&Math.abs(z-CABIN.z)<8;let ux=dx/d,uz=dz/d;
-    if(inH(A.x+ux*s*4,A.z+uz*s*4)){for(const r of [.9,-.9,1.57,-1.57,2.3,-2.3]){const c=Math.cos(r),sn=Math.sin(r),vx=ux*c-uz*sn,vz=ux*sn+uz*c;if(!inH(A.x+vx*s*4,A.z+vz*s*4)){ux=vx;uz=vz;break}}}
-    if(!inH(A.x+ux*s,A.z+uz*s)){A.x+=ux*Math.min(s,d);A.z+=uz*Math.min(s,d)}else{const ox=A.x-CABIN.x,oz=A.z-CABIN.z,ol=Math.hypot(ox,oz)||1;A.x+=ox/ol*s;A.z+=oz/ol*s}A.yaw=Math.atan2(ux,uz);A.sp=lerp(A.sp,1,dt*6)}}
+  else if(A.state==='walk'||A.state==='gohome'){const dx=A.tx-A.x,dz=A.tz-A.z,d=Math.hypot(dx,dz);if(d<.6){if(A.state==='gohome'){A.state='home'}else if(A.via){A.via=0;alekPick()}else{A.state='chop';A.t=4+Math.random()*6;A.chopT=0}}else{const s=6*dt;A.yaw=npcStep(A,A.tx,A.tz,s);A.sp=lerp(A.sp,1,dt*6)}}
   else{A.sp=lerp(A.sp,0,dt*8);if(A.tree)A.yaw=Math.atan2(A.tree.x-A.x,A.tree.z-A.z);A.t-=dt;A.chopT+=dt;
     const s=(A.chopT%1.1)/1.1;A.arms[1].rotation.x=s<.45?lerp(0,-2.6,s/.45):s<.65?lerp(-2.6,.6,(s-.45)/.2):lerp(.6,0,(s-.65)/.35);A.arms[0].rotation.x=A.arms[1].rotation.x*.8;
     if(A.lastS!==undefined&&A.lastS<.6&&s>=.6){const d=Math.hypot(A.x-H.x,A.z-H.z);const v=clamp(1-d/140,0,1);if(v>.02&&AU.ctx&&AU.on&&started){tone({f:150,f2:70,d:.14,v:.25*v*v,pan:clamp((A.x-H.x)/80,-1,1)});tone({f:rr(280,300),d:.2,v:.07*v*v,type:'triangle',lp:2000,pan:clamp((A.x-H.x)/80,-1,1)})}if(A.tree)A.tree.shake=.15}
@@ -1871,9 +1869,9 @@ function zombieFrame(dt,t){const P=ZB.p,night=DAY<.15;
   if(ZB.state!=='walk'){P.g.visible=false;return}
   P.g.visible=true;ZB.rise=Math.min(1,(ZB.rise||0)+dt*.4);
   const d=Math.hypot(H.x-ZB.x,H.z-ZB.z),hunting=d<26&&!CAB.inside;
-  if(!hunting){ZB.t-=dt;if(ZB.t<0||!ZB.tx){const a=Math.random()*6.28;ZB.tx=VX+rr(-60,60);ZB.tz=VZ+rr(-60,60);ZB.t=rr(8,16)}}else{ZB.tx=H.x;ZB.tz=H.z}
+  if(!hunting){ZB.t-=dt;if(ZB.t<0||!ZB.tx){const a=Math.random()*6.28;const v=npcClear({x:VX+rr(-60,60),z:VZ+rr(-60,60)});ZB.tx=v.x;ZB.tz=v.z;ZB.t=rr(8,16)}}else{ZB.tx=H.x;ZB.tz=H.z}
   const dx=ZB.tx-ZB.x,dz=ZB.tz-ZB.z,dd=Math.hypot(dx,dz),sp=(hunting?3.4:1.8)*ZB.rise*(ZB.hitT>0?.2:1);ZB.hitT-=dt;
-  if(dd>1.6){const nx=ZB.x+dx/dd*sp*dt,nz=ZB.z+dz/dd*sp*dt;if(!villageBlocked(nx,nz)){ZB.x=nx;ZB.z=nz}else{ZB.x+=dz/dd*sp*dt;ZB.z-=dx/dd*sp*dt}ZB.yaw=Math.atan2(dx,dz)}
+  if(dd>1.6){ZB.yaw=npcStep(ZB,ZB.tx,ZB.tz,sp*dt)}
   // his hands on Henry: a shove and a cold fright, nothing worse
   if(hunting&&d<1.9&&ZB.hitT<=0){ZB.hitT=1.4;const a=Math.atan2(H.x-ZB.x,H.z-ZB.z);for(let k=0;k<6;k++){const nx=H.x+Math.sin(a)*.6,nz=H.z+Math.cos(a)*.6;if(!blocked(nx,nz)){H.x=nx;H.z=nz}}rumble(220,1,.8);groan(1.2);say('Cold hands on his collar. He wrenches free.')}
   ZB.ph+=dt*sp*1.6;const sw=Math.sin(ZB.ph)*.35;P.legs[0].rotation.x=sw;P.legs[1].rotation.x=-sw;P.arms[0].rotation.x=-1.45+Math.sin(t*1.3)*.1;P.arms[1].rotation.x=-1.35+Math.sin(t*1.1+1)*.1;
@@ -2193,6 +2191,26 @@ function villageFrame(dt,t){const nw=performance.now(),rd=Math.min(.2,(nw-trvLas
   VIL.here=inVillage(H.x,H.z,10);folkFrame(dt,t);{const on=DAY<.45&&(HOUR<22.5&&HOUR>12);for(const m of VWIN){if(m.userData.e===0x2a3038)continue;m.emissive.set(on?m.userData.e:0).multiplyScalar(on?.85:0)}}
   if(VIL.jailed){const c=JAIL.cell;const [lx,lz]=jL(H.x,H.z);[H.x,H.z]=jW(clamp(lx,c.x0+.6,c.x1-.6),clamp(lz,c.z0+.6,c.z1-.6))}}
 function villageBlocked(x,z){for(const b of VIL.blocks)if(x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1)return true;return false}
+/* ---------- people keep to the outside of buildings: the whole house (roof on or off), the woodshed, the chopping block, the village ---------- */
+function npcBlocked(x,z,pad=.8){const lx=x-CABIN.x,lz=z-CABIN.z;
+  if(Math.abs(lx)<8.4+pad&&Math.abs(lz)<5.9+pad)return true;
+  if(lx>9-pad&&lx<12+pad&&Math.abs(lz)<5.5+pad)return true;
+  if(Math.hypot(lx-13.5,lz-4.5)<1.8+pad)return true;
+  if(inVillage(x,z,6))for(const b of VIL.blocks)if(x>b.x0-pad&&x<b.x1+pad&&z>b.z0-pad&&z<b.z1+pad)return true;
+  return false}
+function npcFree(x,z,vx,vz,s){for(const k of [s,.8,1.6,2.6])if(npcBlocked(x+vx*k,z+vz*k))return false;return true}
+// one step toward (tx,tz); when the way is shut it keeps one hand on the wall, on one side, until the way opens again
+function npcStep(o,tx,tz,s){const dx=tx-o.x,dz=tz-o.z,d=Math.hypot(dx,dz)||1;s=Math.min(s,d);const ux=dx/d,uz=dz/d;
+  if(npcBlocked(o.x,o.z,.2)||(d<9&&npcBlocked(tx,tz,0))){o.x+=ux*s;o.z+=uz*s;return Math.atan2(ux,uz)}
+  const dir=r=>{const c=Math.cos(r),sn=Math.sin(r);return[ux*c-uz*sn,ux*sn+uz*c]};
+  if(npcFree(o.x,o.z,ux,uz,s)){o.x+=ux*s;o.z+=uz*s;o.free=(o.free||0)+s;return Math.atan2(ux,uz)}
+  // which way round: keep the side already chosen unless he has walked clear for a good while
+  if(o.side===undefined||o.free>12){let best=0,bs=1;for(const sg of [1,-1])for(let a=.2;a<3.1;a+=.2){const[vx,vz]=dir(a*sg);if(npcFree(o.x,o.z,vx,vz,s)){if(!best||a<best){best=a;bs=sg}break}}o.side=bs}
+  o.free=0;
+  for(let a=.2;a<3.15;a+=.15){const[vx,vz]=dir(a*o.side);if(npcFree(o.x,o.z,vx,vz,s)){o.x+=vx*s;o.z+=vz*s;return Math.atan2(vx,vz)}}
+  o.side=-o.side;return Math.atan2(ux,uz)}
+// a point outside every building, near the one asked for
+function npcClear(v){for(let k=0;k<12&&npcBlocked(v.x,v.z,1.2);k++){v.x+=rr(-6,6);v.z+=rr(-6,6)}return v}
 
 /* ---------- the village alive: a smithy, a horse and wagon, people in the street, a dog, hens, smoke from the chimneys ---------- */
 const TOWN={walkers:[],props:[],plumes:[],forgeT:0,hammer:0};const GARDEN_PLANTS=[],WASH=[];
@@ -2227,7 +2245,7 @@ critterTag('Blacksmith','#e6d6b8',SMITH.g,7.4,60);
 const WALKERS=[{coat:0x3a3e4a,trou:0x4a4440,hat:'top',hair:0x5a4430},{coat:0x6a2a24,dress:0x5a2a28,hat:'bonnet',hatC:0xe8e0d0,hair:0x6a4a2a},{coat:0x2e3a2e,trou:0x5a5448,hat:'wide',hair:0x3a3028,beard:1},
   {coat:0x4a5a6a,dress:0x3e4e62,hat:'bonnet',hatC:0xd8c8a8,hair:0x8a6a3a},{coat:0x5a4a36,trou:0x3a3a3a,hat:'cap',hatC:0x4a3e30,hair:0x6a4a2a},{coat:0x2a2a30,trou:0x2a2a30,hat:'top',hair:0x8a8278,spect:1},
   {coat:0x7a6a4a,dress:0x6a5a3a,hat:'bonnet',hatC:0xc8b890,hair:0x3a3028}];
-function streetPoint(){if(Math.random()<.35)return tL(rr(-80,-56),rr(-36,36));return tL(rr(-44,94),(Math.random()<.5?-1:1)*rr(7.5,9.5))}
+function streetPoint(){for(let k=0;k<20;k++){const v=Math.random()<.35?tL(rr(-80,-56),rr(-36,36)):tL(rr(-44,94),(Math.random()<.5?-1:1)*rr(7.5,9.5));if(!npcBlocked(v.x,v.z,1.2))return v}return tL(0,8.5)}
 for(const o of WALKERS){const p=person(o);const s=streetPoint();p.g.position.copy(s);p.tgt=streetPoint();p.wait=rr(0,6);p.ph=rr(0,6);p.sp=rr(3.6,4.8);TOWN.walkers.push(p)}
 // the horse and wagon, up and down the street
 const WAGON={g:new THREE.Group(),lx:90,dir:-1,wait:0,ph:0,legs:[]};
@@ -2270,7 +2288,7 @@ function townFrame(dt,t){const vc=tL(10,0),dV=Math.hypot(H.x-vc.x,H.z-vc.z),near
   for(const p of TOWN.walkers){p.g.visible=!night;if(night)continue;const dx=p.tgt.x-p.g.position.x,dz=p.tgt.z-p.g.position.z,d=Math.hypot(dx,dz);
     if(p.wait>0){p.wait-=dt;for(const l of p.legs)l.rotation.x*=.8;p.arms[0].rotation.x=Math.sin(t*.8+p.ph)*.06;if(p.wait<=0)p.tgt=streetPoint();continue}
     if(d<1){p.wait=rr(2,9);if(Math.random()<.3&&Math.hypot(H.x-p.g.position.x,H.z-p.g.position.z)<60)townSound('voices',p.g.position);continue}
-    const s=p.sp*dt;p.g.position.x+=dx/d*s;p.g.position.z+=dz/d*s;const want=Math.atan2(dx,dz);let dy=want-p.g.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));p.g.rotation.y+=dy*Math.min(1,dt*6);
+    const s=p.sp*dt;const want=npcStep(p.g.position,p.tgt.x,p.tgt.z,s);let dy=want-p.g.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));p.g.rotation.y+=dy*Math.min(1,dt*6);
     p.ph+=dt*7;const w=Math.sin(p.ph)*.5;p.legs[0].rotation.x=w;p.legs[1].rotation.x=-w;p.arms[0].rotation.x=-w*.6;p.arms[1].rotation.x=w*.6;p.g.position.y=VH+Math.abs(Math.sin(p.ph))*.1}
   // the wagon
   {const W=WAGON;W.g.visible=!night;if(!night){if(W.wait>0){W.wait-=dt;if(W.wait<=0){W.dir*=-1}}else{W.lx+=W.dir*5.5*dt;if(W.lx<-40||W.lx>98){W.lx=clamp(W.lx,-40,98);W.wait=rr(6,14);if(Math.random()<.6)townSound('whinny',W.g.position)}
@@ -2527,13 +2545,13 @@ function iceFrame(dt,t){const on=SEASON===3&&DAY>.25;ICE.g.visible=on;if(!on)ret
 const VIS={group:[],state:'none',t:rr(120,240),big:0};
 function visitorsCome(){const big=Math.random()<.12,n=big?12:3;VIS.big=big;const start=new THREE.Vector3(PATH[PATH.length-1][0],0,PATH[PATH.length-1][1]);
   for(let k=0;k<n;k++){const child=k>0&&(k%3!==0);const p=person({coat:child?[0x7a3a2e,0x4a5a7a,0x6a6a3a][k%3]:[0x2a2e3a,0x5a2a28][k%2],dress:!child&&k%2?0x5a2a28:null,trou:0x3a3430,hat:child?'cap':(k%2?'bonnet':'top'),hatC:child?0x5a4a3a:0xd8d0c0,hair:0x6a4a2a});
-    if(child)p.g.scale.setScalar(.5);p.g.position.set(start.x+rr(-3,3),groundH(start.x,start.z),start.z+rr(-3,3));p.child=child;const a=rr(0,6.28),r=rr(9,16+(big?8:0));p.tgt=new THREE.Vector3(CABIN.x+12+Math.cos(a)*r,0,CABIN.z+16+Math.sin(a)*r);p.home=start.clone();p.ph=rr(0,6);VIS.group.push(p)}
+    if(child)p.g.scale.setScalar(.5);p.g.position.set(start.x+rr(-3,3),groundH(start.x,start.z),start.z+rr(-3,3));p.child=child;const a=rr(0,6.28),r=rr(9,16+(big?8:0));p.tgt=npcClear(new THREE.Vector3(CABIN.x+12+Math.cos(a)*r,0,CABIN.z+16+Math.sin(a)*r));p.home=start.clone();p.ph=rr(0,6);VIS.group.push(p)}
   VIS.state='come';VIS.t=rr(80,140);say(big?'A whole party comes up the path from the cove, two dozen of them it seems.':'Visitors come up the path: a neighbour and some children, to walk and see the pond.')}
 function visitorsFrame(dt,t){if(VIS.state==='none'){if(!started||SEASON===3||DAY<.5||VIL.here)return;VIS.t-=dt;if(VIS.t<0&&Math.hypot(H.x-CABIN.x,H.z-CABIN.z)<90)visitorsCome();return}
   VIS.t-=dt;if(VIS.state==='come'&&(VIS.t<0||DAY<.35)){VIS.state='go';for(const p of VIS.group)p.tgt=p.home.clone().add(new THREE.Vector3(rr(-3,3),0,rr(-3,3)))}
   let away=0;for(const p of VIS.group){const dx=p.tgt.x-p.g.position.x,dz=p.tgt.z-p.g.position.z,d=Math.hypot(dx,dz);
-    if(d>1){const s=(p.child?5:3.6)*dt;p.g.position.x+=dx/d*s;p.g.position.z+=dz/d*s;p.g.rotation.y=Math.atan2(dx,dz);p.ph+=dt*(p.child?10:7);const w=Math.sin(p.ph)*.5;p.legs[0].rotation.x=w;p.legs[1].rotation.x=-w}
-    else{for(const l of p.legs)l.rotation.x*=.8;if(VIS.state==='come'&&Math.random()<dt*.15){const a=rr(0,6.28);p.tgt=new THREE.Vector3(CABIN.x+12+Math.cos(a)*rr(6,18),0,CABIN.z+16+Math.sin(a)*rr(6,18))}if(VIS.state==='go')away++}
+    if(d>1){const s=(p.child?5:3.6)*dt;p.g.rotation.y=npcStep(p.g.position,p.tgt.x,p.tgt.z,s);p.ph+=dt*(p.child?10:7);const w=Math.sin(p.ph)*.5;p.legs[0].rotation.x=w;p.legs[1].rotation.x=-w}
+    else{for(const l of p.legs)l.rotation.x*=.8;if(VIS.state==='come'&&Math.random()<dt*.15){const a=rr(0,6.28);p.tgt=npcClear(new THREE.Vector3(CABIN.x+12+Math.cos(a)*rr(6,18),0,CABIN.z+16+Math.sin(a)*rr(6,18)))}if(VIS.state==='go')away++}
     p.g.position.y=groundH(p.g.position.x,p.g.position.z)+(p.child?Math.abs(Math.sin(p.ph))*.15:0)}
   if(VIS.state==='go'&&away===VIS.group.length){for(const p of VIS.group)scene.remove(p.g);VIS.group=[];VIS.state='none';VIS.t=rr(240,480)}
   if(AU.ctx&&AU.on&&VIS.state==='come'&&Math.random()<dt*.25){const p=VIS.group[(Math.random()*VIS.group.length)|0];if(p.child){const d=Math.hypot(p.g.position.x-H.x,p.g.position.z-H.z),v=clamp(1.2-d/80,0,1);for(let i=0;i<4;i++)tone({f:rr(500,800),f2:rr(400,900),d:.12,a:.02,v:.012*v,type:'triangle',lp:2000,delay:i*.15})}else townSound('voices',p.g.position)}}
@@ -3183,6 +3201,7 @@ window.__pd=pondD;window.__cam=()=>({sub:[postU.uSub.value.x.toFixed(2),postU.uS
   addEventListener('pageshow',ev=>{if(ev.persisted){gone=false;try{if(AU.ctx&&AU.out)AU.out.gain.value=.8*VOL}catch(_){}}});
   if(FRAMED){document.documentElement.classList.add('framed');let n=0;(function ready(){if(++n===4){try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}return}requestAnimationFrame(ready)})()}
   window.__home={leave,framed:FRAMED}}
+window.__npc={npcStep,npcBlocked,ALEK,VIS,visitorsCome,CABIN,TOWN,ZB};
 requestAnimationFrame(frame);
 })();
 </script>
