@@ -54,7 +54,8 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0c0f13;color:var(--in
 .tk::before,.tk::after{content:'';position:absolute;width:4px;height:4px;background:currentColor}
 .tk::before{left:-3px;top:-3px}.tk::after{right:-3px;bottom:-3px}
 #bag{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,calc(100vw - 32px));max-height:calc(100vh - 110px);overflow:auto;background:#1c181b;border:1px solid rgba(236,228,204,.25);border-radius:14px;padding:16px 18px;z-index:4;box-shadow:inset 0 0 40px rgba(0,0,0,.7)}
-#bag .tabs{display:flex;gap:16px;margin:2px 4px 14px}
+#bag .tabs{display:flex;flex-wrap:wrap;gap:8px 10px;margin:2px 4px 14px}
+#bag .tabs .tk{flex:1 1 auto;padding:6px 8px}
 #bag .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
 #bag .cell{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:1px solid rgba(236,228,204,.18);color:var(--ink);padding:8px 4px 6px;cursor:pointer;font:400 11px var(--pix)}
 #bag .cell.on{border-color:var(--ember)}
@@ -81,7 +82,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0c0f13;color:var(--in
 #dlg canvas{width:96px;height:96px;image-rendering:pixelated;flex:none}
 #dlg h4{font-size:26px}
 #map{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#16131a;border:1px solid rgba(236,228,204,.25);border-radius:16px;padding:14px 16px;z-index:4;text-align:center;cursor:pointer;box-shadow:inset 0 0 60px #000}
-#map canvas{width:min(560px,calc(100vw - 64px));image-rendering:pixelated;display:block;border-radius:10px}
+#map canvas{width:min(560px,calc(100vw - 64px),calc((100vh - 110px)*1.152));image-rendering:pixelated;display:block;border-radius:10px}
 #ledger h1,#title h2{font-family:var(--black)}
 #ledger h1{font-size:34px}
 #ledger,#ctl,#act,#act2,#inv .slot{background:rgba(28,24,27,.88);border-color:rgba(236,228,204,.35);border-radius:6px}
@@ -145,6 +146,41 @@ body.print .tag{color:#ece4cc}
 #chest p{font:400 12px var(--pix);color:var(--ink-dim);margin:2px 0 6px}
 #chest .hint{margin-top:10px}
 @media (max-width:520px){#chest .cols{grid-template-columns:1fr}}
+/* the trading and talking menu, the errands, the account book, and the choice of who goes down to the pond (23 Oct 2026) */
+#errrow{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#menu{position:fixed;left:50%;bottom:calc(64px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(440px,calc(100vw - 32px));max-height:calc(100vh - 140px);overflow:auto;background:#1c181b;border:1px solid rgba(236,228,204,.25);border-radius:14px;padding:14px 16px 12px;z-index:5;box-shadow:inset 0 0 40px rgba(0,0,0,.7)}
+#menu h4{font:400 26px/1 var(--black);margin:0 0 4px;color:#ece4cc}
+#menu .who{font:400 13px/1.4 var(--pix);color:#e2dacb;margin:0 0 10px}
+#menu .opts{display:flex;flex-direction:column;gap:5px}
+#menu button{display:flex;justify-content:space-between;gap:12px;text-align:left;background:none;border:1px solid rgba(236,228,204,.18);color:var(--ink);font:400 13px/1.3 var(--pix);padding:7px 10px;cursor:pointer}
+#menu button i{font-style:normal;color:var(--ink-dim);flex:none}
+#menu button.on{border-color:var(--ember);color:#fff}
+#menu button[disabled]{opacity:.45;cursor:default}
+#menu .hint{font:400 11px var(--pix);color:var(--ink-dim);margin:10px 0 0}
+#bag .errs article{border-top:1px solid rgba(236,228,204,.14);padding:9px 2px 8px;cursor:pointer}
+#bag .errs article.pin h5{color:var(--ember)}
+#bag .errs article.done{opacity:.6}
+#bag .errs h5{font:500 13px var(--pix);color:#ece4cc;margin:0 0 3px;display:flex;justify-content:space-between;gap:10px}
+#bag .errs h5 small{font:400 10px var(--mono);color:var(--ink-dim);letter-spacing:.06em;text-transform:uppercase}
+#bag .errs p{font:400 12px/1.4 var(--pix);color:#e2dacb;margin:0 0 4px}
+#bag .errs ul{margin:2px 0 0;padding:0;list-style:none}
+#bag .errs li{font:400 12px/1.4 var(--pix);color:var(--ink-dim);padding-left:16px;position:relative}
+#bag .errs li::before{content:'·';position:absolute;left:4px}
+#bag .errs li.ok{color:#9ec28a}
+#bag .errs li.ok::before{content:'✓';left:2px}
+#bag .errs li.now{color:#ece4cc}
+#bag .errs figure{margin:8px 0 2px}
+#bag .errs figure img{width:100%;image-rendering:pixelated;border:1px solid rgba(236,228,204,.2)}
+#bag .acct table{width:100%;border-collapse:collapse;font:400 12px/1.4 var(--pix);color:#e2dacb}
+#bag .acct td{padding:3px 2px;border-bottom:1px solid rgba(236,228,204,.1);vertical-align:top}
+#bag .acct td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+#bag .acct h5{font:500 12px var(--pix);color:var(--ember);margin:12px 0 4px;letter-spacing:.04em}
+#bag .acct p{font:400 12px/1.45 var(--pix);color:#e2dacb;margin:0 0 6px}
+#bag .acct .big{font:400 30px/1.1 var(--black);color:#ece4cc;margin:2px 0 4px}
+#title .roles{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+#title .roles button{background:none;border:1px solid var(--rule);color:var(--ink-dim);font:500 11px var(--mono);padding:6px 10px;cursor:pointer}
+#title .roles button.on{border-color:var(--ember);color:var(--ember)}
+#title .rolep{font:400 12px/1.45 var(--pix);color:var(--ink-dim);margin:0 0 12px;min-height:3em}
 @media (max-width:700px){#home{letter-spacing:.08em;font-size:10px;padding:6px 8px}}
 </style>
 
@@ -158,6 +194,7 @@ body.print .tag{color:#ece4cc}
   <div class="row"><span>Wood basket</span><b id="bask">6 / 12</b></div>
   <div class="row"><span id="heatlbl">Fireplace</span><b id="firebox">3 / 4</b></div>
   <div class="row" hidden><span>Work</span><b id="jobrow"></b></div>
+  <div class="row" id="errline" hidden><span>Errand</span><b id="errrow"></b></div>
   <div class="row"><span>Purse</span><b id="purse">50¢</b></div>
 </div>
 <div id="ctl" class="panel">
@@ -169,10 +206,11 @@ body.print .tag{color:#ece4cc}
 <div id="inv" hidden></div>
 <div id="bag" hidden role="dialog" aria-label="What he carries"></div>
 <div id="chest" hidden role="dialog" aria-label="The chest"></div>
+<div id="menu" hidden role="dialog" aria-label="Talk and trade"></div>
 <a id="home" href="index.html#issues">‹ Temporary Custody</a>
 <div id="dlg" hidden aria-live="polite"></div>
 <div id="daycard" hidden aria-live="polite"></div>
-<div id="map" hidden role="dialog" aria-label="Map of Walden Woods"><h3>Walden Woods</h3><canvas width="560" height="400"></canvas><p>P or the touchpad to close</p></div>
+<div id="map" hidden role="dialog" aria-label="Map of Walden Woods"><h3>Walden Woods</h3><canvas width="560" height="486"></canvas><p>P or the touchpad to close</p></div>
 <div id="log" aria-live="polite"></div>
 <button id="act" hidden></button>
 <button id="act2" hidden></button>
@@ -186,7 +224,7 @@ body.print .tag{color:#ece4cc}
       <dt>Shift</dt><dd>Run (or click down either stick)</dd>
       <dt>E</dt><dd>Whatever is at hand: take a tool, chop, hoe, plant, water, fish, carry wood, load the stove, cook, write, sleep, open the chest (✕)</dd>
       <dt>1–9, Z C</dt><dd>Change what is in his hand (D-pad left and right); 0, X or the open-hand slot empties it</dd>
-      <dt>Tab</dt><dd>Open the bag to see everything he carries (D-pad down)</dd>
+      <dt>Tab</dt><dd>Open the bag: what he carries, his journal, his errands and his account book (D-pad down)</dd>
       <dt>Q R</dt><dd>Turn the view a quarter round (L1 R1)</dd>
       <dt>Wheel</dt><dd>Zoom (L2 R2)</dd>
       <dt>G</dt><dd>Change the weather</dd>
@@ -196,6 +234,9 @@ body.print .tag{color:#ece4cc}
     </dl>
     <details id="credits" style="margin:0 0 14px;font-size:11px;color:var(--ink-dim)"><summary style="cursor:pointer;color:var(--ember)">Sound credits</summary>
       <p style="font:400 12px/1.5 var(--pix);font-style:normal;margin:6px 0 0">Recorded sounds, all dedicated to the public domain (CC0) on Freesound: axe by xkeril, falling tree by Kinoton, footsteps in the forest by vero.marengere, footsteps on a wooden floor by jedg, the steam engine by xo9rh11o3w, the steam whistle by Bidone, loons by pschrandt and hypnogurl71. Footsteps in snow by Ryding and on sand by worthahep88, from the Minetest Game collection (CC0). Every other sound is made in code.</p></details>
+    <p style="font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin:0 0 6px">Who goes down to the pond</p>
+    <div class="roles" id="roles"></div>
+    <p class="rolep" id="rolep"></p>
     <p id="savedat" hidden style="font:400 12px var(--pix);color:var(--ink-dim);margin:0 0 10px"></p>
     <button id="go">Go down to the pond</button>
     <button id="fresh" hidden style="background:none;border:1px solid var(--rule);color:var(--ink-dim);font:500 12px var(--mono);padding:9px 14px;margin-left:8px;cursor:pointer">Start over</button>
@@ -1579,7 +1620,7 @@ function dialogueFrame(dt){if(dlgT>0){dlgT-=dt;if(dlgT<=0)dlgEl.hidden=true}}
 /* ---------- the map: Walden Woods in hexes, the house, the pond, the railroad and the way to the village ---------- */
 const mapEl=document.getElementById('map');
 function drawMap(){const cv=mapEl.querySelector('canvas'),g=cv.getContext('2d'),W=cv.width,Hh=cv.height;g.fillStyle='#16131a';g.fillRect(0,0,W,Hh);
-  const x0=-360,x1=210,z0=-215,z1=190,sx=W/(x1-x0),sz=Hh/(z1-z0),S=13,hw=Math.sqrt(3)*S;const P=(x,z)=>[(x-x0)*sx,(z-z0)*sz];
+  const x0=-360,x1=210,z0=-215,z1=280,sx=W/(x1-x0),sz=Hh/(z1-z0),S=13,hw=Math.sqrt(3)*S;const P=(x,z)=>[(x-x0)*sx,(z-z0)*sz];
   const B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
   const tone=(x,z)=>{if(groundH(x,z)<WATER_Y-.3)return SEASON===3?.78:.18;if(Math.abs(x-RAILX)<6)return .42;if(pathD(x,z)<4)return .86;if(x>PLOT.x0&&x<PLOT.x0+60&&z>PLOT.z0&&z<PLOT.z0+40)return .58;if(treeZone(x,z))return .34;return .7};
   for(let row=0,z=z0;z<z1+S;row++,z+=S*1.5)for(let x=x0+(row%2?hw/2:0);x<x1+hw;x+=hw){const v=tone(x,z);const [px,py]=P(x,z);
@@ -3101,7 +3142,9 @@ document.getElementById('pix').addEventListener('input',e=>setPix(+e.target.valu
 addEventListener('resize',resize);resize();setTime(16.9);setSeason(3,true);setSound(AU.on);drawInv();purse();setLook(PRINT);setVol(VOL);
 
 /* ---------- saving: progress kept in this browser, written every half minute and when the page is put away ---------- */
-const SAVEKEY='walden-save-v1';
+// each life at the pond keeps its own saved game: Henry's under the old name, the others beside it
+const ROLE0=(()=>{try{const r=localStorage.getItem('walden-role');return ['henry','alek','labourer','hunter'].includes(r)?r:'henry'}catch(e){return 'henry'}})();
+const SAVEKEY='walden-save-v1'+(ROLE0==='henry'?'':'-'+ROLE0);
 function treeGoneNow(tr){if(tr.gone)return;tr.felled=true;tr.fall=1;tr.gone=1;const m4=new THREE.Matrix4().makeScale(0,0,0);for(const p of tr.parts){p.im.setMatrixAt(p.i,m4);p.im.instanceMatrix.needsUpdate=true}
   const s=new THREE.Mesh(STUMPG,matFor(0x7a6450));const sc=tr.r/1.6;s.scale.set(sc,sc,sc);s.position.set(tr.x,groundH(tr.x,tr.z)-.2,tr.z);s.castShadow=true;scene.add(s);tr.stump=s}
 /* ---------- the chest in the house: a pine chest at the foot of the bed, its lid opening toward the stove end.
@@ -3180,6 +3223,775 @@ function loadSave(){let s=null;try{s=JSON.parse(localStorage.getItem(SAVEKEY)||'
     if(s.HELD)setHeld(s.HELD,true);if(s.AUTO!==AUTO)toggleAuto();
     dressHenry();bootLook();ledger();purse();drawInv();
     return s}catch(e){console.warn('save could not be restored',e);return false}}
+/* ======================================================================================================================
+   Errands from the book, an account book after "Economy", tools that can be bettered, and a menu for talking and trading
+   (23 October 2026). This sits inside the game after everything else is built and before the saved game is read back.
+   ====================================================================================================================== */
+const ROLE=ROLE0,HENRY=ROLE==='henry';
+const Q={};                                   // each errand's own state, saved
+const UP={axe:0,pole:0,hoe:0,boat:0};         // the tools as he has bettered them
+const ACCT={work:0,days:0,lines:[],label:''}; // minutes of labour, days at the pond, what came in and went out
+Object.assign(PAL,{u:'#4a5aa8',U:'#2a3460',m:'#d8d4c8',t:'#7a5a3a',o:'#c87a3a',v:'#6a6a70'});
+const qs=(id,o)=>Q[id]||(Q[id]=Object.assign({done:0},o||{}));
+function labour(min){ACCT.work+=min}
+const cleanLabel=l=>(l||'').split(' · ')[0];
+// every change in the purse goes into the account book, under whatever he was doing when it changed
+let purseSeen=null;
+{const _purse=purse;purse=function(){_purse();if(purseSeen!==null&&INV.cents!==purseSeen)bookLine(cleanLabel(ACCT.label)||'Sundries',INV.cents-purseSeen);purseSeen=INV.cents}}
+function bookLine(what,c){ACCT.lines.push({d:dateLine(),what,c});if(ACCT.lines.length>80)ACCT.lines.splice(0,ACCT.lines.length-80)}
+{const _act=act;act=function(){const a=currentAction();ACCT.label=a?a.label:'';_act()};actEl.onclick=()=>act()}
+
+/* ---------- the menu: talk and trade with someone, a short list of what can be said or bought ---------- */
+const menuEl=document.getElementById('menu');const MENU={open:false,opts:[],sel:0,title:'',line:''};
+function openMenu(title,line,opts){MENU.open=true;MENU.title=title;MENU.line=line;MENU.opts=opts.concat([{label:'Leave it there',fn:()=>{}}]);MENU.sel=Math.max(0,MENU.opts.findIndex(o=>!o.dis));
+  for(const k in keys)keys[k]=false;touchMove=null;drawMenu();menuEl.hidden=false;sfx.pickup()}
+function drawMenu(){menuEl.innerHTML=`<h4>${MENU.title}</h4>${MENU.line?`<p class="who">${MENU.line}</p>`:''}<div class="opts">${MENU.opts.map((o,i)=>`<button data-i="${i}"${o.dis?' disabled':''} class="${i===MENU.sel?'on':''}"><span>${i<9?(i+1)+'. ':''}${o.label}</span>${o.price!==undefined?`<i>${o.price}</i>`:''}</button>`).join('')}</div><p class="hint">1–9, or ↑ ↓ and E (D-pad and ✕) · Esc or ○ to leave</p>`;
+  for(const b of menuEl.querySelectorAll('button'))b.onclick=()=>pickMenu(+b.dataset.i)}
+function closeMenu(){MENU.open=false;menuEl.hidden=true}
+function pickMenu(i){const o=MENU.opts[i];if(!o||o.dis)return;closeMenu();ACCT.label=o.label;o.fn();setTimeout(()=>{ACCT.label=''},0)}
+function moveMenu(d){const n=MENU.opts.length;for(let k=0;k<n;k++){MENU.sel=(MENU.sel+d+n)%n;if(!MENU.opts[MENU.sel].dis)break}drawMenu();tone({f:900,d:.04,v:.01,type:'triangle'})}
+addEventListener('keydown',e=>{if(!MENU.open)return;const k=e.key.toLowerCase();e.preventDefault();e.stopImmediatePropagation();
+  if(/^[1-9]$/.test(k))pickMenu(+k-1);else if(k==='arrowup'||k==='w')moveMenu(-1);else if(k==='arrowdown'||k==='s')moveMenu(1);else if(k==='e'||k===' '||k==='enter')pickMenu(MENU.sel);else if(k==='escape'||k==='tab'||k==='x')closeMenu()},true);
+{const _pp=pollPad;pollPad=function(dt){if(!MENU.open)return _pp(dt);const gps=navigator.getGamepads?navigator.getGamepads():[];let gp=null;for(const g of gps)if(g&&g.connected){gp=g;break}if(!gp)return null;
+    const b=i=>!!(gp.buttons[i]&&gp.buttons[i].pressed),pr=i=>b(i)&&!padPrev[i];if(pr(12))moveMenu(-1);if(pr(13))moveMenu(1);if(pr(0))pickMenu(MENU.sel);else if(pr(1))closeMenu();
+    for(let i=0;i<gp.buttons.length;i++)padPrev[i]=gp.buttons[i].pressed;return null}}
+
+/* ---------- errands: what the book has him do, one at a time or in any order, with a mark on the ground and on the map ---------- */
+const ERR=[];let PIN=null;
+function errand(o){o.role=o.role||'henry';ERR.push(o);return o}
+const errOf=id=>ERR.find(e=>e.id===id);
+const isDone=e=>!!(Q[e.id]&&Q[e.id].done);
+function curErrand(){if(PIN){const e=errOf(PIN);if(e&&e.role===ROLE&&!isDone(e))return e}return ERR.find(e=>e.role===ROLE&&!isDone(e)&&(!e.avail||e.avail()))||null}
+function stepNow(e){const S=e.steps();return S.find(s=>!s.ok)||null}
+function finish(id,line,ach){const s=qs(id);if(s.done)return;s.done=1;s.when=dateLine();if(line)say(line,true);if(ach)achieve(ach);if(PIN===id)PIN=null;errDirty=1;
+  for(let i=0;i<3;i++)tone({f:[523.3,659.3,784][i],d:.9,a:.01,v:.02,delay:i*.14,type:'triangle',lp:2000})}
+let errDirty=1;
+// whichever errand last moved forward is the one followed, until it is done or another is chosen
+const ERRN={};
+function errFollow(){for(const e of ERR){if(e.role!==ROLE)continue;let n=0;try{n=e.steps().filter(s=>s.ok).length}catch(err){}if(ERRN[e.id]!==undefined&&n>ERRN[e.id]&&!isDone(e)&&e!==curErrand()){PIN=e.id}ERRN[e.id]=n}}
+function errLine(){errFollow();const e=curErrand(),el=document.getElementById('errrow');if(!el)return;el.parentElement.hidden=!e;if(!e)return;const s=stepNow(e);el.textContent=s?(s.short||s.t):e.title}
+const errTag=document.createElement('div');errTag.className='tag ftag';errTag.style.color='#f0a95a';errTag.hidden=true;document.body.appendChild(errTag);
+const ERRP=new THREE.Vector3();
+function errFrame(){const e=curErrand();let t=null;if(e&&e.target)try{t=e.target()}catch(err){t=null}
+  if(t&&!CAB.inside&&!STUDY&&!VIL.jailed){const d=Math.hypot(t.x-H.x,t.z-H.z);if(d>9&&d<420){ERRP.set(t.x,hy(t.x,t.z),t.z);errTag.textContent='◆ '+t.label;errTag.hidden=false;placeTag(errTag,ERRP,t.dy||6);
+      const r=errTag.getBoundingClientRect();if(r.right<0||r.left>innerWidth||r.bottom<0||r.top>innerHeight)errTag.hidden=true}else errTag.hidden=true}else errTag.hidden=true}
+
+/* ---------- the bag gains two pages: the errands, and the account book ---------- */
+function errHTML(){const L=ERR.filter(e=>e.role===ROLE);const cur=curErrand();
+  return `<div class="errs">${L.map(e=>{const S=e.steps(),done=isDone(e),now=S.find(s=>!s.ok);
+    return `<article data-e="${e.id}" class="${cur===e?'pin':''}${done?' done':''}"><h5><span>${e.title}</span><small>${done?'done · '+Q[e.id].when:e.when||''}</small></h5><p>${e.blurb}</p><ul>${S.map(s=>`<li class="${s.ok?'ok':s===now?'now':''}">${s.t}</li>`).join('')}</ul>${e.fig&&e.fig()?`<figure><img src="${e.fig()}" alt="${e.figAlt||''}"></figure>`:''}</article>`}).join('')}</div>
+    <p class="hint">Choose an errand to follow it; its mark shows on the ground and on the map.</p>`}
+function hrs(m){const h=m/60;return h<10?h.toFixed(1):Math.round(h)+''}
+function acctHTML(){const days=Math.max(1,ACCT.days+1),perDay=ACCT.work/60/days,weeks=perDay*313/48;
+  const inn=ACCT.lines.filter(l=>l.c>0).reduce((a,l)=>a+l.c,0),out=-ACCT.lines.filter(l=>l.c<0).reduce((a,l)=>a+l.c,0);
+  const tools=[['Axe',!HENRY?'':!Q.axe||!Q.axe.returned?(Q.axe&&Q.axe.ground?'borrowed, ground sharp':'borrowed'):['none of his own','his own','his own, the bit steeled','his own, steeled, with a hickory helve'][UP.axe]],
+    ['Fishing tackle',['a plain line and hook','a linen line and better hooks','a silk line and fine hooks'][UP.pole]+(INV.worms?`, ${INV.worms} worms for bait`:'')],['Hoe',HENRY?['the old hoe','a new steel blade'][UP.hoe]:''],['Boat',HENRY?['leaky','the seams paid with pitch','new ash oars and tight seams'][UP.boat]:'']].filter(r=>r[1]);
+  return `<div class="acct"><p>${HENRY?'Henry':ROLE_NAME} has been at the pond ${days} ${days===1?'day':'days'}, and has worked ${hrs(ACCT.work)} hours of them for money or for keep.</p>
+    <p class="big">${weeks<.1?'no':weeks<10?weeks.toFixed(1):Math.round(weeks)} ${weeks>=.95&&weeks<1.05?'week':'weeks'}</p><p>of labour in the year, at this rate. ${HENRY?'In <em>Walden</em> Thoreau reckons that about six weeks of work a year met all his expenses, and left the rest of his time his own.':'Henry Thoreau, down at the pond, reckons that six weeks of work a year is enough.'}</p>
+    <h5>His tools</h5><table>${tools.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>
+    <h5>The account: ${inn}¢ in, ${out}¢ out</h5><table>${ACCT.lines.length?ACCT.lines.slice().reverse().slice(0,30).map(l=>`<tr><td>${l.what}<br><small style="color:var(--ink-dim)">${l.d}</small></td><td style="color:${l.c<0?'#e0a070':'#9ec28a'}">${l.c>0?'+':''}${l.c}¢</td></tr>`).join(''):'<tr><td>Nothing bought or sold yet.</td><td></td></tr>'}</table></div>`}
+{const _db=drawBag;drawBag=function(){const mine=BAGTAB==='errands'||BAGTAB==='account';const keep=BAGTAB;if(mine)BAGTAB='journal';_db();BAGTAB=keep;
+    const tabs=bagEl.querySelector('.tabs');if(!tabs)return;
+    for(const [k,n] of [['errands','Errands'],['account','Account']]){const b=document.createElement('button');b.className='tk'+(BAGTAB===k?' on':'');b.dataset.t=k;b.textContent=n;tabs.appendChild(b)}
+    if(mine){for(const b of tabs.querySelectorAll('.tk'))b.classList.toggle('on',b.dataset.t===BAGTAB);const keepTabs=tabs.outerHTML;bagEl.innerHTML=keepTabs+(BAGTAB==='errands'?errHTML():acctHTML());
+      for(const a of bagEl.querySelectorAll('.errs article'))a.onclick=()=>{PIN=a.dataset.e;errDirty=1;drawBag();sfx.pickup()}}
+    for(const b of bagEl.querySelectorAll('.tk'))b.onclick=()=>{BAGTAB=b.dataset.t;drawBag()}}}
+{const _tb=toggleBag;toggleBag=function(){if(!bagEl.hidden&&BAGTAB==='pressed'){BAGTAB='errands';drawBag();sfx.pickup();return}if(!bagEl.hidden&&BAGTAB==='errands'){BAGTAB='account';drawBag();sfx.pickup();return}if(!bagEl.hidden&&BAGTAB==='account'){bagEl.hidden=true;sfx.pickup();return}_tb()}}
+
+/* ---------- the map: drawn a little further south, with the new places on it and the mark of the errand in hand ---------- */
+const MAPX0=-360,MAPX1=210,MAPZ0=-215,MAPZ1=280;
+{const _dm=drawMap;drawMap=function(){_dm();const cv=mapEl.querySelector('canvas'),g=cv.getContext('2d'),W=cv.width,Hh=cv.height;const P=(x,z)=>[(x-MAPX0)*W/(MAPX1-MAPX0),(z-MAPZ0)*Hh/(MAPZ1-MAPZ0)];
+  g.font='11px monospace';g.textAlign='left';g.textBaseline='middle';
+  for(const pl of PLACES){if(pl.show&&!pl.show())continue;const [px,py]=P(pl.x,pl.z);g.fillStyle='#ece4cc';g.fillRect(px-3,py-3,6,6);g.fillText(pl.name,px+6,py)}
+  const e=curErrand(),t=e&&e.target?e.target():null;if(t){const [px,py]=P(t.x,t.z);g.fillStyle='#f0a95a';g.beginPath();g.moveTo(px,py-7);g.lineTo(px+6,py);g.lineTo(px,py+7);g.lineTo(px-6,py);g.closePath();g.fill();g.strokeStyle='#16131a';g.stroke();
+    g.fillStyle='#f0a95a';g.font='bold 11px monospace';const right=px>W-150;g.textAlign=right?'right':'left';g.fillText(t.label,right?px-9:px+9,py)}}}
+const PLACES=[];
+
+/* ---------- small shared pieces: a plain house, clearing the trees from a site, and keeping people out of the new walls ---------- */
+const XBLOCK=[];// rectangles {x0,x1,z0,z1}, in world coordinates, that nobody walks through
+function xBlocked(x,z,pad=0){for(const b of XBLOCK)if(x>b.x0-pad&&x<b.x1+pad&&z>b.z0-pad&&z<b.z1+pad)return true;return false}
+{const _bl=blocked;blocked=function(x,z){if(!VIL.jailed&&xBlocked(x,z))return true;return _bl(x,z)}}
+{const _nb=npcBlocked;npcBlocked=function(x,z,pad=.8){return xBlocked(x,z,pad)||_nb(x,z,pad)}}
+function clearSite(x,z,r){for(const tr of TREES)if(!tr.felled&&Math.hypot(tr.x-x,tr.z-z)<r){treeGoneNow(tr);if(tr.stump){scene.remove(tr.stump);tr.stump=null}}}
+// a small house of boards with a pitched roof, its door on the side that faces yaw; w along x before turning
+function plainHouse(x,z,w,d,o={}){const G=new THREE.Group();const y=Math.min(groundH(x,z),groundH(x-w/2,z-d/2),groundH(x+w/2,z+d/2),groundH(x-w/2,z+d/2),groundH(x+w/2,z-d/2));G.position.set(x,y,z);G.rotation.y=o.yaw||0;scene.add(G);
+  const B=(bw,bh,bd,c,bx,by,bz)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(bw,bh,bd),vmat(c));m.position.set(bx,by,bz);m.castShadow=m.receiveShadow=true;G.add(m);return m};
+  const h=o.h||6,wc=o.wall||0x7e6448,rc=o.roof||0x5a544e;B(w+.6,.6,d+.6,0x6e6a62,0,.3,0);
+  B(w,h,.3,wc,0,h/2+.5,-d/2);B(.3,h,d,wc,-w/2,h/2+.5,0);B(.3,h,d,wc,w/2,h/2+.5,0);
+  const dw=Math.min(3,w*.3);B((w-dw)/2,h,.3,wc,-(w+dw)/4,h/2+.5,d/2);B((w-dw)/2,h,.3,wc,(w+dw)/4,h/2+.5,d/2);B(dw,h-5.2,.3,wc,0,h+.5-(h-5.2)/2,d/2);
+  B(dw*.9,5,.2,o.door||0x4a3424,0,3,d/2+.1);
+  for(let yy=1.2;yy<h;yy+=.8){B(w+.04,.08,.06,0x5a4430,0,yy+.5,-d/2-.16);B(.06,.08,d+.04,0x5a4430,-w/2-.16,yy+.5,0);B(.06,.08,d+.04,0x5a4430,w/2+.16,yy+.5,0)}
+  const pitch=o.pitch||.5,half=d/2+.8,rl=half/Math.cos(pitch);for(const s of [-1,1]){const r=B(w+1.6,.3,rl,rc,0,h+.5+Math.tan(pitch)*half/2,s*half/2);r.rotation.x=s*pitch}
+  for(const s of [-1,1]){const sh=new THREE.Shape();sh.moveTo(-d/2,0);sh.lineTo(d/2,0);sh.lineTo(0,Math.tan(pitch)*d/2);sh.lineTo(-d/2,0);const gm=new THREE.Mesh(new THREE.ShapeGeometry(sh),vmat(wc));gm.material=gm.material.clone();gm.material.side=THREE.DoubleSide;gm.rotation.y=Math.PI/2;gm.position.set(s*w/2,h+.5,0);G.add(gm)}
+  if(o.chimney)B(1.4,h+4,1.4,0x7a4a3a,w/2-1.4,(h+4)/2,-d/4);
+  G.updateMatrixWorld(true);
+  // its footprint, turned with the house
+  const c=Math.cos(o.yaw||0),s=Math.sin(o.yaw||0),hx=Math.abs(c)*w/2+Math.abs(s)*d/2,hz=Math.abs(s)*w/2+Math.abs(c)*d/2;XBLOCK.push({x0:x-hx,x1:x+hx,z0:z-hz,z1:z+hz});
+  const door=new THREE.Vector3(0,0,d/2+2.6).applyAxisAngle(new THREE.Vector3(0,1,0),o.yaw||0).add(new THREE.Vector3(x,0,z));
+  return{g:G,door,x,z}}
+
+/* ---------- things he can carry, besides what the game began with ---------- */
+Object.assign(ICON,{
+  berries:['..........','..........','...u..u...','..uUu.uUu.','..uuu.uuu.','...u.u.u..','.....uUu..','.....uuu..','......u...','..........'],
+  lime:['..........','...tttt...','..tmmmmt..','.tmmmmmmt.','.ttttttttt','.tmmmmmmt.','.tmmmmmmt.','.ttttttttt','..tttttt..','..........'],
+  shingles:['..........','.LLLlLLLl.','.lLLLlLLL.','.LLLlLLLl.','.lLLLlLLL.','.LLLlLLLl.','.lLLLlLLL.','.LLLlLLLl.','..........','..........'],
+  pitch:['..........','...dddd...','..d....d..','.ddddddddd','.dUUUUUUd.','.dUUUUUUd.','.dUUUUUUd.','..dddddd..','..........','..........'],
+  worms:['..........','..........','..pp......','.p..p..pp.','.....pp..p','..........','...ppp....','..p...pp..','..........','..........'],
+  pelt:['..........','..oooooo..','.oooooooo.','ooooooooo.','.ooooooooo','..oooooo..','...oooo.m.','....ooomm.','.....oo...','..........'],
+  gun:['.........d','........db','.......d..','......d...','.....d....','....v.....','...bb.....','..bbb.....','.bbb......','.bb.......'],
+  bar:['.........g','........g.','.......g..','......g...','.....g....','....g.....','...g......','..g.......','.g........','g.........'],
+  saw:['..........','bggggggggg','b.g.g.g.g.','..........','..........','..........','..........','..........','..........','..........'],
+  traps:['..........','..gggggg..','.g.g..g.g.','.g..gg..g.','.g.g..g.g.','..gggggg..','.....g....','.....g....','....ggg...','..........']});
+const EXTRA=[];// {id,name,count,icon,x,desc}
+{const _sl=slots;slots=function(){const L=_sl();for(const x of EXTRA){const n=x.count();if(n)L.push({id:x.id,name:x.name,count:n===true?0:n,icon:x.icon,x:x.x})}return L}}
+function carry(id,name,icon,count,desc,x){EXTRA.push({id,name,icon,count,x});DESC[id]=desc}
+
+/* ---------- the frame: everything here that moves or watches, once a frame, after the critters' tags ---------- */
+const QF=[];let qfLast=performance.now(),errT=0;
+{const _ct=critterTags;critterTags=function(){_ct();const n=performance.now(),dt=Math.min(.1,(n-qfLast)/1000);qfLast=n;for(const f of QF)f(dt);errFrame();errT-=dt;if(errT<0||errDirty){errT=.5;errDirty=0;errLine()}}}
+{const _nd=newDay;newDay=function(){_nd();ACCT.days++;for(const f of NEWDAY)f()}}
+const NEWDAY=[];
+// a quick fade to another place or another hour, with a line when it lifts
+function fadeTo(cb){travel(cb)}
+
+/* ---------- saving: the errands, the tools and the account go into the saved game alongside the rest ---------- */
+const AFTERLOAD=[];
+{const _sn=snapshot;snapshot=function(){const s=_sn();s.q={Q,UP,ACCT,PIN,role:ROLE};return s}}
+{const _ls=loadSave;loadSave=function(){purseSeen=null;const s=_ls();if(s&&s.q){for(const k in s.q.Q){if(Q[k]&&typeof Q[k]==='object')Object.assign(Q[k],s.q.Q[k]);else Q[k]=s.q.Q[k]}Object.assign(UP,s.q.UP||{});Object.assign(ACCT,s.q.ACCT||{});PIN=s.q.PIN||null}
+    for(const f of AFTERLOAD)try{f(s)}catch(e){console.warn('after load',e)}purseSeen=INV.cents;drawInv();errDirty=1;return s}}
+
+/* ======================================================================================================================
+   The actions: what is newly at hand, ahead of what the game already offers, and the village's new talk and trade
+   ====================================================================================================================== */
+const PRE_ACT=[],PRE_VIL=[];
+PRE_ACT.push(()=>{if(!VIL.here||VIL.jailed)return null;for(const f of PRE_VIL){const a=f();if(a)return a}return null});
+const nearPt=(p,r)=>Math.hypot(H.x-p.x,H.z-p.z)<r;
+function sound2(kind){if(kind==='hammer')for(let i=0;i<6;i++)tone({f:rr(900,1300),f2:500,d:.06,v:.035,type:'triangle',lp:2400,delay:i*.28+rr(0,.05)});
+  else if(kind==='grind')for(let i=0;i<14;i++)tone({f:rr(2400,3600),f2:rr(1800,2600),d:.18,a:.03,v:.008,type:'sawtooth',lp:5200,delay:i*.12});
+  else if(kind==='trowel')for(let i=0;i<8;i++)tone({f:rr(500,800),f2:300,d:.16,a:.04,v:.012,type:'triangle',lp:1600,delay:i*.3});
+  else if(kind==='berry')for(let i=0;i<4;i++)tone({f:rr(1500,2200),d:.05,v:.012,type:'triangle',delay:i*.12})}
+function busy(sec){busyT=sec}
+// the house's local position of Henry, and whether he is close to something inside it
+const deskNear=()=>{const {lx,lz}=cl(),o=CAB.items.desk;return CAB.inside&&Math.hypot(lx-o.x,lz-o.z)-o.r<1.5};
+{const _ca=currentAction;currentAction=function(){if(!started||swing>0||busyT>0||FF.on||MENU.open)return null;
+    if(!HENRY)return roleAction();
+    for(const f of PRE_ACT){const a=f();if(a)return a}
+    let a=_ca();
+    if(a&&Q.axe&&Q.axe.returned&&!INV.axe&&/The axe is in the chopping block/.test(a.label))a={label:a.label.replace('The axe is in the chopping block.','He has no axe now.'),fn:()=>say('He returned the borrowed axe. The blacksmith in the village sells axes.')};
+    return a}}
+{const _va=villageAction;villageAction=function(){for(const f of PRE_VIL){const a=f();if(a)return a}return _va()}}
+{const _ja=jobAction;jobAction=function(){if(VIL.here&&HENRY){if(near(SMITH,7.5))return{label:'Talk with the blacksmith',fn:smithMenu};
+    if(near(FARMER,6)&&Q.axe&&!Q.axe.returned&&INV.axe&&Q.axe.ground&&Q.axe.felled>=5)return{label:'Return the borrowed axe',fn:returnAxe}}return _ja()}}
+function pay(cost,who,fn){if(INV.cents<cost){speak(who,`That is ${cost} cents, and ${HENRY?'Henry':ROLE_FIRST} has ${INV.cents}.`);return false}INV.cents-=cost;purse();fn();drawInv();return true}
+
+/* ---------- the store ---------- */
+const STORE_OPTS=[];// more, from the other lives at the pond
+PRE_VIL.push(()=>near(CLERK)?{label:'Trade at the store',fn:storeMenu}:null);
+function storeMenu(){const O=[];
+  if(hasProduce())O.push({label:'Sell what he has brought: beans, fish, apples',fn:sellAll});
+  if(HENRY)[['beans','A bag of bean seed'],['potato','Seed potatoes'],['corn','Seed corn']].forEach(([k,n],i)=>O.push({label:n,price:PRICE.seed[k]+'¢',fn:()=>{VIL.buyK=i;buySeed()}}));
+  if(INV.meal<1)O.push({label:'A bag of rye and Indian meal',price:'6¢',fn:()=>pay(6,CLERK,()=>{INV.meal=1;speak(CLERK,'He scoops rye and Indian meal into a bag. Six cents.')})});
+  if(HENRY){const Hs=qs('house',{sides:[0,0,0,0],plaster:0});
+    if(!Hs.plaster&&!INV.lime)O.push({label:'A cask of lime, for plastering',price:'25¢',fn:()=>pay(25,CLERK,()=>{INV.lime=1;speak(CLERK,'A small cask of lime. Mix it with sand and water, he says, and lay it on thin.')})});
+    if(Hs.sides.some(v=>!v)&&!INV.shingles)O.push({label:'Refuse shingles, a bundle for each wall',price:'40¢',fn:()=>pay(40,CLERK,()=>{INV.shingles=Hs.sides.filter(v=>!v).length;speak(CLERK,'Refuse shingles, split badly or knotted, sold cheap. Enough for the walls of a small house, and the nails with them.')})});
+    if(!INV.pitch&&UP.boat===0)O.push({label:'Pitch, for the seams of the boat',price:'10¢',fn:()=>pay(10,CLERK,()=>{INV.pitch=1;speak(CLERK,'A lump of pitch in a paper. Warm it and work it into the seams.')})})}
+  if(!INV.pole){}else if(UP.pole===0)O.push({label:'A linen line and better hooks',price:'15¢',fn:()=>pay(15,CLERK,()=>{UP.pole=1;speak(CLERK,'A linen line, and hooks that hold their point. The fish will not get off so easily.')})});
+  else if(UP.pole===1)O.push({label:'A silk line and fine hooks',price:'25¢',fn:()=>pay(25,CLERK,()=>{UP.pole=2;speak(CLERK,'Silk line, fine and strong, and a paper of the best hooks he has.')})});
+  for(const f of STORE_OPTS){const o=f();if(o)O.push(o)}
+  openMenu('The store',`The clerk leans on the counter. ${HENRY?'Henry':ROLE_FIRST} has ${INV.cents}¢.`,O)}
+
+/* ---------- the blacksmith ---------- */
+const SMITH_OPTS=[];
+function smithMenu(){const O=[];
+  if(HENRY&&!CAB.hasStove){if(JOB.state==='none')O.push(VIL.askedStove?{label:'Take the smith’s job, for the stove',fn:()=>takeJob(SMITH,'stove')}:{label:'Ask about a cooking stove',fn:()=>{VIL.askedStove=1;stoveTalk()}});
+    else if(JOB.giver===SMITH&&JOB.state==='paid')O.push({label:'Show him the work, for the stove',fn:payStove});
+    else if(JOB.giver===SMITH)O.push({label:'Ask about his woodlot',fn:()=>speak(SMITH,`Chain the four corners and fell ${JOB.need} trees inside the stakes. ${JOB.measured} corners done so far.`)})}
+  if(HENRY){const A=qs('axe',{felled:0,ground:0,returned:0});
+    if(INV.axe&&!A.returned&&!A.ground)O.push({label:'Grind the borrowed axe at his grindstone',fn:grindAxe});
+    if(A.returned&&UP.axe===0)O.push({label:'An axe of his own',price:'45¢',fn:()=>pay(45,SMITH,()=>{INV.axe=1;UP.axe=1;setHeld('axe');speak(SMITH,'An axe from the rack, the helve of white ash. Henry’s own, and nobody else’s.')})});
+    else if(UP.axe===1&&INV.axe)O.push({label:'Steel the bit of his axe',price:'30¢',fn:()=>pay(30,SMITH,()=>{UP.axe=2;advance(1);speak(SMITH,'He heats the bit, welds on a strip of steel and draws it out to a hard edge. An hour at the forge. It will bite deeper now.')})});
+    else if(UP.axe===2&&INV.axe)O.push({label:'A hickory helve for the axe',price:'20¢',fn:()=>pay(20,SMITH,()=>{UP.axe=3;speak(SMITH,'A helve of split hickory, shaved thin at the throat so it springs. The axe swings itself, nearly.')})});
+    if(INV.hoe&&UP.hoe===0)O.push({label:'A new steel blade for the hoe',price:'25¢',fn:()=>pay(25,SMITH,()=>{UP.hoe=1;speak(SMITH,'A new blade riveted to the old handle. It goes through sod like a knife.')})});
+    if(UP.boat===1)O.push({label:'A pair of ash oars',price:'30¢',fn:()=>pay(30,SMITH,()=>{UP.boat=2;speak(SMITH,'He has a pair of ash oars a man ordered and never fetched. Light, and long in the blade.')})})}
+  for(const f of SMITH_OPTS){const o=f();if(o)O.push(o)}
+  openMenu('The blacksmith','The smith sets down his hammer and wipes his hands.',O)}
+
+/* ======================================================================================================================
+   1. The borrowed axe. "It is difficult to begin without borrowing": he borrows an axe to build the house, and gives it
+   back sharper than he received it.
+   ====================================================================================================================== */
+const AXE=qs('axe',{felled:0,ground:0,returned:0});
+errand({id:'axe',title:'The borrowed axe',when:'Any season',blurb:'He began the house with a borrowed axe. In the book he gives it back sharper than he received it.',
+  steps:()=>{const A=qs('axe');return[{t:'Take the borrowed axe from the chopping block',short:'Take the axe from the block',ok:!!GT.axe.taken||A.returned},{t:`Fell five trees with it (${Math.min(5,A.felled)}/5)`,short:`Fell trees ${Math.min(5,A.felled)}/5`,ok:A.felled>=5},
+    {t:'Grind it sharp at the blacksmith’s grindstone, in the village',short:'Grind the axe at the smithy',ok:!!A.ground},{t:'Give it back to the farmer who lent it',short:'Return the axe to the farmer',ok:!!A.returned}]},
+  target:()=>{const A=qs('axe');if(!GT.axe.taken)return{x:GT.axe.pos.x,z:GT.axe.pos.z,label:'the axe'};if(A.felled<5)return null;if(!A.ground)return{x:SMITH.g.position.x,z:SMITH.g.position.z,label:'the smithy'};return{x:FARMER.g.position.x,z:FARMER.g.position.z,label:'the farmer'}}});
+function axePower(){const A=qs('axe');if(!A.returned)return A.ground?1.35:1;return[1,1.35,1.7,2.1][UP.axe]||1}
+{const _hit=hit;hit=function(t){if(!HENRY){roleHit(t);return}const p=axePower(),extra=Math.floor(p-1+Math.random());for(let i=0;i<extra&&t.hp>1;i++)t.hp--;labour(15);const was=t.felled;_hit(t);if(t.felled&&!was){if(SEASON===2&&!HOUSE.done){HOUSE.wood=(HOUSE.wood||0)+1;if(HOUSE.wood===8)say('Eight trees down this autumn. Wood enough laid in for the winter.',true);houseCheck();errDirty=1}const A=qs('axe');if(!A.returned){A.felled++;if(A.felled===5)say('Five trees down with the borrowed axe. The edge has gone dull; the smith has a grindstone.',true);errDirty=1}}}}
+function grindAxe(){const A=qs('axe');A.ground=1;advance(.5);labour(30);sound2('grind');speak(SMITH,'He lets Henry turn the grindstone himself, a half hour, the water dripping, until the edge will take a hair off his arm.');errDirty=1}
+function returnAxe(){const A=qs('axe');A.returned=1;INV.axe=0;if(HELD==='axe')setHeld(null,true);drawInv();
+  speak(FARMER,'He runs his thumb along the edge and laughs. Sharper than when it went out. Henry will want one of his own now, he says; the smith has them.');
+  finish('axe','He gave back the axe sharper than he received it.','sharper')}
+
+/* ======================================================================================================================
+   2. The poll tax. Near the end of the first summer, going to the village for a shoe from the cobbler's, he is stopped
+   for the tax, will not pay it, and spends the night in the jail. In the morning he gets his shoe and leads a
+   huckleberry party up Fair Haven Hill.
+   ====================================================================================================================== */
+const TAX=qs('tax',{met:0,chose:'',jailed:0,shoe:0,led:0,berries:0});
+// Fair Haven Hill: the high ground south-west, toward the river
+const FH=(()=>{let best=null;for(let x=-330;x<=-170;x+=8)for(let z=215;z<=285;z+=8){const h=groundH(x,z);let v=0;for(const [dx,dz] of [[6,0],[-6,0],[0,6],[0,-6]])v+=Math.abs(groundH(x+dx,z+dz)-h);const sc=h-v*1.5;if(!best||sc>best.sc)best={x,z,sc}}return{x:best.x,z:best.z}})();
+PLACES.push({name:'Fair Haven Hill',x:FH.x,z:FH.z});
+const BUSHES=[];
+{const bushG=new THREE.IcosahedronGeometry(1.5,0),berG=new THREE.SphereGeometry(.22,5,4);
+  for(let k=0;k<14;k++){let x,z;for(let j=0;j<40;j++){const a=Math.random()*6.283,r=rr(6,30);x=FH.x+Math.cos(a)*r;z=FH.z+Math.sin(a)*r;if(!BUSHES.some(b=>Math.hypot(b.x-x,b.z-z)<5))break}
+    const G=new THREE.Group();G.position.set(x,groundH(x,z),z);scene.add(G);for(let i=0;i<3;i++){const m=live(bushG,[0x3e5a2a,0x4a6230,0x34502a][i],rr(-.8,.8),1+rr(0,.4),rr(-.8,.8),G);m.scale.set(rr(.9,1.3),rr(.6,.9),rr(.9,1.3))}
+    const ber=new THREE.Group();G.add(ber);for(let i=0;i<14;i++){const a=Math.random()*6.283,r=rr(.8,1.7);live(berG,0x2a3460,Math.cos(a)*r,rr(.9,2.1),Math.sin(a)*r,ber)}
+    BUSHES.push({x,z,g:G,ber,full:1})}}
+NEWDAY.push(()=>{for(const b of BUSHES){b.full=1;b.ber.visible=true}});
+const PARTY=[];{const L=[{coat:0x6a5a48,dress:0x5a4a62,hat:'bonnet',hatC:0xe0d4bc,hair:0x6a4a2a},{coat:0x7a3a2e,hat:'cap',hatC:0x4a3a2a,child:1},{coat:0x4a5a7a,dress:0x7a5a4a,hat:'bonnet',hatC:0xd8ccb0,child:1},{coat:0x6a6a3a,hat:'cap',hatC:0x5a4a3a,child:1}];
+  for(const o of L){const p=person(Object.assign({trou:0x3a3430,hair:0x7a5a3a},o));if(o.child)p.g.scale.setScalar(.48);p.child=!!o.child;p.g.visible=false;p.ph=rr(0,6);p.off=PARTY.length;PARTY.push(p)}
+  critterTag('Huckleberry party','#b8b0e0',PARTY[0].g,7.2,60)}
+errand({id:'tax',title:'The poll tax',when:'Summer',avail:()=>SEASON===1||TAX.met,blurb:'Going to the village to get a shoe from the cobbler’s, he is stopped for a tax he has not paid in years.',
+  steps:()=>{const T=qs('tax');const S=[{t:'Walk into the village to have a shoe mended',short:'Walk into the village',ok:!!T.met},{t:'Pay the poll tax, or refuse to',short:'Pay the tax, or refuse',ok:!!T.chose}];
+    if(T.chose!=='paid')S.push({t:'Spend the night in the jail',short:'A night in the jail',ok:!!T.jailed});
+    S.push({t:'Fetch the mended shoe from the cobbler',short:'Fetch the shoe',ok:!!T.shoe},{t:'Lead the huckleberry party up Fair Haven Hill',short:'Lead the party to Fair Haven Hill',ok:!!T.led},{t:`Pick huckleberries with them (${Math.min(6,T.berries)}/6)`,short:`Huckleberries ${Math.min(6,T.berries)}/6`,ok:T.berries>=6});return S},
+  target:()=>{const T=qs('tax');if(!T.met||!T.chose)return{x:COBB.g.position.x,z:COBB.g.position.z,label:'the cobbler’s'};if(T.chose!=='paid'&&!T.jailed)return null;if(!T.shoe)return{x:COBB.g.position.x,z:COBB.g.position.z,label:'the cobbler’s'};
+    if(!T.led){const p=PARTY[0].g.position;return T.follow?{x:FH.x,z:FH.z,label:'Fair Haven Hill'}:{x:p.x,z:p.z,label:'the huckleberry party'}}const b=BUSHES.find(b=>b.full);return b?{x:b.x,z:b.z,label:'huckleberries'}:null}});
+// Sam Staples comes up the street to him
+const STAPLES_HOME=STAPLES.g.position.clone();let stT=0;
+QF.push(dt=>{if(!HENRY)return;const T=qs('tax');const want=SEASON===1&&VIL.here&&!T.met&&!VIL.jailDone&&!VIL.jailed&&!FF.on&&!TRV.dir;const P=STAPLES.g.position;stT-=dt;
+  const tx=want?H.x:STAPLES_HOME.x,tz=want?H.z:STAPLES_HOME.z,d=Math.hypot(tx-P.x,tz-P.z);
+  if(d>(want?4.2:.6)){const y=npcStep(P,tx,tz,(want?6:3.5)*dt);STAPLES.yaw=y;STAPLES.g.rotation.y=y;STAPLES.ph=(STAPLES.ph||0)+dt*8;const w=Math.sin(STAPLES.ph)*.5;STAPLES.legs[0].rotation.x=w;STAPLES.legs[1].rotation.x=-w;P.y=hy(P.x,P.z)}
+  else{for(const l of STAPLES.legs)l.rotation.x*=.8;if(!want&&d<=.6)STAPLES.yaw=STAPLES.yaw0!==undefined?STAPLES.yaw0:STAPLES.yaw;
+    if(want&&!MENU.open&&stT<=0&&busyT<=0){stT=15;staplesAsk()}}});
+STAPLES.yaw0=STAPLES.yaw;
+function staplesAsk(){STAPLES.talk=8;openMenu('Sam Staples','Staples, the constable, tax collector and jailer, stops him in the street. He asks, kindly enough, for the poll tax Henry has not paid in years. He offers to pay it himself if Henry is hard up.',[
+  {label:'Pay the poll tax',price:'150¢',dis:INV.cents<150,fn:()=>pay(150,STAPLES,()=>{const T=qs('tax');T.met=1;T.chose='paid';VIL.jailDone=1;speak(STAPLES,'Henry pays. Staples writes out a receipt on his knee and goes back up the street, relieved. Thoreau, in the book, would not.');errDirty=1})},
+  {label:'Refuse to pay it',fn:()=>{const T=qs('tax');T.met=1;T.chose='refused';VIL.metStaples=1;speak(STAPLES,'Henry will not pay. Staples takes him by the arm, kindly enough, to the jail.');setTimeout(()=>travel(jailHenry),1600);errDirty=1}}])}
+{const _jh=jailHenry;jailHenry=function(){const T=qs('tax');if(!T.met){T.met=1;T.chose='refused'}_jh();errDirty=1}}
+{const _jm=jailMorning;jailMorning=function(){_jm();if(!HENRY)return;const T=qs('tax');T.jailed=1;achieve('civil');setTimeout(()=>say('Out in the morning. He goes on to the cobbler’s for his shoe, as he meant to.',true),2600);errDirty=1}}
+PRE_VIL.push(()=>{if(!HENRY)return null;const T=qs('tax');if(near(COBB)&&T.chose&&(T.chose==='paid'||T.jailed)&&!T.shoe)return{label:'Fetch his mended shoe',fn:()=>{T.shoe=1;speak(COBB,'The shoe is ready, sewn and soled. Outside, a huckleberry party is waiting in the street, impatient to have Henry lead them to the hill.');partyStart();errDirty=1}};
+  if(T.shoe&&!T.follow&&!T.led&&PARTY[0].g.visible&&nearPt(PARTY[0].g.position,7))return{label:'Lead the huckleberry party to Fair Haven Hill',fn:()=>{T.follow=1;say('They fall in behind him. Fair Haven Hill is south of the village, the high ground toward the river.',true);errDirty=1}};return null});
+function partyStart(){const p0=COBB.g.position;PARTY.forEach((p,i)=>{p.g.visible=true;p.g.position.set(p0.x+3+i*1.6,VH,p0.z+4+(i%2)*1.5)})}
+QF.push(dt=>{const T=TAX;const on=HENRY&&T.shoe&&!(T.done&&SEASON!==1)&&!(T.done&&!nearPt(FH,90));
+  for(const p of PARTY){p.g.visible=!!on;if(!on)continue;const P=p.g.position;let tx=P.x,tz=P.z,sp=0;
+    if(T.follow&&!T.led){const a=H.yaw+Math.PI+(p.off-1.5)*.45,r=5+p.off*1.5;tx=H.x+Math.sin(a)*r;tz=H.z+Math.cos(a)*r;sp=(Math.hypot(tx-P.x,tz-P.z)>14?13:9)}
+    else if(T.led){if(!p.bush||!p.bush.full||p.t<0){const L=BUSHES.filter(b=>b.full);p.bush=L.length?L[(Math.random()*L.length)|0]:BUSHES[p.off];p.t=rr(8,16)}p.t-=dt;tx=p.bush.x+Math.sin(p.off*1.7)*2.4;tz=p.bush.z+Math.cos(p.off*1.7)*2.4;sp=4}
+    const d=Math.hypot(tx-P.x,tz-P.z);if(sp&&d>1.2){p.g.rotation.y=npcStep(P,tx,tz,sp*dt);p.ph+=dt*(p.child?11:8);const w=Math.sin(p.ph)*.5;p.legs[0].rotation.x=w;p.legs[1].rotation.x=-w;p.arms[1].rotation.x=-w*.5}
+    else{for(const l of p.legs)l.rotation.x*=.85;if(T.led){p.g.rotation.y=Math.atan2(p.bush.x-P.x,p.bush.z-P.z);p.arms[1].rotation.x=-.9+Math.sin(performance.now()/300+p.off)*.3}}
+    P.y=hy(P.x,P.z)}
+  if(T.follow&&!T.led&&nearPt(FH,26)){T.led=1;say('Fair Haven Hill, and the huckleberries thick on the bushes. The children scatter to them.',true);note('huckle','led a huckleberry party up Fair Haven Hill');errDirty=1}});
+PRE_ACT.push(()=>{if(SEASON!==1)return null;let b=null,bd=4.2;for(const x of BUSHES){if(!x.full)continue;const d=Math.hypot(x.x-H.x,x.z-H.z);if(d<bd){bd=d;b=x}}if(!b)return null;
+  return{label:'Pick huckleberries',fn:()=>{b.full=0;b.ber.visible=false;INV.berries=(INV.berries||0)+2;busy(1.2);sound2('berry');H.yaw=Math.atan2(b.x-H.x,b.z-H.z);drawInv();const T=qs('tax');
+    if(T.led&&!T.done){T.berries+=2;if(T.berries>=6)finish('tax','The pails are full. They eat huckleberries on the hill, with the river below them.','huckle');else say(`A handful into the pail, and two quarts more. ${Math.min(6,T.berries)} of six.`)}else say('Huckleberries, warm from the sun.');errDirty=1}}});
+carry('berries','Huckleberries','berries',()=>INV.berries||0,'Eat a handful anywhere.');
+PRE_ACT.push(()=>HELD==='berries'&&INV.berries?{label:'Eat a handful of huckleberries',fn:()=>{INV.berries--;drawInv();sound2('berry');say('A handful of huckleberries. “The fruits do not yield their true flavor to the purchaser of them.”')}}:null);
+
+/* ======================================================================================================================
+   3. Is the pond bottomless? In the winter of 1846 he sounds it through the ice with a cod-line and a stone, and draws
+   the plan: the deepest place a hundred and two feet.
+   ====================================================================================================================== */
+const DEEP={x:0,z:95,d:0};
+{for(let x=-130;x<=130;x+=2)for(let z=10;z<=180;z+=2){const d=WATER_Y-groundH(x,z);if(d>DEEP.d){DEEP.d=d;DEEP.x=x;DEEP.z=z}}}
+const depthAt=(x,z)=>Math.max(1,Math.min(102,Math.round((WATER_Y-groundH(x,z))/DEEP.d*102)));
+sound=function(){const x=H.x+Math.sin(H.yaw)*2,z=H.z+Math.cos(H.yaw)*2,d=depthAt(x,z);SOUNDINGS.push({x,z,d});busy(1.4);waterU.uHole.value.set(x,z,1);setTimeout(()=>{if(!FISHING)waterU.uHole.value.z=0},6000);
+  for(let i=0;i<5;i++)tone({f:rr(900,1300),f2:500,d:.07,v:.03,type:'triangle',delay:i*.18});tone({f:300,f2:120,d:.4,v:.04,lp:500,delay:1.1});
+  const deep=Math.max(...SOUNDINGS.map(s=>s.d));say(`He cuts a hole and lets down the cod-line with a stone on it. Bottom at ${d} feet. ${SOUNDINGS.length} ${SOUNDINGS.length===1?'sounding':'soundings'}, the deepest ${deep} feet.`);
+  if(d>=100&&!said.deep102){said.deep102=1;setTimeout(()=>say(`${d} feet. The deepest place in the pond, and a bottom to it, whatever they say in the village.`,true),2400)}
+  if(SOUNDINGS.length===1)note('sound','sounded the depth of the pond through the ice');errDirty=1};
+const sndCells=()=>new Set(SOUNDINGS.map(s=>Math.floor(s.x/28)+','+Math.floor(s.z/24))).size;
+errand({id:'sound',title:'Is the pond bottomless?',when:'Winter',avail:()=>SEASON===3,blurb:'In the village they say Walden has no bottom. In the winter he sounds it through the ice, with a cod-line and a stone.',
+  steps:()=>{const n=Math.min(12,sndCells()),deep=SOUNDINGS.length?Math.max(...SOUNDINGS.map(s=>s.d)):0;return[{t:'Wait for the ice to bear him',short:'Wait for the ice',ok:SEASON===3||SOUNDINGS.length>0},{t:`Sound the pond all over, in twelve places at least (${n}/12)`,short:`Soundings ${n}/12`,ok:n>=12},
+    {t:`Find the deepest place${deep?` (deepest so far ${deep} feet)`:''}`,short:'Find the deepest place',ok:deep>=100},{t:'Draw the plan of the soundings at his desk',short:'Draw the plan at the desk',ok:!!qs('sound').charted}]},
+  target:()=>{if(SEASON!==3&&!SOUNDINGS.length)return null;const S=errOf('sound').steps();if(!S[1].ok||!S[2].ok)return{x:0,z:95,label:'sound the pond',dy:2};return{x:CABIN.x,z:CABIN.z,label:'the desk'}},
+  fig:()=>qs('sound').charted?chartURL():null,figAlt:'His plan of the pond, with the soundings in feet'});
+let chartCache=null,chartN=-1;
+function chartURL(){if(chartCache&&chartN===SOUNDINGS.length)return chartCache;const cv=document.createElement('canvas');cv.width=300;cv.height=200;const g=cv.getContext('2d');g.fillStyle='#ece4d0';g.fillRect(0,0,300,200);
+  const x0=-140,x1=140,z0=10,z1=180,P=(x,z)=>[(x-x0)/(x1-x0)*280+10,(z-z0)/(z1-z0)*160+28];
+  g.fillStyle='#c8d0d0';for(let x=x0;x<x1;x+=3)for(let z=z0;z<z1;z+=3)if(groundH(x,z)<WATER_Y){const [px,py]=P(x,z);g.fillRect(px,py,3,3)}
+  g.strokeStyle='#4a4038';g.lineWidth=1;for(let x=x0;x<x1;x+=3)for(let z=z0;z<z1;z+=3){const a=groundH(x,z)<WATER_Y,b=groundH(x+3,z)<WATER_Y,c=groundH(x,z+3)<WATER_Y;if(a!==b||a!==c){const [px,py]=P(x,z);g.fillStyle='#4a4038';g.fillRect(px,py,2,2)}}
+  g.font='9px monospace';g.textAlign='center';g.textBaseline='middle';const deep=Math.max(0,...SOUNDINGS.map(s=>s.d));
+  for(const s of SOUNDINGS){const [px,py]=P(s.x,s.z);g.fillStyle=s.d===deep?'#a83a2a':'#3a3430';g.fillText(String(s.d),px,py)}
+  g.fillStyle='#3a3430';g.font='bold 11px serif';g.fillText('WALDEN POND. A Reduced Plan. 1846.',150,12);g.font='9px serif';g.fillText('Soundings in feet. The deepest place in red.',150,193);
+  chartCache=cv.toDataURL();chartN=SOUNDINGS.length;return chartCache}
+PRE_ACT.push(()=>{if(!deskNear())return null;const S=errOf('sound').steps();if(!S[1].ok||!S[2].ok||qs('sound').charted)return null;
+  return{label:'Draw the plan of the soundings',fn:()=>{qs('sound').charted=1;advance(2);sfx.pencil();chartCache=null;note('plan','drew a reduced plan of Walden Pond, with the soundings');finish('sound','The plan is drawn: a hundred and two feet at the deepest. A bottom after all. It is in the errands, in his bag.','bottom')}}});
+
+/* ======================================================================================================================
+   4. Before the cold. He shingles the sides of the house with refuse shingles, plasters the walls with lime and white
+   sand from the shore, and lays in his wood. Until the house is tight the fire burns faster.
+   ====================================================================================================================== */
+const HOUSE=qs('house',{sides:[0,0,0,0],plaster:0});
+const SIDE_NAMES=['north','south','east','west'];
+// which wall each piece belongs to, and the shingle courses on each side
+const HSIDE={walls:[[],[],[],[]],strips:[[],[],[],[]]};
+{for(const w of CAB.walls){if(w.userData.mo&&w.userData.mo.color===0x8a4636)continue;const p=w.position;const k=p.z<-4?0:p.z>4?1:p.x>7?2:p.x<-7?3:-1;if(k>=0)HSIDE.walls[k].push(w)}
+  for(const m of CAB.tall){const g=m.geometry&&m.geometry.parameters;if(!g||Math.abs(g.height-.1)>.001)continue;const p=m.position;const k=Math.abs(p.z+5.02)<.01?0:Math.abs(p.z-5.02)<.01?1:Math.abs(p.x-7.52)<.01?2:Math.abs(p.x+7.52)<.01?3:-1;if(k>=0)HSIDE.strips[k].push(m)}}
+const PLASTER=makeMat({color:0xe8e2d2,nosnow:1});
+function applyHouse(){if(!HENRY)return;const Hs=qs('house');
+  for(let k=0;k<4;k++){const on=!!Hs.sides[k];for(const s of HSIDE.strips[k])s.scale.y=on?1:.02;for(const w of HSIDE.walls[k]){const base=w.userData.mat||w.material;if(!w.userData.bare){w.userData.bare=1;w.userData.matS=base}
+      const M=w.userData.matS;M.color.set(on?0x8e7050:0xa2845c);
+      // the inner face of each wall takes the plaster: +z for the north wall, -z for the south, -x for the east, +x for the west
+      if(Hs.plaster){const inner=[4,5,1,0][k];const arr=[M,M,M,M,M,M];arr[inner]=PLASTER;w.material=arr;w.userData.mat=arr}else{w.material=M;w.userData.mat=M}}}}
+AFTERLOAD.push(()=>applyHouse());applyHouse();
+errand({id:'house',title:'Before the cold',when:'Autumn',avail:()=>SEASON===2||SEASON===3,blurb:'Before winter he shingles the sides of the house, plasters the walls with lime and white sand from the shore, and lays in his wood. Until then the wind gets in and the fire burns fast.',
+  steps:()=>{const Hs=qs('house'),n=Hs.sides.filter(v=>v).length;return[{t:'Buy refuse shingles at the store',short:'Buy shingles at the store',ok:n>0||!!INV.shingles},{t:`Shingle the four sides of the house (${n}/4)`,short:`Shingle the walls ${n}/4`,ok:n>=4},
+    {t:'Buy a cask of lime at the store, and take a pail of sand from the shore',short:'Lime from the store, sand from the shore',ok:!!Hs.plaster||(!!INV.lime&&!!INV.sand)},{t:'Plaster the walls inside',short:'Plaster the walls',ok:!!Hs.plaster},{t:`Lay in wood for the winter: fell eight trees in the autumn (${Math.min(8,Hs.wood||0)}/8)`,short:`Winter wood ${Math.min(8,Hs.wood||0)}/8`,ok:(Hs.wood||0)>=8}]},
+  target:()=>{const Hs=qs('house'),n=Hs.sides.filter(v=>v).length;if(!n&&!INV.shingles)return{x:CLERK.g.position.x,z:CLERK.g.position.z,label:'the store'};if(n<4)return{x:CABIN.x,z:CABIN.z,label:'the house walls'};
+    if(!Hs.plaster&&!INV.lime)return{x:CLERK.g.position.x,z:CLERK.g.position.z,label:'the store'};if(!Hs.plaster&&!INV.sand)return{x:POLEPOS.x,z:POLEPOS.z,label:'sand on the shore'};if(!Hs.plaster)return{x:CABIN.x,z:CABIN.z,label:'the house'};return null}});
+function wallSide(){const {lx,lz}=cl();if(CAB.inside)return -1;const ax=Math.abs(lx),az=Math.abs(lz);if(ax<11&&az<9.5){if(az>5.2&&ax<9)return lz<0?0:1;if(ax>7.7&&az<7.5)return lx>0?2:3}return -1}
+PRE_ACT.push(()=>{const Hs=qs('house');if(!INV.shingles)return null;const k=wallSide();if(k<0||Hs.sides[k])return null;
+  return{label:`Nail shingles on the ${SIDE_NAMES[k]} side`,fn:()=>{Hs.sides[k]=1;INV.shingles--;drawInv();busy(1.6);advance(1);labour(60);sound2('hammer');applyHouse();const n=Hs.sides.filter(v=>v).length;
+    say(n<4?`The ${SIDE_NAMES[k]} wall shingled, an hour’s work. ${4-n} to go.`:'The last wall shingled. The house is tight against the wind.');houseCheck();errDirty=1}}});
+PRE_ACT.push(()=>{const Hs=qs('house');if(!CAB.inside||Hs.plaster||!INV.lime||!INV.sand)return null;const {lx,lz}=cl();if(Math.abs(lx)>5||Math.abs(lz)>3)return null;
+  return{label:'Plaster the walls with lime and sand',fn:()=>{Hs.plaster=1;INV.lime=0;INV.sand=0;if(HELD==='sand')setHeld(null,true);drawInv();busy(2.5);advance(3);labour(180);sound2('trowel');applyHouse();
+    say('He mixes the lime with the white sand and lays it on the walls with a trowel. Three hours, and the room is white and close.');houseCheck();errDirty=1}}});
+function houseCheck(){const S=errOf('house').steps();if(S.every(s=>s.ok))finish('house','The house is shingled and plastered, and the wood laid in. Let winter come.','housewarm')}
+
+{const _bh=burnHours;burnHours=function(h){if(HENRY&&SEASON>=2){const Hs=qs('house'),bare=Hs.sides.filter(v=>!v).length;h*=(Hs.plaster?1:1.35)*(1+bare*.08)}_bh(h)}}
+NEWDAY.push(()=>{if(HENRY&&SEASON===3&&CAL.day===0&&!HOUSE.done)say('Winter, and the house not ready. The wind comes through the boards and the fire eats wood.',true)});
+carry('lime','Cask of lime','lime',()=>INV.lime||0,'Plaster the walls with it, mixed with sand from the shore.');
+carry('shingles','Refuse shingles','shingles',()=>INV.shingles||0,'One bundle for each wall of the house. Stand outside the wall.');
+
+/* ======================================================================================================================
+   5. The bean-field. He hoes the weeds from the rows, and the woodchucks come in when he is away.
+   ====================================================================================================================== */
+const BEANS=qs('beans',{weeded:0,harvests:0,eaten:0});
+const WEEDG=new THREE.ConeGeometry(.35,1.3,4);
+function drawWeeds(tl){if(!tl.weedG){tl.weedG=new THREE.Group();tl.G.add(tl.weedG);for(let k=0;k<9;k++){const g=new THREE.Group();g.position.set(rr(-4,4),0,rr(-4,4));for(let j=0;j<3;j++){const m=live(WEEDG,[0x5a8a2a,0x6a9a34,0x4a7a26][j],rr(-.4,.4),.6,rr(-.4,.4),g);m.rotation.z=rr(-.5,.5)}tl.weedG.add(g)}}
+  const n=(tl.s==='sown'?(tl.weeds||0):0)*3;tl.weedG.children.forEach((g,i)=>{g.visible=i<n;g.position.y=groundH(tl.cx+g.position.x,tl.cz+g.position.z)-tl.G.position.y+.2})}
+{const _gr=grow;grow=function(min){const c0=CLOCK,wet=TILES.map(tl=>tl.s==='sown'?Math.max(0,Math.min(min,tl.wet-c0)):0);_gr(min);if(SEASON===3)return;const f=[1,1,.6,0][SEASON];
+  TILES.forEach((tl,i)=>{if(tl.s!=='sown')return;tl.wacc=(tl.wacc||0)+min;let ch=0;while(tl.wacc>=540){tl.wacc-=540;if((tl.weeds||0)<3){tl.weeds=(tl.weeds||0)+1;ch=1}}
+    if(tl.weeds&&wet[i]>0)tl.growth=Math.max(0,tl.growth-wet[i]*f*.22*tl.weeds);if(ch){drawWeeds(tl);if(tl.weeds===2&&Math.hypot(tl.cx-H.x,tl.cz-H.z)<80)sayOnce('weeds'+CAL.day,'Weeds coming up among the rows. They choke the crop.')}})}}
+PRE_ACT.push(()=>{const tl=tileAt(H.x,H.z);if(!tl||tl.s!=='sown'||!tl.weeds||SEASON===3)return null;return need('hoe',`Hoe the weeds from the ${CROPS[tl.crop].name} · ${tl.weeds}`,()=>hoeSwing(tl))||{label:'Weeds in the rows. The hoe is by the house.',fn:()=>say('The hoe leans against the house, on the pond side.')}});
+{const _hh=hoeHit;hoeHit=function(tl){labour(10);if(tl.s==='sown'&&tl.weeds){sfx.hoe();rumble(70,.4,.3);tl.weeds=Math.max(0,tl.weeds-(UP.hoe?3:2));drawWeeds(tl);const B=qs('beans');B.weeded++;
+      say(tl.weeds?'Some of the weeds out. Again.':'He hoes out the weeds and draws fresh soil about the stems.');sayOnce('hoebean','“Making the earth say beans instead of grass.”',true);errDirty=1;beansCheck();return}
+    if(UP.hoe&&tl.s==='brush'&&tl.hp>1)tl.hp--;_hh(tl)}}
+{const _hv=harvest;harvest=function(tl){const k=tl.crop;_hv(tl);tl.weeds=0;drawWeeds(tl);if(k==='beans'){qs('beans').harvests++;errDirty=1;beansCheck()}}}
+function beansCheck(){const B=qs('beans');if(B.weeded>=6&&B.harvests>=3)finish('beans','Three harvests of beans, and the weeds kept down. The earth has said beans.','beanfield')}
+AFTERLOAD.push(()=>{for(const tl of TILES)drawWeeds(tl)});
+// the woodchuck, when he is away
+const RAID={on:0,tile:null,warned:0,ate:0};
+QF.push(dt=>{if(!HENRY)return;const day=DAY>.4&&(SEASON===0||SEASON===1);const dPlot=Math.hypot(H.x-(PLOT.x0+30),H.z-(PLOT.z0+20)),dChuck=Math.hypot(CH.x-H.x,CH.z-H.z);
+  if(!RAID.on&&day&&dPlot>70&&Math.random()<dt*.02){const L=TILES.filter(t=>t.s==='sown'&&t.crop==='beans'&&t.growth>30);if(L.length){RAID.on=1;RAID.tile=L[(Math.random()*L.length)|0]}}
+  if(RAID.on){if(!day||dChuck<26){RAID.on=0;CH.tx=CH.hole.x;CH.tz=CH.hole.z;CH.t=4;if(dChuck<26&&RAID.ate>20){say('The woodchuck runs for its hole. It has been at the beans: a row eaten down nearly to the ground.',true);RAID.ate=0}return}
+    const tl=RAID.tile;CH.t=5;CH.tx=tl.cx;CH.tz=tl.cz;CH.up=1;if(Math.hypot(CH.x-tl.cx,CH.z-tl.cz)<2.5&&tl.s==='sown'){const g=Math.min(tl.growth,dt*5);tl.growth-=g;RAID.ate+=g;qs('beans').eaten+=g;if(tl.growth<=0){drawTile(tl);RAID.tile=TILES.find(t=>t.s==='sown'&&t.crop==='beans'&&t.growth>30)||tl;if(RAID.tile===tl)RAID.on=0}}}});
+errand({id:'beans',title:'The bean-field',when:'Spring and summer',avail:()=>SEASON<=1,blurb:'Seven miles of beans, in the book. He hoes them in the cool of the morning; the weeds come up, and the woodchucks come in when he is away.',
+  steps:()=>{const B=qs('beans');const plantedB=TILES.some(t=>t.s==='sown'&&t.crop==='beans');return[{t:'Clear the brush and hoe rows in the field north-east of the house',short:'Hoe rows in the field',ok:B.harvests>0||TILES.some(t=>t.s==='tilled'||t.s==='sown')},
+    {t:'Plant beans, and water them',short:'Plant beans',ok:B.harvests>0||plantedB},{t:`Hoe the weeds from among them (${Math.min(6,B.weeded)}/6)`,short:`Hoe weeds ${Math.min(6,B.weeded)}/6`,ok:B.weeded>=6},
+    {t:`Bring in three harvests of beans, before the woodchuck does (${Math.min(3,B.harvests)}/3)`,short:`Bean harvests ${Math.min(3,B.harvests)}/3`,ok:B.harvests>=3}]},
+  target:()=>({x:PLOT.x0+30,z:PLOT.z0+20,label:'the bean-field'})});
+
+/* ======================================================================================================================
+   6. The war of the ants, on the woodpile, in summer.
+   ====================================================================================================================== */
+const ANTS={c:CW(10.5,7.6),n:44,im:null,pairs:[]};
+{const g=new THREE.BoxGeometry(.5,.18,.24);const m=new THREE.MeshLambertMaterial({color:0xffffff});ANTS.im=new THREE.InstancedMesh(g,m,ANTS.n);ANTS.im.castShadow=false;scene.add(ANTS.im);
+  const red=new THREE.Color(0xa83420),blk=new THREE.Color(0x141210);for(let i=0;i<ANTS.n;i++){ANTS.im.setColorAt(i,i%2?blk:red)}ANTS.im.instanceColor.needsUpdate=true;
+  for(let k=0;k<ANTS.n/2;k++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*3.6;ANTS.pairs.push({x:ANTS.c.x+Math.cos(a)*r,z:ANTS.c.z+Math.sin(a)*r,yaw:rr(0,6.3),ph:rr(0,6),run:k%5===0?rr(0,6.3):null})}
+  for(let k=0;k<6;k++){const c=live(new THREE.BoxGeometry(rr(.6,1.4),.12,rr(.4,.8)),0xb8986a,ANTS.c.x+rr(-3,3),groundH(ANTS.c.x,ANTS.c.z)+.06,ANTS.c.z+rr(-3,3));c.rotation.y=rr(0,3);scene.add(c)}}
+const antAnchor=new THREE.Object3D();antAnchor.position.copy(ANTS.c);antAnchor.position.y=groundH(ANTS.c.x,ANTS.c.z);critterTag('Ants at war','#d88a6a',antAnchor,2.4,34);
+const m4a=new THREE.Matrix4(),qa=new THREE.Quaternion(),va=new THREE.Vector3(),sa=new THREE.Vector3(1,1,1),ea=new THREE.Euler();
+QF.push(dt=>{const on=SEASON===1&&DAY>.3&&HENRY;ANTS.im.visible=on;antAnchor.visible=on;if(!on||Math.hypot(H.x-ANTS.c.x,H.z-ANTS.c.z)>60)return;const t=performance.now()/1000;
+  ANTS.pairs.forEach((p,k)=>{p.ph+=dt*(6+k%3);if(p.run!==null){p.x+=Math.cos(p.run)*dt*1.4;p.z+=Math.sin(p.run)*dt*1.4;if(Math.hypot(p.x-ANTS.c.x,p.z-ANTS.c.z)>3.8)p.run+=Math.PI*.8}
+    for(let s=0;s<2;s++){const i=k*2+s,face=p.yaw+s*Math.PI,off=.22+Math.sin(p.ph)*.06;const x=p.x+Math.cos(p.yaw)*(s?off:-off),z=p.z+Math.sin(p.yaw)*(s?off:-off);
+      ea.set(0,-face+Math.sin(p.ph*1.3+s)*.4,Math.sin(p.ph+s)*.25);qa.setFromEuler(ea);va.set(x,groundH(x,z)+.12,z);m4a.compose(va,qa,sa);ANTS.im.setMatrixAt(i,m4a)}});ANTS.im.instanceMatrix.needsUpdate=true});
+const ANTBEATS=['Red ants and black, locked in pairs among the chips by the woodpile, the ground covered with them. Neither side gives way.',
+  'He watches one pair a long while: a small red ant fastened like a vice to the foreleg of a big black one, the two of them rolling over and over among the chips.',
+  'He carries the chip indoors and sets it under a tumbler on the window sill. Hours later the black ant stands alone, the severed heads of his enemies still hanging from him, and limps away over the sill.'];
+PRE_ACT.push(()=>{if(!ANTS.im.visible||!nearPt(ANTS.c,5))return null;const A=qs('ants',{watch:0});if(A.done)return{label:'Watch the ants a while',fn:()=>{advance(.25);say('The war goes on by the woodpile, as fierce as ever.')}};
+  return{label:A.watch?'Go on watching the ants':'Watch the war of the ants',fn:()=>{busy(1.5);advance(.5);H.yaw=Math.atan2(ANTS.c.x-H.x,ANTS.c.z-H.z);say(ANTBEATS[A.watch],true);A.watch++;errDirty=1;
+    if(A.watch>=3){note('ants','watched a war between the red ants and the black on the woodpile');finish('ants','',  'ants')}}}});
+errand({id:'ants',title:'The war of the ants',when:'Summer',avail:()=>SEASON===1,blurb:'One day by the woodpile he finds two races of ants at war, red against black, and watches it out.',
+  steps:()=>{const A=qs('ants',{watch:0});return[{t:'Find the battle, by the woodpile on the pond side of the house, on a summer day',short:'Find the ants by the woodpile',ok:A.watch>0},{t:`Watch it out (${Math.min(3,A.watch)}/3)`,short:`Watch the ants ${Math.min(3,A.watch)}/3`,ok:A.watch>=3}]},
+  target:()=>SEASON===1?{x:ANTS.c.x,z:ANTS.c.z,label:'the ants',dy:3}:null});
+
+/* ======================================================================================================================
+   7. Baker Farm. Caught in the rain, he shelters in John Field's hut with Field, his wife and their children; then they
+   go fishing.
+   ====================================================================================================================== */
+function findSite(x0,z0,r,ok){let best=null;for(let x=x0-r;x<=x0+r;x+=4)for(let z=z0-r;z<=z0+r;z+=4){if(ok&&!ok(x,z))continue;const h=groundH(x,z);let v=0;for(const [dx,dz] of [[7,0],[-7,0],[0,7],[0,-7],[5,5],[-5,-5]])v+=Math.abs(groundH(x+dx,z+dz)-h);const sc=v+Math.hypot(x-x0,z-z0)*.02;if(!best||sc<best.sc)best={x,z,sc}}return best}
+const BFs=findSite(-112,172,16,(x,z)=>pondD(x,z)>1.35&&Math.abs(x-RAILX)>14&&!inVillage(x,z,4));
+const BF=plainHouse(BFs.x,BFs.z,9,7,{yaw:Math.atan2(0-BFs.x,95-BFs.z),wall:0x7a6650,roof:0x6a6458,h:5.4,chimney:1});
+PLACES.push({name:'Baker Farm',x:BF.x,z:BF.z});clearSite(BF.x,BF.z,12);
+const FIELD_SPOT=(()=>{let best=null;for(let k=0;k<720;k++){const a=k/720*6.283;for(let r=4;r<160;r+=1){const x=BF.x+Math.cos(a)*r,z=BF.z+Math.sin(a)*r;if(pondD(x,z)<1.02){const sx=BF.x+Math.cos(a)*(r-3),sz=BF.z+Math.sin(a)*(r-3);if(!best||r<best.r)best={x:sx,z:sz,r,a};break}}}return best})();
+const JOHN=person({coat:0x5a4a3a,trou:0x4a4038,hat:'wide',hatC:0x4a4034,hair:0x6a4a2a,beard:1});JOHN.name='John Field';JOHN.g.position.set(BF.door.x,hy(BF.door.x,BF.door.z),BF.door.z);critterTag('John Field','#e8c890',JOHN.g,7.4,60);
+const MRSF=person({coat:0x5a4a48,dress:0x6a4a3a,hat:'none',hair:0x7a4a2a,apron:0xd8ccb0});MRSF.name='Mrs. Field';
+const FKIDS=[0,1].map(i=>{const p=person({coat:[0x7a5a3a,0x5a6a7a][i],trou:0x4a4038,hat:'none',hair:0xa86a3a});p.g.scale.setScalar(.45);return p});
+{const pole=toolMesh('pole');pole.position.set(0,-2.3,.3);pole.rotation.x=-1.2;pole.visible=false;JOHN.arms[1].add(pole);JOHN.pole=pole}
+const HEN=mkG([[S_(.6),0x8a5a3a,0,1,0,1,.9,1.3],[S_(.32),0x8a5a3a,0,1.6,.6],[K_(.08,.25,4),0xd8a030,0,1.6,.95,1,1,1,Math.PI/2],[B_(.1,.25,.2),0xc83a2a,0,1.95,.6]]);scene.add(HEN);
+{const a=new THREE.Vector3(BF.door.x-BF.x,0,BF.door.z-BF.z).normalize();const side=new THREE.Vector3(-a.z,0,a.x);
+  const put=(p,u,v)=>{const x=BF.door.x+side.x*u+a.x*v,z=BF.door.z+side.z*u+a.z*v;p.position.set(x,hy(x,z),z);p.rotation.y=Math.atan2(a.x,a.z)};
+  put(MRSF.g,-2.4,.6);put(FKIDS[0].g,2.2,1.2);put(FKIDS[1].g,3.3,.2);put(HEN,-4,3)}
+const JF={state:'home',t:0};
+errand({id:'field',title:'Baker Farm',when:'A wet day',avail:()=>SEASON!==3,blurb:'Caught in a shower on the way to Fair Haven, he shelters in John Field’s hut at Baker Farm, with Field, his wife and their children, and tries to tell Field how he might live.',
+  steps:()=>{const F=qs('field',{met:0,talk:0,fish:0});return[{t:'Walk to Baker Farm, south-west of the pond, on a rainy day',short:'Baker Farm, on a rainy day',ok:!!F.met},{t:'Shelter from the rain with John Field and his family',short:'Shelter with the Fields',ok:!!F.talk},{t:'Go fishing with John Field when it clears',short:'Fish with John Field',ok:!!F.fish}]},
+  target:()=>{const F=qs('field',{met:0,talk:0,fish:0});if(F.talk&&!F.fish)return{x:FIELD_SPOT.x,z:FIELD_SPOT.z,label:'fishing with John Field'};return{x:BF.door.x,z:BF.door.z,label:'Baker Farm'}}});
+PRE_ACT.push(()=>{if(!nearPt(BF.door,5.5))return null;const F=qs('field',{met:0,talk:0,fish:0});const wet=WX.cur.rain>.2||WX.kind==='rain'||WX.kind==='storm'||WX.kind==='hail';
+  if(!F.talk&&wet)return{label:'Shelter from the rain at John Field’s',fn:fieldTalk};
+  if(!F.talk)return{label:'Knock at John Field’s door',fn:()=>speak(MRSF,'Mrs. Field comes to the door with the baby on her hip. John is out bogging in a farmer’s meadow. On a wet day, she says, they are all of them at home.')};
+  if(F.fish)return{label:'Talk with John Field',fn:()=>speak(JOHN,['He says the luck will turn. He means to go west some day, or back to Ireland.','He asks if Henry has ever thought of keeping a cow.','He is bogging again tomorrow, at the same rate.'][(F.n=(F.n||0)+1)%3])};return null});
+function fieldTalk(){const F=qs('field');F.met=1;JF.state='talk';JOHN.talk=12;errDirty=1;
+  openMenu('John Field','John Field, an Irishman, his wife and their children crowd into the hut out of the rain. Field has been bogging for a farmer, turning up a meadow with a spade for ten dollars an acre and the use of the land for a year. He works hard, and has nothing to show for it.',[
+    {label:'Tell him how he might live: no tea, no coffee, no butter, no meat, and so no need to work for them',fn:()=>{speak(JOHN,'He listens, and shakes his head. A man must have his tea and his meat, and work hard to pay for them. He has always worked hard. Mrs. Field looks at the floor.');fieldAfter()}},
+    {label:'Ask him how the fishing is in the pond',fn:()=>{speak(JOHN,'He brightens. He has fished it often, for pickerel and perch. When the rain stops he will show Henry the place.');fieldAfter()}}])}
+function fieldAfter(){const F=qs('field');F.talk=1;errDirty=1;setTimeout(()=>{setWeather('cloudy');say('The rain stops. John Field takes his pole and goes down to the pond with Henry.',true);JF.state='walk'},5200)}
+QF.push(dt=>{const F=qs('field',{met:0,talk:0,fish:0});const P=JOHN.g.position;let tx=BF.door.x,tz=BF.door.z;
+  if(JF.state==='walk'||JF.state==='fish'){tx=FIELD_SPOT.x;tz=FIELD_SPOT.z}if(F.fish&&JF.state==='fish'){JF.t+=dt;if(JF.t>40)JF.state='home'}if(JF.state==='home'||JF.state==='talk'){tx=BF.door.x;tz=BF.door.z}
+  const d=Math.hypot(tx-P.x,tz-P.z);if(d>1.2){JOHN.g.rotation.y=npcStep(P,tx,tz,5*dt);JOHN.ph=(JOHN.ph||0)+dt*8;const w=Math.sin(JOHN.ph)*.5;JOHN.legs[0].rotation.x=w;JOHN.legs[1].rotation.x=-w}
+  else{for(const l of JOHN.legs)l.rotation.x*=.8;if(JF.state==='walk')JF.state='fish';if(JF.state==='fish'){JOHN.g.rotation.y=Math.atan2(Math.cos(FIELD_SPOT.a),Math.sin(FIELD_SPOT.a));JOHN.arms[1].rotation.x=-1.1+Math.sin(performance.now()/900)*.05}else if(JOHN.talk>0){JOHN.talk-=dt;JOHN.g.rotation.y=Math.atan2(H.x-P.x,H.z-P.z)}else JOHN.arms[1].rotation.x*=.9}
+  JOHN.pole.visible=JF.state==='walk'||JF.state==='fish';P.y=hy(P.x,P.z);
+  const vis=SEASON!==3;JOHN.g.visible=vis;MRSF.g.visible=vis;for(const k of FKIDS)k.g.visible=vis;HEN.visible=vis});
+{const _st=strike;strike=function(){const F=FISHING;let up=false;if(INV.worms>0&&F){INV.worms--;if(!F.fish||['shiner','bream','pout'].includes(F.fish.type))up=Math.random()<.5}
+    _st();if(up){const small=['shiner','bream','pout'].find(k=>INV.fish[k]>0);if(small){INV.fish[small]--;const big=Math.random()<.5?'pickerel':'perch';INV.fish[big]=(INV.fish[big]||0)+1;drawInv();say(`On the worm: a good ${FISH[big][0].toLowerCase()} instead.`)}}
+    const Fd=qs('field',{met:0,talk:0,fish:0});if(HENRY&&Fd.talk&&!Fd.fish&&JF.state==='fish'&&nearPt(FIELD_SPOT,40)){Fd.fish=1;JF.t=0;setTimeout(()=>{speak(JOHN,'John Field has fished all the while beside him and caught only a few small ones. Henry has a fair string. Field says it is his luck, and that it will change.');note('field','sheltered at Baker Farm with John Field and his family, and fished with him after');finish('field','','bakerfarm')},2400)}}}
+
+/* ======================================================================================================================
+   Tackle, bait and the boat
+   ====================================================================================================================== */
+{const _cs=cast;cast=function(w){_cs(w);if(FISHING){FISHING.wait*=[1,.72,.52][UP.pole]*(INV.worms?.7:1)}}}
+QF.push(dt=>{if(FISHING&&FISHING.state==='bite'&&UP.pole)FISHING.t-=dt*[0,.35,.55][UP.pole]});
+carry('worms','Worms for bait','worms',()=>INV.worms||0,'Fish bite quicker on them, and the bigger fish take them.');
+carry('pitch','Pitch','pitch',()=>INV.pitch||0,'For the seams of the boat. Use it at the boat.');
+PRE_ACT.push(()=>{if(SEASON===3||!INV.hoe)return null;const tl=tileAt(H.x,H.z);if(!tl||(tl.s!=='cleared'&&tl.s!=='tilled')||(INV.worms||0)>=18)return null;if(HELD&&HELD.startsWith('seed:'))return null;
+  return{label:'Dig worms for bait',fn:()=>{INV.worms=Math.min(18,(INV.worms||0)+6);busy(1);sfx.hoe();drawInv();say(`He turns over the soil and picks out worms for bait. ${INV.worms} in the can.`)}}});
+PRE_ACT.push(()=>{if(!INV.pitch||UP.boat||!nearBoat())return null;return{label:'Pay the seams of the boat with pitch',fn:()=>{INV.pitch=0;UP.boat=1;drawInv();busy(2);advance(1);labour(40);say('He turns the boat over, warms the pitch and works it into the seams. She will not take water now, and goes lighter.')}}});
+{const _bb=boardBoat,_rb=rowBack,k=()=>[1,1.4,1.85][UP.boat];boardBoat=function(){_bb();BOAT.dur/=k()};rowBack=function(){_rb();BOAT.dur/=k()}}
+
+/* ---------- the account of labour: the other work in the game counts too ---------- */
+{const _ms=measureStake;measureStake=function(g){labour(30);_ms(g)}}
+{const _tp=takePile;takePile=function(){labour(4);_tp()}}
+{const _wa=water;water=function(tl){labour(5);_wa(tl)}}
+
+/* ---------- achievements for all of it ---------- */
+Object.assign(ACH_DEF,{sharper:{name:'Sharper Than He Received It',desc:'Gave back the borrowed axe with a better edge than it had.'},
+  civil:{name:'Civil Disobedience',desc:'Spent a night in the Concord jail rather than pay the poll tax.'},
+  huckle:{name:'A Huckleberry Party',desc:'Led a party up Fair Haven Hill and picked huckleberries with them.'},
+  bottom:{name:'A Bottom After All',desc:'Sounded Walden through the ice, found the deepest place, and drew the plan.'},
+  housewarm:{name:'House-Warming',desc:'Shingled and plastered the house and laid in wood before the winter.'},
+  beanfield:{name:'Making the Earth Say Beans',desc:'Kept the weeds down and brought in three harvests of beans.'},
+  ants:{name:'The Battle of the Ants',desc:'Watched the red ants and the black fight it out by the woodpile.'},
+  bakerfarm:{name:'Baker Farm',desc:'Sheltered from the rain with John Field, and went fishing with him after.'}});
+
+/* ---------- an older saved game: the jail already done, the axe already long in use ---------- */
+AFTERLOAD.push(s=>{if(!HENRY||!s)return;const T=qs('tax');if(VIL.jailDone&&!T.met){T.met=1;T.chose='refused';T.jailed=1}})
+
+// for testing from outside the page
+window.__q={unbusy:()=>{busyT=0;swing=0},Q,UP,ACCT,ERR,PIN:()=>PIN,curErrand,openMenu,MENU,storeMenu,smithMenu,pickMenu,returnAxe,grindAxe,FH,BUSHES,PARTY,BF,JOHN,JF,FIELD_SPOT,ANTS,HSIDE,applyHouse,DEEP,depthAt,chartURL,staplesAsk,STAPLES,errLine,hit:t=>hit(t),hoeHit:t=>hoeHit(t),harvest:t=>harvest(t),grow:m=>grow(m),CH,RAID,TILES,drawBag:()=>drawBag(),setTab:t=>{BAGTAB=t},sound:()=>sound(),SOUNDINGS,COBB,CLERK,FARMER,SMITH,cast:w=>cast(w),strike:()=>strike(),nearWater:()=>nearWater(),fishing:()=>FISHING,XBLOCK,blocked:(x,z)=>blocked(x,z),wallSide,CAB,jailMorning:()=>jailMorning(),weather:k=>setWeather(k,true),WX};
+
+/* ======================================================================================================================
+   Other lives at the pond (23 October 2026): Alek Therien the woodchopper, a labourer on the Fitchburg line, and a hunter
+   with a cabin in the woods east of the pond. In their games Henry is a neighbour, going about his day.
+   ====================================================================================================================== */
+const ROLES={henry:{name:'Henry Thoreau',first:'Henry',blurb:'Two years and two months at the pond: the house, the beans, the woodlot, the village, and the errands of the book.'},
+  alek:{name:'Alek Therien',first:'Alek',blurb:'The woodchopper of “Visitors”: a Canadian who boards toward the village, cuts wood all day in the lots by the bean-field, and eats his dinner from a pail.'},
+  labourer:{name:'Owen Daly',first:'Owen',blurb:'A labourer on the Fitchburg line, with a shanty by the railroad cut: section work, the ice harvest in winter, and money sent home. Owen is made up; men like him are in the book.'},
+  hunter:{name:'Silas Reed',first:'Silas',blurb:'A hunter with a cabin in the woods east of the pond, two hounds and a fowling piece: the fox, the muskrat traps, and a neighbour who gave up hunting. Silas is made up; the hunter and his hound are in the book.'}};
+const ROLE_NAME=ROLES[ROLE].name,ROLE_FIRST=ROLES[ROLE].first;
+// the choice on the title card
+{const box=document.getElementById('roles'),p=document.getElementById('rolep');
+  for(const k of ['henry','alek','labourer','hunter']){const b=document.createElement('button');b.textContent=ROLES[k].name;b.className=k===ROLE?'on':'';b.setAttribute('aria-pressed',k===ROLE?'true':'false');
+    b.onclick=()=>{if(k===ROLE)return;saveGame();try{localStorage.setItem('walden-role',k)}catch(e){}location.reload()};box.appendChild(b)}
+  p.textContent=ROLES[ROLE].blurb}
+const R=qs('role',{});          // the life in hand: what it carries, where it has got to
+let roleAction=()=>null,roleHit=()=>{};
+
+if(!HENRY){
+/* ---------- a body for whoever is playing; Henry's own body walks on as the neighbour ---------- */
+const HB={g:H.g,legs:H.legs.slice(),arms:H.arms.slice(),name:'Henry Thoreau',talk:0,ph:0,x:CABIN.x-8.6,z:CABIN.z+1,yaw:Math.PI/2,state:'door'};
+const SILMAT=new THREE.MeshBasicMaterial({color:0xeadab0,transparent:true,opacity:.62,depthWrite:false,depthFunc:THREE.GreaterDepth,stencilWrite:true,stencilRef:1,stencilFunc:THREE.NotEqualStencilFunc,stencilZPass:THREE.KeepStencilOp});
+function wearBody(B){const ms=[];B.g.traverse(o=>{if(o.isMesh)ms.push(o)});for(const m of ms){if(m.userData.sil)continue;m.material=Array.isArray(m.material)?m.material.map(x=>x.clone()):m.material.clone();for(const mm of [].concat(m.material))Object.assign(mm,{stencilWrite:true,stencilRef:1,stencilFunc:THREE.AlwaysStencilFunc,stencilZPass:THREE.ReplaceStencilOp});m.renderOrder=2;
+    const s=new THREE.Mesh(m.geometry,SILMAT);s.renderOrder=3;s.castShadow=false;s.userData.sil=1;m.add(s)}
+  // Henry's silhouettes go: he is no longer the one followed through walls
+  HB.g.traverse(o=>{if(o.userData&&o.userData.sil===undefined&&o.isMesh&&o.material===SILMAT)o.visible=false});
+  H.g=B.g;H.legs.length=0;H.legs.push(...B.legs);H.arms.length=0;H.arms.push(...B.arms);
+  for(const k in HAND)B.arms[1].add(HAND[k]);B.arms[0].add(LANT);B.g.add(ARMLOAD);
+  document.getElementById('tag').textContent=ROLE_FIRST}
+{const ms=[];HB.g.traverse(o=>{if(o.isMesh&&o.material&&o.material.depthFunc===THREE.GreaterDepth)ms.push(o)});for(const m of ms)m.visible=false}
+let BODY;
+if(ROLE==='alek'){BODY={g:ALEK.g,legs:ALEK.legs,arms:ALEK.arms}}
+else if(ROLE==='labourer')BODY=person({coat:0x5a5244,sleeve:0xd8d0c0,vest:0x3a3632,trou:0x4a4234,hat:'cap',hatC:0x3a3834,hair:0x8a4a2a,tall:1.02});
+else BODY=person({coat:0x4e5434,trou:0x4a4436,vest:0x6a4a2a,hat:'wide',hatC:0x3a3226,hair:0x5a4430,beard:1,tall:1.04});
+if(ROLE!=='alek'){BODY.g.scale.setScalar(.8)}
+wearBody(BODY);
+// the neighbour Henry: tools of his own to hold
+HB.hoe=toolMesh('hoe');HB.pole=toolMesh('pole');HB.axe=toolMesh('axe');for(const k of ['hoe','pole','axe']){const m=HB[k];m.position.set(0,-2.3,.3);m.rotation.x=-1.2;m.visible=false;HB.arms[1].add(m)}
+HB.book=new THREE.Group();live(new THREE.BoxGeometry(.9,.18,1.2),0x2e4a2e,0,-2.6,.5,HB.book);HB.book.visible=false;HB.arms[0].add(HB.book);
+critterTag('Henry Thoreau','#e6d6b8',HB.g,7.4,70);
+INV.notebook=0;INV.flute=0;INV.iliad=0;CAB.fire=3;
+// nobody else goes into Henry's house
+{const _bl=blocked;blocked=function(x,z){const lx=x-CABIN.x,lz=z-CABIN.z;if(Math.abs(lx)<8.6&&Math.abs(lz)<6.2)return true;return _bl(x,z)}}
+{const _ss=startSleep;startSleep=function(){_ss();FF.bed=false}}
+{const _say=say;say=function(t,q){if(typeof t==='string'){if(/^Morning, and the stove/.test(t))t='Morning.';else if(/^The axe is in the chopping block; the hoe/.test(t))t=ROLE_START();else if(/^Walden Pond, in /.test(t))t=t.replace('Walden Pond',ROLE_NAME+', at Walden Pond');else if(/^(He banks the fire and lies down|He lies down)\. The night goes by\./.test(t))t='He turns in. The night goes by.'}return _say(t,q)}}
+{const _ac=alekNear;alekNear=function(){return ROLE==='alek'?false:_ac()}}
+{const _af=alekFrame;alekFrame=function(dt,t){if(ROLE==='alek'){alekTag.hidden=true;ALEK.x=H.x;ALEK.z=H.z;ALEK.pail.visible=!!R.eating;if(R.eating){ALEK.pail.position.set(H.x+Math.sin(H.yaw+1.2)*1.6,hy(H.x,H.z),H.z+Math.cos(H.yaw+1.2)*1.6)}return}_af(dt,t)}}
+// the ledger's rows: the house's wood and fire are Henry's business now
+for(const id of ['bootrow','carry','bask','firebox'])document.getElementById(id).parentElement.hidden=true;
+const ROWS={};function roleRow(k,label){const r=document.createElement('div');r.className='row';r.innerHTML=`<span>${label}</span><b></b>`;const pr=document.getElementById('purse').parentElement;pr.parentElement.insertBefore(r,pr);ROWS[k]=r.querySelector('b');return ROWS[k]}
+const HOMES={};// where each life starts and sleeps
+
+/* ---------- Henry's day, seen from outside: the beans in the morning, the doorway at noon, the pond in the afternoon ---------- */
+function henryPlan(){const S=SEASONS[SEASON];if(HOUR<S.rise+.3||HOUR>S.set+.6)return{st:'in'};
+  if(HOUR<11)return SEASON<=1?{st:'hoe',x:PLOT.x0+18+((CAL.day*7)%3)*10,z:PLOT.z0+12}:{st:'chop',x:CABIN.x+16,z:CABIN.z+6};
+  if(HOUR<14)return{st:'door',x:CABIN.x-9.2,z:CABIN.z+1};
+  if(HOUR<S.set-1)return SEASON===3?{st:'walk',x:20,z:100}:{st:'fish',x:POLEPOS.x,z:POLEPOS.z};return{st:'door',x:CABIN.x-9.2,z:CABIN.z+1}}
+QF.push(dt=>{const P=henryPlan(),g=HB.g;if(HB.talk>0)HB.talk-=dt;
+  if(P.st==='in'){g.visible=false;HB.x=CABIN.x-9.2;HB.z=CABIN.z+1;HB.state='in';return}g.visible=true;
+  const d=Math.hypot(P.x-HB.x,P.z-HB.z);let moving=false;
+  if(HB.talk<=0&&d>1){const o={x:HB.x,z:HB.z,side:HB.side,free:HB.free};HB.yaw=npcStep(o,P.x,P.z,8*dt);HB.x=o.x;HB.z=o.z;HB.side=o.side;HB.free=o.free;moving=true}
+  if(HB.talk>0)HB.yaw=HB.face!==undefined?HB.face:Math.atan2(H.x-HB.x,H.z-HB.z);
+  HB.ph+=dt*(moving?8:0);const sw=moving?Math.sin(HB.ph)*.55:0;HB.legs[0].rotation.x=sw;HB.legs[1].rotation.x=-sw;
+  const t=performance.now()/1000;HB.hoe.visible=!moving&&P.st==='hoe';HB.axe.visible=!moving&&P.st==='chop';HB.pole.visible=P.st==='fish';HB.book.visible=!moving&&P.st==='door';
+  let a1=moving?-sw*.5:0;if(!moving&&HB.talk<=0){if(P.st==='hoe'||P.st==='chop'){const s=(t%1.3)/1.3;a1=s<.5?lerp(0,-2.2,s/.5):lerp(-2.2,0,(s-.5)/.5)}else if(P.st==='fish')a1=-1.1;else if(P.st==='door'){a1=-.6;HB.arms[0].rotation.x=-.9}}
+  if(P.st!=='door'||moving)HB.arms[0].rotation.x=moving?sw*.5:0;HB.arms[1].rotation.x=a1;
+  if(!moving&&HB.talk<=0&&P.st==='fish')HB.yaw=Math.atan2(boat.position.x-HB.x,boat.position.z-HB.z);
+  g.position.set(HB.x,hy(HB.x,HB.z)+(moving?Math.abs(Math.sin(HB.ph))*.1:0),HB.z);g.rotation.set(0,HB.yaw,0);
+  if(CAB.fire<2)CAB.fire=3});
+const nearHenry=()=>HB.g.visible&&Math.hypot(HB.x-H.x,HB.z-H.z)<6.5;
+// the portrait's camera stands in front of his face; by the house it must not stand inside the walls
+function clearYaw(x,z,yaw){for(const d of [0,Math.PI/2,-Math.PI/2,Math.PI]){const a=yaw+d,cx=x+Math.sin(a)*3.6,cz=z+Math.cos(a)*3.6;if(!(Math.abs(cx-CABIN.x)<9.5&&Math.abs(cz-CABIN.z)<7)&&!xBlocked(cx,cz,.5))return a}return yaw}
+function henrySays(line){HB.talk=7;HB.yaw=Math.atan2(H.x-HB.x,H.z-HB.z);HB.g.rotation.y=HB.yaw;HB.g.updateMatrixWorld(true);const py=clearYaw(HB.x,HB.z,HB.yaw);HB.yaw=HB.face=py;HB.g.rotation.y=py;HB.g.updateMatrixWorld(true);showDialogue('Henry Thoreau',line,HB.g,6.3,py);sfx.pickup()}
+const HENRY_TALK={alek:['Henry asks him what he thinks of the world. Alek laughs and says he is satisfied with it.','Henry asks if he would not like to change something about his life. Alek says no, he is very well as he is.','Henry tells him he has been reading. Alek asks what about, and listens, and laughs.'],
+  labourer:['Henry asks about the work on the line, and the wages, and the rent of the shanty.','Henry says a man could build a house as good as his own for what a shanty costs in rent. Owen says that is easy to say.','Henry asks after his people at home.'],
+  hunter:['Henry asks what Silas has been after. He knows the woods as well as anyone, he says, but by a different road.','Henry says he has not hunted since he was a boy. He sold his gun before he came to the woods.','Henry says the fox has a den in the bank above the pond, and he will not say where.']};
+
+/* ---------- a home for each, and the ordinary things anyone can do: fish, sleep, trade, talk with Henry ---------- */
+function homeAt(o){HOMES.door=o.door;HOMES.x=o.x;HOMES.z=o.z;PLACES.push({name:o.label,x:o.x,z:o.z})}
+const COMMON=[];
+COMMON.push(()=>HOMES.door&&nearPt(HOMES.door,5)&&(HOUR>=19||HOUR<5)?{label:'Go in and sleep till morning',fn:()=>{const b=HOMES.door;H.x=b.x;H.z=b.z;startSleep()}}:null);
+COMMON.push(()=>HOMES.door&&nearPt(HOMES.door,5)&&!(HOUR>=19||HOUR<5)?{label:'Rest an hour at home',fn:()=>{advance(1);say('He sits a while out of the weather.')}}:null);
+bedSpot=function(){return HOMES.door?{x:HOMES.door.x,z:HOMES.door.z}:{x:H.x,z:H.z}};
+function talkHenry(){const L=HENRY_TALK[ROLE];R.hn=(R.hn||0)+1;for(const f of HENRY_HOOK){if(f())return}henrySays(L[R.hn%L.length])}
+const HENRY_HOOK=[];
+function fishAct(){if(FISHING)return FISHING.state==='bite'?{label:'Strike!',fn:strike}:{label:'Reel in',fn:()=>{endFishing();say('He reels in.')}};if(!INV.pole)return null;
+  if(onIce()){const w={a:H.yaw,x:H.x+Math.sin(H.yaw)*2.6,z:H.z+Math.cos(H.yaw)*2.6,ice:1};return need('pole','Cut a hole in the ice and fish',()=>cast(w))}
+  const w=nearWater();if(w)return need('pole',SEASON===3?'Cut a hole and fish':'Cast a line',()=>cast(w));return null}
+const ROLE_ACT=[],URGENT=[];
+roleAction=function(){for(const f of URGENT){const a=f();if(a)return a}if(nearHenry())return{label:'Talk with Henry Thoreau',fn:talkHenry};for(const f of ROLE_ACT){const a=f();if(a)return a}{const a=fishAct();if(a)return a}for(const f of COMMON){const a=f();if(a)return a}
+  if(VIL.here&&!VIL.jailed){if(near(CLERK))return{label:'Trade at the store',fn:storeMenu};if(near(SMITH,7.5)&&SMITH_OPTS.some(f=>f()))return{label:'Talk with the blacksmith',fn:smithMenu}}
+  if(HELD==='berries'&&INV.berries)return{label:'Eat a handful of huckleberries',fn:()=>{INV.berries--;drawInv();say('A handful of huckleberries.')}};
+  return null};
+// fish fried at home
+ROLE_ACT.push(()=>{if(!HOMES.door||!nearPt(HOMES.door,5))return null;const f=Object.keys(INV.fish).find(k=>INV.fish[k]>0);if(!f)return null;
+  return{label:`Fry the ${FISH[f][0].toLowerCase()} for supper`,fn:()=>{INV.fish[f]--;drawInv();sfx.sizzle();busy(1);R.fried=(R.fried||0)+1;say(`He fries the ${FISH[f][0].toLowerCase()} over the fire and eats it.`);errDirty=1}}});
+
+let ROLE_START=()=>'';
+QF.push(()=>{if(FF.on)H.g.visible=false;else H.g.visible=true});
+
+/* ======================================================================================================================
+   Alek Therien, the woodchopper
+   ====================================================================================================================== */
+if(ROLE==='alek'){
+  Object.assign(R,Object.assign({carry:0,pile:0,cords:0,ate:-1,talked:0,homer:0},R));
+  homeAt({x:ALEK_HOME.x,z:ALEK_HOME.z,door:new THREE.Vector3(ALEK_HOME.x,0,ALEK_HOME.z),label:'where Alek boards'});
+  // his lot and his pile, east of the bean-field
+  const LOT=(()=>{let best=null;for(let x=60;x<=170;x+=10)for(let z=-180;z<=-90;z+=10){if(!treeZone(x,z))continue;const n=TREES.filter(t=>!t.felled&&Math.hypot(t.x-x,t.z-z)<35).length;if(!best||n>best.n)best={x,z,n}}return best||{x:100,z:-130}})();
+  const PILE=findSite(LOT.x-30,LOT.z+20,14,(x,z)=>!TREES.some(t=>!t.felled&&Math.hypot(t.x-x,t.z-z)<5));PILE.y=groundH(PILE.x,PILE.z);clearSite(PILE.x,PILE.z,5);
+  PLACES.push({name:'Alek’s woodlot',x:LOT.x,z:LOT.z});
+  const pileIM=new THREE.InstancedMesh((()=>{const g=new THREE.CylinderGeometry(.42,.42,3.4,7);g.rotateX(Math.PI/2);return g})(),matFor(0x8a6a48),24);pileIM.castShadow=true;scene.add(pileIM);
+  {const m=new THREE.Matrix4();for(let i=0;i<24;i++){const row=(i/6)|0,col=i%6;m.makeTranslation(PILE.x-2.6+col*.9+(row%2)*.45,PILE.y+.45+row*.78,PILE.z);pileIM.setMatrixAt(i,m)}pileIM.instanceMatrix.needsUpdate=true}
+  const pileTag=new THREE.Object3D();pileTag.position.set(PILE.x,PILE.y,PILE.z);critterTag('Alek’s cord','#d6a28e',pileTag,5,60);
+  const drawPile=()=>{pileIM.count=Math.min(24,R.pile)};window.__alek={LOT,PILE};drawPile();AFTERLOAD.push(drawPile);
+  roleRow('logs','Logs carried');roleRow('pile','On the pile');
+  QF.push(()=>{ROWS.logs.textContent=R.carry;ROWS.pile.textContent=R.pile+' / 24';ARMLOAD.visible=R.carry>0});
+  H.x=ALEK_HOME.x;H.z=ALEK_HOME.z;
+  ROLE_START=()=>'Morning in the village. Alek takes his axe and his dinner pail and goes out to the woodlot by the bean-field.';
+  INV.cents=20;
+  roleHit=function(t){sfx.chop(t.kind);t.hp-=Math.random()<.5?2:1;t.shake=.2;rumble(90,.7,.3);labour(12);
+    if(t.hp<=0){t.felled=true;t.fall=0;t.fdir=Math.atan2(t.x-H.x,t.z-H.z);sfx.fall();const n=Math.min(3,6-R.carry);R.carry+=n;R.felled=(R.felled||0)+1;errDirty=1;
+      say(n?`The ${t.kind} comes down. He limbs it and cuts ${n} lengths${R.carry>=6?'; an armful, all he can carry':''}.`:`The ${t.kind} comes down. His arms are full; the pile first.`)}};
+  // dinner from the pail, at noon, wherever he is working
+  ROLE_ACT.push(()=>{if(HOUR<11.5||HOUR>14||R.ate===dayNo()||VIL.here)return null;return{label:'Sit on a log and eat his dinner',fn:()=>{R.ate=dayNo();R.eating=1;busy(3);H.legs[0].rotation.x=H.legs[1].rotation.x=-1.4;advance(.5);
+    say('He sits on a log and eats his dinner from the tin pail. The chickadees come for the crumbs.',true);setTimeout(()=>{sfx.chickadee();setTimeout(()=>sfx.chickadee(),700)},500);setTimeout(()=>{R.eating=0},3000);
+    if(!qs('adinner').done)finish('adinner','','')}}});
+  ROLE_ACT.push(()=>{const t=nearTree();if(!t||R.carry>=6)return null;return{label:`Chop the ${t.kind}`,fn:()=>{target=t;swingKind='chop';swing=.55;H.yaw=Math.atan2(t.x-H.x,t.z-H.z)}}});
+  ROLE_ACT.push(()=>{if(!R.carry||!nearPt(PILE,5.5))return null;return{label:'Stack the logs on his pile',fn:()=>{const n=Math.min(R.carry,24-R.pile);R.pile+=n;R.carry-=n;drawPile();sfx.knock(Math.min(4,n));busy(.8);labour(6);errDirty=1;
+    say(R.pile>=24?'A cord, piled square and tight. The farmer will pay for it.':`${R.pile} logs on the pile. ${24-R.pile} to a cord.`)}}});
+  ROLE_ACT.push(()=>{if(R.pile<24||!VIL.here||!near(FARMER,6))return null;return{label:'Tell the farmer a cord is piled',fn:()=>{R.pile=0;R.cords++;drawPile();ACCT.label='A cord of wood';INV.cents+=40;purse();drawInv();errDirty=1;
+    speak(FARMER,'He counts out forty cents. His team will haul the cord out tomorrow. Alek folds the money away and laughs.');if(R.cords===1)finish('acord','','woodchopper')}}});
+  HENRY_HOOK.push(()=>{R.talked=(R.talked||0)+1;errDirty=1;if(R.talked>=1&&!R.homer){openMenu('Henry Thoreau','Henry is glad to see him, and asks him in to sit a while by the door.',[
+      {label:'Ask him to read some Homer',fn:()=>{R.homer=1;advance(.5);henrySays('Henry reads him the place in the Iliad where Achilles asks Patroclus why he is crying like a girl. Alek listens with all his attention, and says that is good.');finish('ahomer','','homer')}},
+      {label:'Ask him what he is writing',fn:()=>henrySays('Henry says he is writing about the pond, and about what a man needs and does not need. Alek laughs a long time.')}]);return true}return false});
+  errand({id:'acord',role:'alek',title:'A cord of wood',when:'Any season',blurb:'Alek cuts wood all day for a farmer, in the lots beside the bean-field, and is paid by the cord.',
+    steps:()=>[{t:'Fell trees in the woodlot east of the bean-field',short:'Fell trees in the woodlot',ok:(R.felled||0)>0||R.cords>0},{t:'Carry the lengths to his pile',short:'Carry logs to the pile',ok:R.pile>0||R.cords>0},
+      {t:`Pile a cord: twenty-four lengths (${Math.min(24,R.pile)}/24)`,short:`The cord ${Math.min(24,R.pile)}/24`,ok:R.pile>=24||R.cords>0},{t:'Tell the farmer in the village, and be paid',short:'Be paid by the farmer',ok:R.cords>0}],
+    target:()=>R.pile>=24?{x:FARMER.g.position.x,z:FARMER.g.position.z,label:'the farmer'}:R.carry>=6||(R.carry&&!nearTree())?{x:PILE.x,z:PILE.z,label:'his pile'}:{x:LOT.x,z:LOT.z,label:'the woodlot'}});
+  errand({id:'adinner',role:'alek',title:'Dinner from the pail',when:'Noon',blurb:'At noon he sits on a log in the woods and eats his dinner from a tin pail, and the chickadees come round for the crumbs.',
+    steps:()=>[{t:'Work the morning in the woods',ok:HOUR>=11.5||qs('adinner').done},{t:'At noon, sit down on a log and eat dinner',short:'Dinner at noon',ok:!!qs('adinner').done}],target:()=>null});
+  errand({id:'ahomer',role:'alek',title:'Homer at the pond',when:'Any day',blurb:'Alek stops at Henry Thoreau’s house. He cannot read Homer, but he likes to hear it, and Henry reads it to him.',
+    steps:()=>[{t:'Stop at Henry’s house by the pond and talk with him',short:'Talk with Henry',ok:(R.talked||0)>0},{t:'Ask him to read some Homer',short:'Hear some Homer',ok:!!R.homer}],
+    target:()=>({x:HB.x,z:HB.z,label:'Henry Thoreau'})});
+}
+
+/* ======================================================================================================================
+   Owen Daly, a labourer on the Fitchburg line
+   ====================================================================================================================== */
+if(ROLE==='labourer'){
+  Object.assign(R,Object.assign({bar:0,ties:[],workDay:-1,paidDay:-1,sent:0,leanto:0,boards:0,sold:0,ice:0,icePaid:0},R));
+  const SH=findSite(RAILX+22,-150,14,(x,z)=>Math.abs(x-RAILX)>13&&!inVillage(x,z,10));clearSite(SH.x,SH.z,14);
+  const SHANTY=plainHouse(SH.x,SH.z,8,6,{yaw:-Math.PI/2,wall:0x6e5e4a,roof:0x5a5a56,h:4.6,chimney:1});
+  homeAt({x:SH.x,z:SH.z,door:SHANTY.door,label:'Owen’s shanty'});
+  // the old lean-to beside the shanty, and its boards
+  const LEAN=new THREE.Group();{const p=SHANTY.g.localToWorld(new THREE.Vector3(0,0,-6.5));LEAN.position.set(p.x,groundH(p.x,p.z),p.z);LEAN.rotation.y=-Math.PI/2;scene.add(LEAN);
+    for(let k=0;k<5;k++){const b=live(new THREE.BoxGeometry(.9,4,.2),0x7e6a50,-2+k,2,0,LEAN);b.rotation.z=rr(-.08,.08)}const r=live(new THREE.BoxGeometry(5.4,.2,3.4),0x6a5a48,0,4,1.2,LEAN);r.rotation.x=.4;for(const s of [-1,1])live(new THREE.BoxGeometry(.3,4,.3),0x5a4a38,s*2.4,2,2.6,LEAN)}
+  const LEANP=new THREE.Vector3(LEAN.position.x,0,LEAN.position.z);
+  AFTERLOAD.push(()=>{LEAN.visible=!R.leanto});
+  // the section boss, by the track near the shanty in the working day
+  const BOSS=person({coat:0x2e2e34,trou:0x3a3a3a,vest:0x5a4a3a,hat:'wide',hatC:0x2a2826,hair:0x6a6058,beard:1});BOSS.name='The section boss';
+  const BOSSP=new THREE.Vector3(RAILX+8,0,SH.z+10);BOSS.g.position.set(BOSSP.x,hy(BOSSP.x,BOSSP.z),BOSSP.z);BOSS.g.rotation.y=Math.PI/2;critterTag('Section boss','#e8c890',BOSS.g,7.4,70);
+  const bossOn=()=>DAY>.35&&HOUR>6&&HOUR<18.5;
+  QF.push(()=>{BOSS.g.visible=bossOn();if(BOSS.talk>0){BOSS.talk-=1/60;BOSS.g.rotation.y=Math.atan2(H.x-BOSSP.x,H.z-BOSSP.z)}});
+  const FLAGS=[];for(let i=0;i<8;i++){const g=new THREE.Group();live(new THREE.BoxGeometry(.2,2.2,.2),0x8a7050,0,1.1,0,g);live(new THREE.BoxGeometry(.06,.6,.8),0xc23a2a,0,1.9,.4,g);g.visible=false;scene.add(g);FLAGS.push(g)}
+  window.__lab={SH,SHANTY,LEANP,BOSSP,BOSS};
+  function layTies(){R.ties=[];const z0=SH.z-70;for(let i=0;i<8;i++){const z=z0+i*20+rr(-4,4);R.ties.push({z,done:0})}R.workDay=dayNo();drawTies()}
+  function drawTies(){FLAGS.forEach((g,i)=>{const t=R.ties[i];g.visible=!!t&&!t.done&&R.workDay===dayNo();if(t){g.position.set(RAILX+3.4,RAILY,t.z)}})}
+  AFTERLOAD.push(drawTies);NEWDAY.push(()=>{drawTies()});
+  roleRow('ties','Section');roleRow('saved','Saved to send');
+  QF.push(()=>{const today=R.workDay===dayNo();ROWS.ties.textContent=today?`${R.ties.filter(t=>t.done).length} / 8 ties`:(R.paidDay===dayNo()?'paid today':'see the boss');ROWS.saved.textContent=R.sent?'sent home':INV.cents+' / 100¢'});
+  H.x=SHANTY.door.x;H.z=SHANTY.door.z;INV.pole=1;INV.cents=15;
+  ROLE_START=()=>'Morning at the shanty by the cut. The section boss will be out on the line; there is ballast to tamp.';
+  carry('bar','Tamping bar','bar',()=>R.bar?1:0,'For packing the ballast under the ties.');
+  ROLE_ACT.push(()=>{if(!BOSS.g.visible||!nearPt(BOSS.g.position,6))return null;const today=R.workDay===dayNo();
+    if(!today&&R.paidDay!==dayNo())return{label:'Ask the section boss for the day’s work',fn:()=>{layTies();R.bar=1;drawInv();BOSS.talk=6;speak(BOSS,'He hands Owen a tamping bar. Eight ties are flagged along the line toward the pond, where the ballast has settled. Tamp them up, and mind the cars.');errDirty=1}};
+    if(today&&R.ties.every(t=>t.done)&&R.paidDay!==dayNo())return{label:'Report the section done, and be paid',fn:()=>{R.paidDay=dayNo();R.bar=0;drawInv();ACCT.label='A day on the section';INV.cents+=50;purse();BOSS.talk=6;speak(BOSS,'He walks the line and looks at each tie, then counts out fifty cents. The same tomorrow.');R.days=(R.days||0)+1;errDirty=1;if(R.days===1)finish('lsection','','section')}};
+    return{label:'Talk with the section boss',fn:()=>{BOSS.talk=6;speak(BOSS,R.paidDay===dayNo()?'That is the day’s work done. Come out in the morning.':`${R.ties.filter(t=>!t.done).length} ties still flagged. The cars do not wait.`)}}});
+  ROLE_ACT.push(()=>{if(R.workDay!==dayNo()||!R.bar)return null;const t=R.ties.find(t=>!t.done&&Math.abs(H.z-t.z)<4&&Math.abs(H.x-RAILX)<7);if(!t)return null;
+    return{label:'Tamp the ballast under the tie',fn:()=>{t.done=1;drawTies();busy(1.6);labour(40);H.yaw=Math.atan2(RAILX-H.x,0);for(let i=0;i<4;i++)tone({f:rr(90,120),f2:60,d:.16,v:.12,lp:500,delay:i*.38});for(let i=0;i<4;i++)tone({f:rr(1600,2200),d:.05,v:.015,type:'triangle',delay:i*.38+.02});
+      const n=R.ties.filter(t=>!t.done).length;say(n?`The tie is up and the ballast packed hard under it. ${n} more.`:'The last tie. Back to the boss.');errDirty=1}}});
+  // the cars
+  let trainWarn=0;QF.push(dt=>{trainWarn-=dt;if(!TRAIN.run||Math.abs(H.x-RAILX)>4.6)return;const ahead=TRAIN.dir*(H.z-TRAIN.z);
+    if(ahead>0&&ahead<90&&trainWarn<=0){trainWarn=6;say('The cars are coming. Off the track!',true)}
+    if(ahead>-14&&ahead<12){H.x=RAILX+(H.x>RAILX?8:-8);rumble(400,1,1);for(let i=0;i<3;i++)tone({f:rr(70,90),f2:40,d:.3,v:.15,lp:400,delay:i*.1});if(INV.cents>=5){ACCT.label='Docked by the boss';INV.cents-=5;purse()}say('He throws himself down the bank as the cars go by, close enough to feel the heat of the engine. The boss docks him five cents for the fright.',true)}});
+  // money home, from the post office
+  ROLE_ACT.push(()=>{if(!VIL.here||!near(POSTM)||R.sent)return null;return{label:INV.cents>=100?'Send a dollar home to Ireland':'Ask what it costs to send money home',fn:()=>{if(INV.cents<100){speak(POSTM,`A dollar is the least worth sending, he says, with the cost of it. Owen has ${INV.cents} cents.`);return}
+    ACCT.label='Money sent home';INV.cents-=100;purse();R.sent=1;drawInv();speak(POSTM,'He writes out the order, and Owen puts it in a letter to his mother, and the letter in the bag for the cars.');finish('lhome','','passage')}}});
+  // the lean-to's boards, for Henry
+  HENRY_HOOK.push(()=>{if(R.sold)return false;if(!R.offer){R.offer=1;errDirty=1;henrySays('Henry asks about the old lean-to by Owen’s shanty. He could use the boards, he says; he is building, and he will pay for them.');return true}
+    if(R.boards){R.boards=0;R.sold=1;drawInv();ACCT.label='Boards sold to Henry';INV.cents+=40;purse();henrySays('Henry looks the boards over, counts out forty cents, and stacks them by his house. Good boards, he says, for being old.');finish('lboards','','');return true}return false});
+  ROLE_ACT.push(()=>{if(!R.offer||R.leanto||!nearPt(LEANP,5))return null;return{label:'Pull down the old lean-to',fn:()=>{R.leanto=1;R.boards=1;LEAN.visible=false;busy(2);advance(1);labour(60);for(let i=0;i<6;i++)tone({f:rr(300,500),f2:150,d:.2,v:.04,type:'triangle',lp:900,delay:i*.3});drawInv();say('He knocks the lean-to apart and draws the nails. An armful of boards for Henry.');errDirty=1}}});
+  carry('boards','Boards from the lean-to','shingles',()=>R.boards?1:0,'For Henry Thoreau, at his house by the pond.');
+  // the ice harvest, in winter
+  ROLE_ACT.push(()=>{if(SEASON!==3||!ICE.g.visible||!nearPt(ICE.site,14))return null;if(!R.iceHired)return{label:'Hire on with the ice cutters',fn:()=>{R.iceHired=dayNo();R.ice=0;speak(ICE.men[0],'The overseer looks him up and down and hands him a saw. Thirty cents for the day, if he keeps up.');errDirty=1}};
+    if(R.ice<6)return{label:`Saw out a block of ice · ${R.ice}/6`,fn:()=>{R.ice++;busy(1.6);labour(50);for(let i=0;i<10;i++)tone({f:rr(180,240),f2:rr(140,170),d:.2,a:.03,v:.03,type:'sawtooth',lp:1400,delay:i*.15});say(R.ice<6?`A block out, floated to the channel. ${6-R.ice} more.`:'Six blocks out. The overseer will pay at the end of the day.');errDirty=1}};
+    if(!R.icePaid)return{label:'Be paid for the day on the ice',fn:()=>{R.icePaid=1;ACCT.label='A day on the ice';INV.cents+=30;purse();speak(ICE.men[0],'Thirty cents, counted into his mitten. The ice is going to Charleston, the men say, and to India.');finish('lice','','icecutter')}};return null});
+  errand({id:'lsection',role:'labourer',title:'A day on the section',when:'Any working day',blurb:'Owen keeps a stretch of the Fitchburg line, packing the ballast under the ties where it has settled, for wages by the day.',
+    steps:()=>{const today=R.workDay===dayNo();return[{t:'Find the section boss on the line by the shanty, and take the bar',short:'See the section boss',ok:today||(R.days||0)>0},{t:`Tamp the ballast under eight flagged ties (${today?R.ties.filter(t=>t.done).length:0}/8)`,short:`Ties ${today?R.ties.filter(t=>t.done).length:0}/8`,ok:(today&&R.ties.every(t=>t.done))||(R.days||0)>0},{t:'Report to the boss, and be paid',short:'Be paid by the boss',ok:(R.days||0)>0}]},
+    target:()=>{const today=R.workDay===dayNo();if(today&&R.paidDay!==dayNo()){const t=R.ties.find(t=>!t.done);if(t)return{x:RAILX+3,z:t.z,label:'a flagged tie',dy:3}}return{x:BOSSP.x,z:BOSSP.z,label:'the section boss'}}});
+  errand({id:'lhome',role:'labourer',title:'Money home',when:'Any season',blurb:'Most of what the line pays goes for the shanty and for food. What is left he saves, to send home to Ireland.',
+    steps:()=>[{t:`Save a dollar (${Math.min(100,INV.cents)}/100 cents)`,short:`Save a dollar ${Math.min(100,INV.cents)}/100`,ok:INV.cents>=100||!!R.sent},{t:'Send it home from the post office in the village',short:'Send it from the post office',ok:!!R.sent}],
+    target:()=>INV.cents>=100?{x:POSTM.g.position.x,z:POSTM.g.position.z,label:'the post office'}:null});
+  errand({id:'lboards',role:'labourer',title:'Boards for the neighbour',when:'Any season',blurb:'Henry Thoreau bought an Irishman’s shanty on the line for its boards, to build his house. He has his eye on Owen’s old lean-to.',
+    steps:()=>[{t:'Talk with Henry Thoreau at his house by the pond',short:'Talk with Henry',ok:!!R.offer},{t:'Pull down the old lean-to beside the shanty',short:'Pull down the lean-to',ok:!!R.leanto},{t:'Take the boards to Henry, and be paid',short:'Boards to Henry',ok:!!R.sold}],
+    target:()=>!R.offer||R.leanto?{x:HB.x,z:HB.z,label:'Henry Thoreau'}:{x:LEANP.x,z:LEANP.z,label:'the lean-to'}});
+  errand({id:'lice',role:'labourer',title:'The ice harvest',when:'Winter',avail:()=>SEASON===3,blurb:'In the winter a hundred men come out to take the ice off the pond in blocks, for the ice-houses and the ships. Owen hires on.',
+    steps:()=>[{t:'Wait for the ice, and the ice cutters on the pond',short:'Wait for the ice cutters',ok:SEASON===3||!!R.iceHired},{t:'Hire on with them',ok:!!R.iceHired},{t:`Saw out six blocks (${Math.min(6,R.ice||0)}/6)`,short:`Ice blocks ${Math.min(6,R.ice||0)}/6`,ok:(R.ice||0)>=6},{t:'Be paid for the day',ok:!!R.icePaid}],
+    target:()=>SEASON===3?{x:ICE.site.x,z:ICE.site.z,label:'the ice cutters'}:null});
+  errand({id:'lsupper',role:'labourer',title:'Fish for supper',when:'Any season',blurb:'Pork is dear. The pond is free, and a pout or a perch fried at the shanty is supper.',
+    steps:()=>{const n=Object.values(INV.fish).reduce((a,b)=>a+b,0);return[{t:'Catch a fish in the pond',short:'Catch a fish',ok:n>0||(R.fried||0)>0},{t:'Fry it at the shanty for supper',short:'Fry it at the shanty',ok:(R.fried||0)>0}]},
+    target:()=>Object.values(INV.fish).some(v=>v>0)?{x:SHANTY.door.x,z:SHANTY.door.z,label:'the shanty'}:{x:-60,z:20,label:'the pond'}});
+  QF.push(()=>{if(!qs('lsupper').done&&(R.fried||0)>0)finish('lsupper','','')});
+}
+
+/* ======================================================================================================================
+   Silas Reed, a hunter
+   ====================================================================================================================== */
+if(ROLE==='hunter'){
+  Object.assign(R,Object.assign({hunts:0,hits:0,pelts:0,rats:0,traps:[],lost:0,found:0,asked:0,laws:'',gun:1},R));
+  const CS=findSite(172,-24,16,(x,z)=>pondD(x,z)>1.6);clearSite(CS.x,CS.z,15);
+  const CABIN2=plainHouse(CS.x,CS.z,10,8,{yaw:-Math.PI/2,wall:0x6a5a44,roof:0x4e4a46,h:5.4,chimney:1});
+  homeAt({x:CS.x,z:CS.z,door:CABIN2.door,label:'Silas’s cabin'});
+  // the gun, in his hands
+  HAND.gun=new THREE.Group();{const b=live(new THREE.CylinderGeometry(.07,.08,4.6,6),0x2a2a2c,0,-2.6,0,HAND.gun);live(new THREE.BoxGeometry(.3,.5,1.4),0x6a4a2a,0,-.4,-.1,HAND.gun).rotation.x=.3;live(new THREE.BoxGeometry(.1,.2,.5),0x3a3a3a,0,-1.1,.12,HAND.gun)}
+  HAND.gun.position.set(0,-2.3,.3);HAND.gun.rotation.x=-1.2;HAND.gun.visible=false;H.arms[1].add(HAND.gun);
+  const FLASH=live(new THREE.SphereGeometry(.45,6,5),0xffd070,0,-5,0,HAND.gun);FLASH.material=new THREE.MeshBasicMaterial({color:0xffd070});FLASH.visible=false;
+  carry('gun','Fowling piece','gun',()=>R.gun?1:0,'Hold it to fire, when the fox comes by.');
+  carry('pelt','Pelts','pelt',()=>R.pelts+R.rats,'Sell them at the store in the village.');
+  carry('traps','Muskrat traps','traps',()=>R.trapsHave?Math.max(0,4-R.traps.length):0,'Set them at the water’s edge.');
+  roleRow('hounds','Hounds');roleRow('pelts','Pelts');
+  H.x=CABIN2.door.x;H.z=CABIN2.door.z;INV.cents=25;
+  ROLE_START=()=>'Morning at the cabin in the east woods. The hounds are restless; there is a fox in these woods.';
+  // the hounds
+  function makeDog(c1,c2){const G=new THREE.Group(),legs=[];live(S_(.7),c1,0,1.9,0,G).scale.set(.72,.68,1.8);live(S_(.5),c2,.15,2.1,-.3,G).scale.set(.9,.7,1.3);
+    const hd=new THREE.Group();hd.position.set(0,2.55,1.35);G.add(hd);live(S_(.42),c1,0,0,0,hd);live(B_(.38,.38,.7),c1,0,-.12,.5,hd);live(S_(.1,5,4),0x141414,0,-.08,.88,hd);for(const s of [-1,1]){const e=live(B_(.1,.7,.4),c2,s*.36,-.25,-.05,hd);e.rotation.z=s*.2}
+    const tail=new THREE.Group();tail.position.set(0,2.2,-1.2);G.add(tail);const tm=live(C_(.06,.12,1.1,5),c1,0,.45,-.2,tail);tm.rotation.x=-.6;
+    for(const [x,z] of [[-.3,.8],[.3,.8],[-.3,-.8],[.3,-.8]]){const lg=new THREE.Group();lg.position.set(x,1.5,z);G.add(lg);live(C_(.1,.08,1.5,5),c1,0,-.75,0,lg);legs.push(lg)}
+    G.scale.setScalar(.85);scene.add(G);return{g:G,legs,head:hd,tail,x:H.x+rr(-3,3),z:H.z+rr(-3,3),yaw:0,ph:rr(0,6),state:'heel'}}
+  const DOGS=[makeDog(0xe8e0d0,0x8a5a2a),makeDog(0xc8a070,0x3a2a1e)];DOGS[0].name='Ranger';DOGS[1].name='Bell';critterTag('Ranger','#e8d8b8',DOGS[0].g,3,50);critterTag('Bell','#e8d8b8',DOGS[1].g,3,50);
+  // the fox they run: a loop round the pond, wide of it, the way a fox runs before hounds
+  const FX=FOX.g.clone();FX.visible=false;scene.add(FX);const FXL=FX.children.slice(-4),FXT=FX.children[3];critterTag('Fox','#e09060',FX,3.4,120);
+  const RUN={on:0,a:0,loops:0,x:0,z:0,dead:0,t:0,shot:0,cry:0};
+  const loopAt=a=>({x:20+Math.cos(a)*175,z:70+Math.sin(a)*145});
+  function bay(x,z,k){const d=Math.hypot(x-H.x,z-H.z);if(d>420||!AU.ctx||!AU.on)return;const v=clamp(1.2-d/360,.12,1),pn=clamp((x-H.x)/120,-1,1);tone({f:rr(400,470),f2:rr(290,330),g:.8,d:1.1,a:.06,v:.035*v*k,type:'sawtooth',lp:1100,vib:7,vibr:5,pan:pn});tone({f:rr(200,235),f2:150,g:.8,d:1,a:.06,v:.02*v*k,type:'triangle',lp:700,pan:pn})}
+  function startHunt(){RUN.on=1;RUN.loops=0;RUN.dead=0;RUN.shot=0;const p=loopAt(0);RUN.a=Math.atan2((H.z-70)/145,(H.x-20)/175)+.9;const q=loopAt(RUN.a);RUN.x=q.x;RUN.z=q.z;FX.visible=true;
+    for(const d of DOGS){if(d.state==='lost')continue;d.state='run'}say('He slips the hounds. They cast about, strike the scent and are gone, crying. A fox runs a wide circle; wait where it will come round.',true);R.hunts++;errDirty=1}
+  function endHunt(line){RUN.on=0;FX.visible=false;for(const d of DOGS)if(d.state==='run')d.state='heel';if(line)say(line,true)}
+  QF.push(dt=>{const t=performance.now()/1000;
+    if(RUN.on&&!RUN.dead){RUN.a+=dt*22/165;const p=loopAt(RUN.a);const dx=p.x-RUN.x,dz=p.z-RUN.z;RUN.x=p.x;RUN.z=p.z;FX.position.set(RUN.x,groundH(RUN.x,RUN.z)-.1+Math.abs(Math.sin(t*13))*.4,RUN.z);FX.rotation.y=Math.atan2(dx,dz);
+      const s=Math.sin(t*13)*.9;FXL[0].rotation.x=FXL[3].rotation.x=s;FXL[1].rotation.x=FXL[2].rotation.x=-s;FXT.rotation.x=.35;
+      RUN.cry-=dt;if(RUN.cry<0){RUN.cry=rr(1.2,2.4);const dg=DOGS.find(d=>d.state==='run');if(dg)bay(dg.x,dg.z,1)}
+      RUN.t+=dt;if(RUN.t>150){endHunt('The cry dies away. The fox has gone to earth somewhere toward Fair Haven, and the hounds come back one by one.')}}
+    if(RUN.dead){RUN.dead-=dt;FX.rotation.z=Math.min(1.5,FX.rotation.z+dt*3);if(RUN.dead<=0){RUN.dead=0;endHunt('')}}
+    for(const [i,d] of DOGS.entries()){let tx=H.x+Math.sin(H.yaw+Math.PI+(i?.6:-.6))*4,tz=H.z+Math.cos(H.yaw+Math.PI+(i?.6:-.6))*4,sp=12;
+      if(d.state==='run'&&RUN.on){const p=loopAt(RUN.a-.05-i*.03);tx=p.x;tz=p.z;sp=26}
+      if(d.state==='lost'){tx=LOSTAT.x;tz=LOSTAT.z;sp=0;d.x=LOSTAT.x;d.z=LOSTAT.z}
+      if(d.state==='home'){tx=CABIN2.door.x+2;tz=CABIN2.door.z+2;sp=10}
+      if(FF.on&&d.state!=='lost'){d.x=CABIN2.door.x+i*2;d.z=CABIN2.door.z+2;sp=0}
+      const dd=Math.hypot(tx-d.x,tz-d.z);let mv=0;if(sp&&dd>(d.state==='run'?.5:1.6)){const st=Math.min(dd,sp*dt*(dd>40&&d.state!=='run'?2:1));d.yaw=Math.atan2(tx-d.x,tz-d.z);d.x+=Math.sin(d.yaw)*st;d.z+=Math.cos(d.yaw)*st;mv=1}
+      d.ph+=dt*(mv?(sp>20?14:9):0);const s=mv?Math.sin(d.ph)*.8:0;d.legs[0].rotation.x=d.legs[3].rotation.x=s;d.legs[1].rotation.x=d.legs[2].rotation.x=-s;d.tail.rotation.x=Math.sin(t*(mv?8:3))*.3;
+      d.g.position.set(d.x,groundH(d.x,d.z)+(mv?Math.abs(Math.sin(d.ph))*.25:0),d.z);d.g.rotation.y=d.yaw;d.g.visible=d.state!=='lost'||R.lost===1}
+    if(R.lost===1){R.howl=(R.howl||0)-dt;if(R.howl<0){R.howl=rr(9,16);bay(LOSTAT.x,LOSTAT.z,.7)}}
+    ROWS.hounds.textContent=R.lost===1?'Bell is missing':RUN.on?'running':'at heel';ROWS.pelts.textContent=(R.pelts?R.pelts+' fox':'')+(R.pelts&&R.rats?', ':'')+(R.rats?R.rats+' muskrat':'')||'none';
+    if(RUN.reload>0)RUN.reload-=dt;FLASH.visible=RUN.flash>0;if(RUN.flash>0)RUN.flash-=dt;
+    HAND.gun.visible=H.hold==='gun'});
+  window.__hun={RUN,DOGS,FX,startHunt:()=>startHunt(),endHunt:l=>endHunt(l),get LOSTAT(){return LOSTAT},get TRAPSPOTS(){return TRAPSPOTS},loopAt};
+  const foxNearby=()=>RUN.on&&!RUN.dead&&!(RUN.reload>0)&&Math.hypot(RUN.x-H.x,RUN.z-H.z)<17;
+  URGENT.push(()=>{if(!foxNearby())return null;return need('gun','Fire at the fox!',fire)||{label:'The fox! The gun is in his bag',fn:()=>setHeld('gun')}});
+  function fire(){const d=Math.hypot(RUN.x-H.x,RUN.z-H.z);H.yaw=Math.atan2(RUN.x-H.x,RUN.z-H.z);RUN.flash=.12;rumble(300,1,1);
+    for(let i=0;i<3;i++)tone({f:rr(60,90),f2:30,d:.5,v:.25,type:'square',lp:600,delay:i*.01});for(let i=0;i<8;i++)tone({f:rr(1800,4000),f2:400,d:.12,v:.03,type:'sawtooth',lp:5000,delay:rr(0,.05)});
+    RUN.reload=2.5;if(Math.random()<clamp(1.3-d/20,.35,.92)){RUN.dead=2.4;R.pelts++;R.hits++;drawInv();say('The fox rolls over in the snow and lies still. The hounds come up crying, and he takes them off it.',true);errDirty=1;if(R.hits===1)finish('hfox','','foxhunt')}
+    else say('A miss. The fox doubles and is away, and the hounds after it. It will come round again.')}
+  ROLE_ACT.push(()=>{if(RUN.on||!nearPt(HOMES.door,7)||R.lost===1||FF.on)return null;if(DAY<.3)return null;return{label:'Slip the hounds after a fox',fn:startHunt}});
+  ROLE_ACT.push(()=>{if(!RUN.on||foxNearby())return null;if(!nearPt(HOMES.door,7))return null;return{label:'Call the hounds in',fn:()=>endHunt('He winds his horn and the hounds come in, tongues out.')}});
+  // a hound lost: after the second hunt Bell does not come back
+  const LOSTAT=(()=>{for(let k=0;k<300;k++){const a=Math.random()*6.283,r=rr(60,140);const x=-40+Math.cos(a)*r*1.3,z=200+Math.sin(a)*r*.4;if(groundH(x,z)>WATER_Y+1&&treeZone(x,z))return{x,z}}return{x:60,z:200}})();
+  {const _eh=endHunt;endHunt=function(line){_eh(line);if(R.hunts>=2&&!R.lost){R.lost=1;DOGS[1].state='lost';setTimeout(()=>say('Ranger comes in alone. Bell has not come back.',true),2500);errDirty=1}}}
+  HENRY_HOOK.push(()=>{if(R.lost===1&&!R.asked){R.asked=1;errDirty=1;henrySays('Henry has heard a hound. Off on the far side of the pond, south, past the shore, it was running alone all morning on an old track, giving tongue. It will be there yet.');return true}
+    if(R.hits>0&&!R.laws){openMenu('Henry Thoreau','Henry sees the fox pelt. He says he hunted himself as a boy, and is glad he did: there is no better way into the woods. But a man who goes on going there may find he is after something else, and leave the gun behind.',[
+      {label:'Say he will keep the gun; it is his living',fn:()=>{R.laws='keep';henrySays('Henry nods. Every man to his own road, he says. Mind the fox’s den in the bank, though; he would not see it dug out.');finish('hlaws','','higherlaws')}},
+      {label:'Say he might hang it up, come spring',fn:()=>{R.laws='hang';henrySays('Henry says nothing for a while, and then that the woods will still be there, gun or no gun.');finish('hlaws','','higherlaws')}}]);return true}return false});
+  ROLE_ACT.push(()=>{if(R.lost!==1||!nearPt(LOSTAT,7))return null;return{label:'Call Bell to him',fn:()=>{R.lost=2;DOGS[1].state='heel';DOGS[1].x=LOSTAT.x;DOGS[1].z=LOSTAT.z;say('Bell comes to him, footsore and glad, and falls in at heel.',true);errDirty=1;finish('hhound','','')}}});
+  // muskrat traps along the shore below the cabin
+  const TRAPSPOTS=(()=>{const C=[];for(let k=0;k<720;k++){const a=k/720*6.283;for(let r=40;r<140;r+=1){const x=Math.cos(a)*r*1.1,z=95+Math.sin(a)*r*.7;if(pondD(x,z)>=1&&pondD(x,z)<1.06&&groundH(x,z)>WATER_Y){C.push({x,z,d:Math.hypot(x-CS.x,z-CS.z)});break}}}
+    C.sort((a,b)=>a.d-b.d);const L=[];for(const c of C){if(L.length>=4)break;if(!L.some(p=>Math.hypot(p.x-c.x,p.z-c.z)<16))L.push(c)}return L})();
+  const TRAPM=TRAPSPOTS.map(p=>{const g=new THREE.Group();live(new THREE.TorusGeometry(.5,.08,4,10),0x6a6a6a,0,.1,0,g).rotation.x=Math.PI/2;live(new THREE.BoxGeometry(.05,1.6,.05),0x8a7050,.4,.8,0,g);g.position.set(p.x,groundH(p.x,p.z)+.05,p.z);g.visible=false;scene.add(g);return g});
+  const drawTraps=()=>TRAPM.forEach((g,i)=>g.visible=R.traps.some(t=>t.i===i));AFTERLOAD.push(drawTraps);
+  STORE_OPTS.push(()=>{if(R.trapsHave)return null;return{label:'Four muskrat traps',price:'30¢',fn:()=>pay(30,CLERK,()=>{R.trapsHave=1;speak(CLERK,'Four steel traps on a chain. Set them where the muskrats come out on the bank.')})}});
+  STORE_OPTS.push(()=>{if(!R.pelts&&!R.rats)return null;const v=R.pelts*50+R.rats*12;return{label:`Sell his pelts`,price:'+'+v+'¢',fn:()=>{INV.cents+=v;purse();R.soldP=(R.soldP||0)+R.pelts+R.rats;R.pelts=0;R.rats=0;drawInv();speak(CLERK,`He blows into the fur and turns the skins over. ${v} cents.`);errDirty=1}}});
+  ROLE_ACT.push(()=>{if(!R.trapsHave||SEASON===1)return null;const i=TRAPSPOTS.findIndex(p=>nearPt(p,4.5));if(i<0)return null;const T=R.traps.find(t=>t.i===i);
+    if(!T&&R.traps.length<4)return{label:'Set a trap at the water’s edge',fn:()=>{R.traps.push({i,day:dayNo()});drawTraps();drawInv();busy(1.2);sfx.clank();say(`The trap is set and staked. ${4-R.traps.length} more to set.`);errDirty=1}};
+    if(T&&dayNo()>T.day)return{label:'Look at the trap',fn:()=>{R.traps=R.traps.filter(t=>t!==T);R.checked=(R.checked||0)+1;drawTraps();drawInv();busy(1);if(Math.random()<.6){R.rats++;say('A muskrat in the trap. He takes it out and lifts the trap.')}else say('Empty, the bait gone. He takes the trap up.');errDirty=1;if((R.checked||0)>=4)finish('htraps','','')}};
+    if(T)return{label:'The trap is set',fn:()=>say('Leave it the night. Come back tomorrow.')};return null});
+  errand({id:'hfox',role:'hunter',title:'After the fox',when:'Any season, best in snow',blurb:'The hounds run a fox in a wide circle round the pond; the hunter waits in the woods for it to come round, and fires.',
+    steps:()=>[{t:'Slip the hounds at the cabin door',short:'Slip the hounds',ok:R.hunts>0},{t:'Wait on the fox’s circle, and fire when it comes by',short:'Wait for the fox, and fire',ok:R.hits>0}],
+    target:()=>RUN.on?{x:RUN.x,z:RUN.z,label:'the fox',dy:3}:{x:HOMES.door.x,z:HOMES.door.z,label:'the cabin'}});
+  errand({id:'hhound',role:'hunter',title:'A hound gone astray',when:'After a hunt or two',avail:()=>R.lost>=1||R.hunts>=1,blurb:'In the book a hunter comes by Henry’s house asking whether he has seen his hound, which has gone off hunting on its own.',
+    steps:()=>[{t:'Run the fox twice',short:'Run the fox twice',ok:R.lost>=1},{t:'Ask Henry Thoreau if he has heard the hound',short:'Ask Henry about Bell',ok:!!R.asked||R.lost===2},{t:'Find Bell, and call her home',short:'Find Bell',ok:R.lost===2}],
+    target:()=>R.lost===1?(R.asked?{x:LOSTAT.x,z:LOSTAT.z,label:'the hound’s cry'}:{x:HB.x,z:HB.z,label:'Henry Thoreau'}):null});
+  errand({id:'htraps',role:'hunter',title:'Muskrat traps',when:'Autumn to spring',avail:()=>SEASON!==1,blurb:'Along the shore the muskrats come out on the bank. Their skins sell in the village.',
+    steps:()=>[{t:'Buy traps at the store in the village',short:'Buy traps',ok:!!R.trapsHave},{t:`Set four at the water’s edge below the cabin (${Math.min(4,R.traps.length+(R.checked||0))}/4)`,short:`Set traps ${Math.min(4,R.traps.length+(R.checked||0))}/4`,ok:R.traps.length+(R.checked||0)>=4},{t:`Look at them the next day (${Math.min(4,R.checked||0)}/4)`,short:`Look at the traps ${Math.min(4,R.checked||0)}/4`,ok:(R.checked||0)>=4}],
+    target:()=>{if(!R.trapsHave)return{x:CLERK.g.position.x,z:CLERK.g.position.z,label:'the store'};const i=TRAPSPOTS.findIndex((p,i)=>!R.traps.some(t=>t.i===i));const T=R.traps.find(t=>dayNo()>t.day);const p=T?TRAPSPOTS[T.i]:i>=0&&R.traps.length+(R.checked||0)<4?TRAPSPOTS[i]:null;return p?{x:p.x,z:p.z,label:'a trap',dy:3}:null}});
+  errand({id:'hlaws',role:'hunter',title:'Higher laws',when:'After the fox',avail:()=>R.hits>0,blurb:'Henry Thoreau hunted as a boy, and gave it up. He has something to say about it, if asked.',
+    steps:()=>[{t:'Bring down a fox',ok:R.hits>0},{t:'Talk with Henry about hunting',short:'Talk with Henry',ok:!!R.laws}],target:()=>R.hits>0?{x:HB.x,z:HB.z,label:'Henry Thoreau'}:null});
+}
+
+/* ---------- each life's achievements ---------- */
+Object.assign(ACH_DEF,{woodchopper:{name:'A Cord of Wood',desc:'Cut and piled a cord as Alek Therien, and was paid for it.'},homer:{name:'Homer in the Woods',desc:'Heard Henry read from the Iliad, as Alek Therien.'},
+  section:{name:'A Day on the Section',desc:'Kept the ballast under eight ties on the Fitchburg line, as Owen Daly.'},passage:{name:'Money Home',desc:'Sent a dollar home to Ireland, as Owen Daly.'},icecutter:{name:'The Ice Harvest',desc:'Sawed ice out of Walden with the ice cutters, as Owen Daly.'},
+  foxhunt:{name:'After the Fox',desc:'Brought down a fox run by the hounds, as Silas Reed.'},higherlaws:{name:'Higher Laws',desc:'Talked hunting with Henry Thoreau, as Silas Reed.'}});
+purse();
+window.__role={R,HB,HOMES,ROWS,roleAction:()=>roleAction(),talkHenry,henrySays};
+}
+
 const SAVED=loadSave();
 {const go=document.getElementById('go'),fresh=document.getElementById('fresh');
   if(SAVED){go.textContent='Return to the pond';fresh.hidden=false;const when=new Date(SAVED.when);document.getElementById('savedat').textContent=`Saved ${dateLine()}, ${SEASONS[SEASON].name.toLowerCase()}. Last played ${when.toLocaleDateString(undefined,{month:'long',day:'numeric'})} at ${when.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}.`;document.getElementById('savedat').hidden=false}
@@ -3201,7 +4013,7 @@ window.__pd=pondD;window.__cam=()=>({sub:[postU.uSub.value.x.toFixed(2),postU.uS
   addEventListener('pageshow',ev=>{if(ev.persisted){gone=false;try{if(AU.ctx&&AU.out)AU.out.gain.value=.8*VOL}catch(_){}}});
   if(FRAMED){document.documentElement.classList.add('framed');let n=0;(function ready(){if(++n===4){try{parent.postMessage({tc:'planetReady'},'*')}catch(_){}return}requestAnimationFrame(ready)})()}
   window.__home={leave,framed:FRAMED}}
-window.__npc={npcStep,npcBlocked,ALEK,VIS,visitorsCome,CABIN,TOWN,ZB};
+window.__npc={npcStep,npcBlocked,ALEK,VIS,visitorsCome,CABIN,TOWN,ZB};window.__dev={treeZone,pathD,inVillage,pondD,TREES,groundH,RAILX,PLOT,ICE,ORCH:typeof ORCH!=="undefined"?ORCH:null,PAST:typeof PAST!=="undefined"?PAST:null};
 requestAnimationFrame(frame);
 })();
 </script>
