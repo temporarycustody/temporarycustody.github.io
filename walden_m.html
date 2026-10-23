@@ -3947,6 +3947,8 @@ if(ROLE==='hunter'){
   {let last=CLOCK;QF.push(()=>{const d=CLOCK-last;last=CLOCK;if(d>0&&d<120&&R.fireH>0)R.fireH=Math.max(0,R.fireH-d/60)})}
   // the axe, the pole, and the wood
   INV.axe=1;INV.pole=1;
+  // a hunter saved before he had them gets them all the same: the saved bag is read back over these
+  AFTERLOAD.push(()=>{INV.axe=1;INV.pole=1;drawInv()});
   roleHit=function(t){sfx.chop(t.kind);t.hp-=Math.random()<.4?2:1;t.shake=.2;rumble(90,.7,.3);labour(12);
     if(t.hp<=0){t.felled=true;t.fall=0;t.fdir=Math.atan2(t.x-H.x,t.z-H.z);sfx.fall();const n=Math.min(3,6-R.carry);R.carry+=n;drawInv();errDirty=1;
       say(n?`The ${t.kind} comes down. He cuts ${n} lengths for the hearth${R.carry>=6?'; an armful':''}.`:`The ${t.kind} comes down. His arms are full already.`)}};
