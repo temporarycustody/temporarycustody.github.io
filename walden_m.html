@@ -647,9 +647,11 @@ const POLES=[];
    petals cupped up and drawn in), the open flower by late spring and all summer, and in autumn a round seed head, pale down
    on the daisies and stars, brown on the roses and bluets. Each flower keeps a little time of its own, so a meadow turns
    over gradually rather than all at once, and when the season is changed by hand the flowers can be seen to morph. */
-const SFU={uBloom:{value:1},uTime:SNOWU.uTime};
-const SF_OPEN=[[12,1,4,8],[6,1.5,4,4],[4,1.2,2.5,6],[8,.7,1.4,1.4],[6,1.5,4,4]];
-const SF_CENTRE=[[.93,.78,.25],[.95,.85,.35],[.98,.92,.55],[.9,.75,.3],[.95,.85,.4]];
+// the weather's hold on the flowers: uClose folds an open flower toward a bud (night, rain); uWindF is how hard they toss
+const SFW={uClose:{value:0},uWindF:{value:.5}};
+const SFU={uBloom:{value:1},uTime:SNOWU.uTime,uClose:SFW.uClose};
+const SF_OPEN=[[12,1,4,8],[6,1.5,4,4],[4,1.2,2.5,6],[8,.7,1.4,1.4],[16,.6,1,1]]; // the fifth is the water lily
+const SF_CENTRE=[[.93,.78,.25],[.95,.85,.35],[.98,.92,.55],[.9,.75,.3],[.98,.84,.3]];
 const SF_SEED=[[.88,.86,.8],[.48,.34,.22],[.52,.4,.26],[.86,.84,.78],[.48,.34,.22]];
 function sfGeometry(){const N=48,R=[0,.3,.62,1],pos=[],pt=[],idx=[];
   pos.push(0,0,0);pt.push(0,0);
@@ -663,8 +665,8 @@ function sfGeometry(){const N=48,R=[0,.3,.62,1],pos=[],pt=[],idx=[];
   g.boundingSphere=new THREE.Sphere(new THREE.Vector3(0,0,0),1.5);return g}
 function sfMaterial(U){const m=new THREE.MeshPhongMaterial({color:0xffffff,side:THREE.DoubleSide,shininess:4,specular:col(0x0c0c0c)});
   const v4=a=>a.map(p=>new THREE.Vector4(...p)),v3=a=>a.map(p=>new THREE.Vector3(...p));
-  m.onBeforeCompile=sh=>{sh.uniforms.uBloom=U.uBloom;sh.uniforms.uTime=SFU.uTime;sh.uniforms.uOpenP={value:v4(SF_OPEN)};sh.uniforms.uCen={value:v3(SF_CENTRE)};sh.uniforms.uSeedC={value:v3(SF_SEED)};
-    sh.vertexShader=`uniform float uBloom,uTime;uniform vec4 uOpenP[5];attribute vec2 aPT;attribute float aSp,aPh;varying float vT,vSt;varying float vSp;
+  m.onBeforeCompile=sh=>{sh.uniforms.uBloom=U.uBloom;sh.uniforms.uTime=SFU.uTime;sh.uniforms.uClose=U.uClose;sh.uniforms.uWindF=SFW.uWindF;sh.uniforms.uOpenP={value:v4(SF_OPEN)};sh.uniforms.uCen={value:v3(SF_CENTRE)};sh.uniforms.uSeedC={value:v3(SF_SEED)};
+    sh.vertexShader=`uniform float uBloom,uTime,uClose,uWindF;uniform vec4 uOpenP[5];attribute vec2 aPT;attribute float aSp,aPh;varying float vT,vSt;varying float vSp;
 float sfr(float phi,vec4 p){float a=pow(abs(cos(p.x*phi*.25)),p.z),b=pow(abs(sin(p.x*phi*.25)),p.w);return pow(a+b+1e-4,-1./p.y);}
 `+sh.vertexShader.replace('#include <begin_vertex>',`
   int sp=int(aSp+.5);vec4 O=uOpenP[0];if(sp==1)O=uOpenP[1];else if(sp==2)O=uOpenP[2];else if(sp==3)O=uOpenP[3];else if(sp==4)O=uOpenP[4];
@@ -678,9 +680,13 @@ float sfr(float phi,vec4 p){float a=pow(abs(cos(p.x*phi*.25)),p.z),b=pow(abs(sin
   float spread=st<1.?mix(.42,1.,k1):mix(1.,.72,k2);
   float rise=st<1.?mix(1.15,.16,k1):mix(.16,-.1,k2);
   float dome=st<1.?mix(.12,.05,k1):mix(.05,.62,k2);
-  float sway=sin(uTime*1.7+aPh*40.)*.04;
+  // folding up for the night or the rain: only an open flower folds; a bud or a seed head stays as it is
+  float op=k1*(1.-k2),cl=uClose*op*(.8+.2*fract(aPh*91.7));spread*=mix(1.,.48,cl);rise=mix(rise,1.05,cl);dome=mix(dome,.14,cl);
+  // the wind: a gentle nod on a still day, tossing in a gale
+  float gust=.55+.45*sin(uTime*.37+aPh*13.);
+  float sway=(sin(uTime*1.7+aPh*40.)*.6+sin(uTime*3.3+aPh*17.)*.4)*(.03+.09*uWindF)*gust;
   vec3 transformed=vec3(cos(aPT.x)*r*t*spread,(rise*t*t+dome*(1.-t*t))*r*.9,sin(aPT.x)*r*t*spread)*.72;
-  transformed.x+=sway*transformed.y*2.;
+  transformed.x+=sway*(transformed.y*2.+.5);transformed.z+=sway*.4*(transformed.y+.3);transformed.y+=transformed.x*sway*.8;
   vT=t;vSt=st;vSp=float(sp);`);
     sh.fragmentShader=`uniform vec3 uCen[5],uSeedC[5];varying float vT,vSt,vSp;\n`+sh.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
   {int sp=int(vSp+.5);vec3 cen=uCen[0],sd=uSeedC[0];if(sp==1){cen=uCen[1];sd=uSeedC[1];}else if(sp==2){cen=uCen[2];sd=uSeedC[2];}else if(sp==3){cen=uCen[3];sd=uSeedC[3];}else if(sp==4){cen=uCen[4];sd=uSeedC[4];}
@@ -699,6 +705,30 @@ const FLOWERS=(()=>{const N=1600;const im=new THREE.InstancedMesh(sfGeometry(),n
     sp[k]=kind;ph[k]=(h2(i,k,77)-.5)*.5;pts.push(rnd());k++}
   im.count=k;im.instanceMatrix.needsUpdate=true;im.geometry.setAttribute('aSp',new THREE.InstancedBufferAttribute(sp,1));im.geometry.setAttribute('aPh',new THREE.InstancedBufferAttribute(ph,1));
   reg(im,{cast:false,nosnow:1});im.userData.mat=sfMaterial(SFU);im.frustumCulled=false;scene.add(im);im.userData.r=pts;im.userData.m0=new Float32Array(im.instanceMatrix.array);return im})();
+
+/* ---------- water lilies in the shallows: notched round pads lying on the water, and the white flowers among them, drawn
+   from the same superformula as the meadow flowers (sixteen pointed petals). Green buds in spring; the flowers open in
+   summer, by day only, closing toward evening as real pond lilies do; in autumn they close and the pads go bronze; under the
+   winter ice there is nothing. Mostly in the cove and along the shallow south shore. ---------- */
+const SFL={uBloom:{value:1},uTime:SNOWU.uTime,uClose:{value:0}};
+const LILY=(()=>{const pads=[],flw=[];
+  for(let i=0;i<14000&&pads.length<170;i++){const x=POND.x+(h2(i,1,301)-.5)*2.2*POND.rx+(h2(i,2,301)<.4?COVE.x*.9:0),z=POND.z+(h2(i,3,301)-.5)*2.2*POND.rz+(h2(i,2,301)<.4?(COVE.z-POND.z)*.9:0);
+    const d=pondD(x,z);if(d<.8||d>.97)continue;if(groundH(x,z)>WATER_Y-.4)continue;if(vn(x*.035,z*.035,303)<.5)continue;if(pads.some(o=>Math.hypot(o.x-x,o.z-z)<1.9))continue;
+    pads.push({x,z,r:.65+h2(i,4,301)*.6,a:h2(i,5,301)*6.283,c:h2(i,6,301)});if(h2(i,7,301)<.36)flw.push({x:x+(h2(i,8,301)-.5)*.5,z:z+(h2(i,9,301)-.5)*.5,ph:(h2(i,10,301)-.5)*.35})}
+  // a pad: a flat disc with a narrow notch to its middle
+  const P=[0,0,0],idx=[],N=26,gap=.22;for(let k=0;k<=N;k++){const a=gap+(6.2832-2*gap)*k/N;P.push(Math.cos(a),0,Math.sin(a))}for(let k=1;k<=N;k++)idx.push(0,k+1,k);
+  const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));pg.setAttribute('normal',new THREE.Float32BufferAttribute(P.map((v,i)=>i%3===1?1:0),3));pg.setIndex(idx);
+  const pm=new THREE.InstancedMesh(pg,null,pads.length),m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler();
+  pads.forEach((p,i)=>{m4.compose(new THREE.Vector3(p.x,WATER_Y+.07+i*.0004,p.z),q.setFromEuler(e.set(0,p.a,0)),new THREE.Vector3(p.r,1,p.r));pm.setMatrixAt(i,m4);pm.setColorAt(i,col(0x3e7a3a))});
+  pm.instanceMatrix.needsUpdate=true;reg(pm,{cast:false,nosnow:1});pm.frustumCulled=false;scene.add(pm);
+  const fm=new THREE.InstancedMesh(sfGeometry(),null,Math.max(1,flw.length)),sp=new Float32Array(fm.count).fill(4),ph=new Float32Array(fm.count);
+  flw.forEach((f,i)=>{m4.compose(new THREE.Vector3(f.x,WATER_Y+.2,f.z),q.setFromEuler(e.set(0,h2(i,11,301)*6.28,0)),new THREE.Vector3(1.25,1.25,1.25));fm.setMatrixAt(i,m4);fm.setColorAt(i,col(h2(i,12,301)<.2?0xf6dce4:0xf6f4ee));ph[i]=f.ph});
+  fm.count=flw.length;fm.instanceMatrix.needsUpdate=true;fm.geometry.setAttribute('aSp',new THREE.InstancedBufferAttribute(sp,1));fm.geometry.setAttribute('aPh',new THREE.InstancedBufferAttribute(ph,1));
+  reg(fm,{cast:false,nosnow:1});fm.userData.mat=sfMaterial(SFL);fm.frustumCulled=false;scene.add(fm);
+  return{pads:pm,flowers:fm,P:pads}})();
+const LILY_PAD=[[0x46703a,0x507a3c],[0x2c5428,0x345c2c],[0x5e4a26,0x6a3e24],[0,0]];
+function lilySeason(S){LILY.pads.visible=LILY.flowers.visible=S!==3;if(S===3)return;const c=LILY_PAD[S];
+  LILY.P.forEach((p,i)=>LILY.pads.setColorAt(i,col(p.c<.5?c[0]:c[1])));LILY.pads.instanceColor.needsUpdate=true}
 
 /* ---------- the garden plot by the bean field: tiles of ten feet, staked out ---------- */
 const TILES=[];
@@ -1013,11 +1043,29 @@ const FOL={};
   FOL.bells=mkInst(bellSprig(),2200,.9,bm,1.1,1.8);
 }
 // ferns in the woods, huckleberry bushes at the edges, sedge by the water, goldenrod in the open
-function fernG(){const P=[],Hh=[],S=[],push=(p,h,s)=>{P.push(...p);Hh.push(h);S.push(s)};const n=6+(Math.random()*3|0);
-  for(let f=0;f<n;f++){const a=f/n*6.283+Math.random()*.4,len=2.2+Math.random()*1.2,arch=.7+Math.random()*.4;const ca=Math.cos(a),sa=Math.sin(a);
+function fernG(){const P=[],Hh=[],S=[],F=[],T=[],push=(p,h,s,t,f,lat)=>{P.push(...p);Hh.push(h);S.push(s);T.push(t);F.push(f[0],f[1],f[2],lat)};const n=6+(Math.random()*3|0);
+  for(let f=0;f<n;f++){const a=f/n*6.283+Math.random()*.4,len=2.2+Math.random()*1.2,arch=.7+Math.random()*.4;const ca=Math.cos(a),sa=Math.sin(a),fr=[a,len,arch];
     const pt=t=>{const r=t*len,y=Math.sin(t*Math.PI*.75)*arch*len*.55;return[ca*r,y,-sa*r]};
-    for(let k=0;k<11;k++){const t=(k+1)/12,p=pt(t),w=(1-t)*.42+.13;for(const sd of [-1,1]){const q=[p[0]+sa*w*sd,p[1]-.05,p[2]+ca*w*sd],tip=pt(Math.min(1,t+.07));push(p,p[1]/len,1);push(q,q[1]/len,sd>0?.6:.9);push(tip,tip[1]/len,1)}}}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('aH',new THREE.Float32BufferAttribute(Hh,1));g.setAttribute('aS',new THREE.Float32BufferAttribute(S,1));return g}
+    for(let k=0;k<11;k++){const t=(k+1)/12,p=pt(t),w=(1-t)*.42+.13;for(const sd of [-1,1]){const q=[p[0]+sa*w*sd,p[1]-.05,p[2]+ca*w*sd],t2=Math.min(1,t+.07),tip=pt(t2);push(p,p[1]/len,1,t,fr,0);push(q,q[1]/len,sd>0?.6:.9,t,fr,w*sd);push(tip,tip[1]/len,1,t2,fr,0)}}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('aH',new THREE.Float32BufferAttribute(Hh,1));g.setAttribute('aS',new THREE.Float32BufferAttribute(S,1));
+  g.setAttribute('aT',new THREE.Float32BufferAttribute(T,1));g.setAttribute('aF',new THREE.Float32BufferAttribute(F,4));return g}
+/* the ferns' year: in spring each frond comes up as a fiddlehead, a tight coil on a short stalk, and unrolls over the first
+   ten days or so (each plant a little ahead or behind); in summer they stand open; through autumn they brown, flatten and
+   droop toward the ground. The frond is rebuilt here from where each point lies along it: rolled, the frond is a spiral in
+   its own upright plane at the top of a straight stalk (the tighter, the more it is still to unroll), and its leaflets are
+   tucked in against the stalk */
+const FERNU={uUnroll:{value:1},uDroop:{value:0}};
+const FERN_VS=LEAF_VS.replace('attribute float aH;','attribute float aH;attribute float aT;attribute vec4 aF;uniform float uUnroll,uDroop;')
+  .replace('vec3 p=position;',`vec3 p=position;
+    {float u=clamp(uUnroll*1.3-vR*.3,0.,1.),a=aF.x,L=aF.y,ar=aF.z,lat=aF.w,t=aT;vec2 d=vec2(cos(a),-sin(a)),sd=vec2(sin(a),cos(a));
+     // open: the arching frond as built, sinking as it browns
+     float ro=t*L,yo=sin(t*3.1416*.75)*ar*L*.55*mix(1.,.3,uDroop);ro*=mix(1.,1.12,uDroop);
+     // rolled: a spiral up from the ground, tightest when the frond is just up
+     float tau=10.*(1.-u)+.001,Lc=L*mix(.75,1.,u),t0=.55*(1.-u),y0=t0*Lc,ts=max(t-t0,0.)/max(1.-t0,.001),Rs=Lc*(1.-t0)/tau,th=tau*ts;float rc=t<t0?0.:Rs*(1.-cos(th)),yc=t<t0?t*Lc:y0+Rs*sin(th);
+     float k=u*u;float rr=mix(rc,ro,k),yy=mix(yc,yo,k);float lw=lat*mix(.12,1.,u)*(1.-.35*uDroop);
+     p=vec3(d.x*rr+sd.x*lw,yy-(lat!=0.?.05:0.),d.y*rr+sd.y*lw);}`);
+function fernTargets(){const d=clamp(CAL.day/13,0,1);return SEASON===0?[clamp((d-.08)/.72,0,1),0]:SEASON===1?[1,0]:SEASON===2?[1,clamp(d*1.15,0,1)]:[1,1]}
+function fernFrame(dt){const [u,dr]=fernTargets(),k=Math.min(1,dt*.5);FERNU.uUnroll.value+=(u-FERNU.uUnroll.value)*k;FERNU.uDroop.value+=(dr-FERNU.uDroop.value)*k}
 function shrubG(){const P=[],Hh=[],S=[],push=(p,h,s)=>{P.push(...p);Hh.push(h);S.push(s)};
   for(let k=0;k<70;k++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*1.6,y=.3+Math.random()*1.4*(1-r/2.2);const c=[Math.cos(a)*r,y,Math.sin(a)*r],s=.22+Math.random()*.12,b=Math.random()*6.3;
     const v=[[c[0]+Math.cos(b)*s,c[1],c[2]+Math.sin(b)*s],[c[0],c[1]+s*.7,c[2]],[c[0]-Math.cos(b)*s,c[1],c[2]-Math.sin(b)*s],[c[0],c[1]-s*.5,c[2]+s*.3]];
@@ -1037,12 +1085,12 @@ function rodG(){const P=[],Hh=[],S=[],push=(p,h,s)=>{P.push(...p);Hh.push(h);S.p
 const PLANTS={};
 {
   const ok=(x,z)=>!inVillage(x,z,3)&&riverD(x,z)>RW+1&&pondD(x,z)>1.08&&pathD(x,z)>2.6&&Math.abs(x-RAILX)>7&&!(Math.abs(x-CABIN.x)<11&&Math.abs(z-CABIN.z)<8)&&!(x>PLOT.x0-1.5&&x<PLOT.x0+61.5&&z>PLOT.z0-1.5&&z<PLOT.z0+41.5)&&!inRect(ORCH,x,z,2)&&!inRect(PAST,x,z,1);
-  const fam=(name,geo,N,where,s0,s1,uni,fs)=>{const U=Object.assign({},leafU,uni);const m=new THREE.ShaderMaterial({uniforms:U,vertexShader:LEAF_VS,fragmentShader:fs||LEAF_FS,side:THREE.DoubleSide});
+  const fam=(name,geo,N,where,s0,s1,uni,fs,vs)=>{const U=Object.assign({},leafU,uni);const m=new THREE.ShaderMaterial({uniforms:U,vertexShader:vs||LEAF_VS,fragmentShader:fs||LEAF_FS,side:THREE.DoubleSide});
     const im=new THREE.InstancedMesh(geo,m,N);const m4=new THREE.Matrix4();let k=0;for(let i=0;i<N*40&&k<N;i++){const x=(rnd()-.5)*700-60,z=(rnd()-.5)*560-20;if(!ok(x,z)||rnd()>where(x,z))continue;const s=s0+rnd()*(s1-s0);
       m4.compose(new THREE.Vector3(x,groundH(x,z)-.05,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,rnd()*6.28,0)),new THREE.Vector3(s,s*(.85+rnd()*.3),s));im.setMatrixAt(k++,m4)}
     im.count=k;im.userData.full=k;im.instanceMatrix.needsUpdate=true;im.frustumCulled=false;scene.add(im);PLANTS[name]={im,U}};
   const mkU=()=>({uBase:{value:new THREE.Color()},uTip:{value:new THREE.Color()},uVar:{value:new THREE.Color()},uScale:{value:1}});
-  fam('fern',fernG(),1700,(x,z)=>(treeZone(x,z)||x<-330?.75:.04)*(.4+vn(x*.05,z*.05,71)),.7,1.3,mkU());
+  fam('fern',fernG(),1700,(x,z)=>(treeZone(x,z)||x<-330?.75:.04)*(.4+vn(x*.05,z*.05,71)),.7,1.3,Object.assign(mkU(),FERNU),undefined,FERN_VS);
   if(0)fam('shrub',shrubG(),900,(x,z)=>{const tz=treeZone(x,z);return(tz?.25:.18)+(vn(x*.04,z*.04,72)>.6?.4:0)},.8,1.5,mkU());
   fam('sedge',sedgeG(),1400,(x,z)=>{const pd=pondD(x,z),dR=riverD(x,z);return pd<1.5||dR<RW+7?.9:.03},.8,1.3,mkU());
   if(0)fam('rod',rodG(),700,(x,z)=>!treeZone(x,z)&&vn(x*.03,z*.03,73)>.5?.55:.02,.8,1.25,mkU(),LEAF_FS.replace('vec3 c=mix(uBase,uTip,smoothstep(.0,1.,vH));','vec3 c=vH>1.5?uVar:mix(uBase,uTip,vH);'));
@@ -1608,7 +1656,65 @@ function foxFrame(dt,t){const F=FOX,night=foxNight(),winter=SEASON===3;
 
 // the flowers' year: buds through early spring, open by late spring and all summer, gone to seed through autumn
 function sfTarget(){const d=clamp(CAL.day/13,0,1);return SEASON===0?.15+d*.95:SEASON===1?1:SEASON===2?1.05+d*.95:1}
-function sfFrame(dt){const T=sfTarget(),u=SFU.uBloom;u.value+=(T-u.value)*Math.min(1,dt*.6)}
+function lilyTarget(){const d=clamp(CAL.day/13,0,1);return SEASON===0?.1+d*.4:SEASON===1?.35+.65*sstep(.25,.7,DAY):SEASON===2?.45-d*.3:0}
+function sfFrame(dt){const T=sfTarget(),u=SFU.uBloom;u.value+=(T-u.value)*Math.min(1,dt*.6);SFL.uBloom.value+=(lilyTarget()-SFL.uBloom.value)*Math.min(1,dt*.35);
+  // night and rain close the meadow flowers (the lilies already close at evening, so for them only the rain); the wind tosses them all
+  const w=(typeof WX!=='undefined'&&WX.cur)?WX.cur:{rain:0,hail:0,wind:.3},wet=clamp((w.rain+w.hail)*1.3,0,1),night=1-sstep(.12,.45,DAY);
+  SFW.uClose.value+=(Math.max(night,wet)-SFW.uClose.value)*Math.min(1,dt*.35);SFL.uClose.value+=(wet-SFL.uClose.value)*Math.min(1,dt*.35);
+  SFW.uWindF.value+=(w.wind*1.1-SFW.uWindF.value)*Math.min(1,dt);fernFrame(dt)}
+/* ---------- butterflies and bees among the open flowers, on fine days from late spring through summer ----------
+   The butterflies' wings are drawn from the superformula too: a four-lobed shape (m 4) turned forty-five degrees gives the
+   fore and hind wings, split down the body into a left and a right half that beat. They wander from flower to flower,
+   resting a few seconds on each with the wings opening and closing slowly, and lift away if he comes close. The bees are
+   quicker and keep low, a few seconds to a flower, with a quiet hum when he is near. */
+const BUGS={fl:[],bees:[],on:0};
+{const sfr=(phi,m,n1,n2,n3)=>Math.pow(Math.pow(Math.abs(Math.cos(m*phi/4)),n2)+Math.pow(Math.abs(Math.sin(m*phi/4)),n3)+1e-6,-1/n1);
+  // one half of the wings, as a fan from the body: angles across the left (or right) half of the four-lobed shape
+  const wing=(side,P0)=>{const pts=[],N=22;let mx=0;for(let i=0;i<=N;i++){const ph=(side<0?Math.PI*.5:-Math.PI*.5)+Math.PI*i/N+Math.PI/4;const r=sfr(ph,...P0);mx=Math.max(mx,r);pts.push([ph-Math.PI/4,r])}
+    const P=[];for(let i=0;i<N;i++){const [a0,r0]=pts[i],[a1,r1]=pts[i+1];P.push(0,0,0,Math.cos(a0)*r0/mx,0,Math.sin(a0)*r0/mx,Math.cos(a1)*r1/mx,0,Math.sin(a1)*r1/mx)}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.computeVertexNormals();return g};
+  const KINDS=[{c:0xf4f2e8,s:.62,P:[4,.75,1.3,1.7],spot:0x3a3a3a},{c:0xf0d860,s:.6,P:[4,.8,1.1,1.6],spot:0xc89a2a},{c:0xe0802a,s:.8,P:[4,.65,1.2,2.2],spot:0x2a1a12}];
+  const wm=c=>{const m=makeMat({color:c,nosnow:1,side:THREE.DoubleSide});return m};
+  for(let i=0;i<7;i++){const K=KINDS[i%3],G=new THREE.Group(),L=new THREE.Group(),Rt=new THREE.Group();
+    const body=live(B_(.09,.09,.62),0x2a2420,0,0,0,G);body.castShadow=false;
+    for(const [grp,sd] of [[L,-1],[Rt,1]]){const m=new THREE.Mesh(wing(sd,K.P),wm(K.c));m.scale.setScalar(K.s*1.25);grp.add(m);
+      const sp=new THREE.Mesh(new THREE.CircleGeometry(.07,6),wm(K.spot));sp.rotation.x=-Math.PI/2;sp.position.set(sd*.42*K.s*1.25,.01,.15*K.s);grp.add(sp);G.add(grp)}
+    G.visible=false;scene.add(G);BUGS.fl.push({g:G,L,R:Rt,x:0,y:0,z:0,tx:0,ty:0,tz:0,st:'gone',t:0,ph:Math.random()*6,fi:-1,yaw:0})}
+  for(let i=0;i<5;i++){const G=new THREE.Group();const b=live(S_(.16,8,6),0xd8a830,0,0,0,G);b.scale.set(1,1,1.5);b.castShadow=false;
+    live(B_(.33,.06,.07),0x1a1612,0,0,.02,G).castShadow=false;live(B_(.3,.06,.07),0x1a1612,0,0,-.12,G).castShadow=false;
+    const wg=new THREE.Mesh(new THREE.CircleGeometry(.17,8),new THREE.MeshBasicMaterial({color:0xe8eef4,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false}));wg.rotation.x=-Math.PI/2;wg.position.y=.14;G.add(wg);
+    G.visible=false;scene.add(G);BUGS.bees.push({g:G,w:wg,x:0,y:0,z:0,tx:0,ty:0,tz:0,st:'gone',t:0,ph:Math.random()*6,fi:-1,yaw:0,hum:rr(1,4)})}}
+// an open flower near a point, from the flower field
+function flowerNear(x,z,r){const F=FLOWERS,a=F.userData.m0,n=F.count;for(let k=0;k<40;k++){const i=(Math.random()*n)|0;const fx=a[i*16+12],fz=a[i*16+14];if(!a[i*16+15])continue;
+  if(Math.hypot(fx-x,fz-z)<r)return{i,x:fx,y:a[i*16+13]+.55,z:fz}}return null}
+function bugWeather(){const w=WX.cur;return DAY>.45&&w.rain<.05&&w.hail<.05&&w.snow<.05&&w.wind<1.2&&(SEASON===1||SEASON===0&&CAL.day>=6)&&SFU.uBloom.value>.65&&SFW.uClose.value<.3}
+function bugsFrame(dt,t){const ok=started&&bugWeather()&&!CAB.inside;
+  const step=(b,fast)=>{const dx=b.tx-b.x,dy=b.ty-b.y,dz=b.tz-b.z,d=Math.hypot(dx,dy,dz),sp=fast?(b.st==='flee'?9:5.5):(b.st==='flee'?7:3.2);
+    if(d<.15)return true;const k=Math.min(1,sp*dt/d);b.x+=dx*k;b.y+=dy*k;b.z+=dz*k;if(Math.hypot(dx,dz)>.05)b.yaw=Math.atan2(dx,dz);return false};
+  const pick=(b,r)=>{const f=flowerNear(H.x+rr(-30,30),H.z+rr(-30,30),r);if(!f)return false;b.fi=f.i;b.tx=f.x;b.ty=f.y;b.tz=f.z;return true};
+  for(const b of BUGS.fl){if(b.st==='gone'){b.g.visible=false;if(ok&&Math.random()<dt*.25&&pick(b,40)){b.x=b.tx+rr(-12,12);b.z=b.tz+rr(-12,12);b.y=b.ty+rr(2,4);b.st='fly';b.g.visible=true}continue}
+    const dH=Math.hypot(b.x-H.x,b.z-H.z);
+    if(!ok||dH>140){b.st='leave';b.tx=b.x+rr(-30,30);b.tz=b.z+rr(-30,30);b.ty=b.y+12}
+    if(b.st==='rest'){b.t-=dt;if(dH<4.5&&H.sp>.2||b.t<0){b.st=dH<4.5?'flee':'fly';if(!pick(b,40))b.st='leave';if(b.st==='flee')b.ty+=1.5}}
+    else{// a butterfly's path is never straight: it bobs and weaves on the way
+      const arrived=step(b,false);b.y+=Math.sin(t*5+b.ph)*dt*1.2;b.x+=Math.cos(t*2.3+b.ph)*dt*.9;
+      if(arrived){if(b.st==='leave'){b.st='gone';continue}b.st='rest';b.t=rr(2.5,7);b.x=b.tx;b.y=b.ty;b.z=b.tz}}
+    // the wings: a quick beat in flight; at rest, slow, opening flat in the sun and closing up again
+    const fly=b.st!=='rest';const f=fly?Math.abs(Math.sin(t*15+b.ph)):.5+.5*Math.sin(t*1.6+b.ph);const ang=fly?.15+f*1.15:.05+f*1.3;
+    b.L.rotation.z=ang;b.R.rotation.z=-ang;b.g.position.set(b.x,b.y+(fly?0:.02),b.z);b.g.rotation.y=b.yaw;b.g.visible=true}
+  let nearest=1e9;
+  for(const b of BUGS.bees){if(b.st==='gone'){b.g.visible=false;if(ok&&Math.random()<dt*.35&&pick(b,30)){b.x=b.tx+rr(-6,6);b.z=b.tz+rr(-6,6);b.y=b.ty+1;b.st='fly';b.g.visible=true}continue}
+    const dH=Math.hypot(b.x-H.x,b.z-H.z);nearest=Math.min(nearest,dH);
+    if(!ok||dH>110){b.st='leave';b.tx=b.x+rr(-25,25);b.tz=b.z+rr(-25,25);b.ty=b.y+8}
+    if(b.st==='rest'){b.t-=dt;b.x=b.tx+Math.sin(t*9+b.ph)*.04;b.z=b.tz+Math.cos(t*7+b.ph)*.04;if(b.t<0||dH<2.2){b.st=dH<2.2?'flee':'fly';if(!pick(b,25))b.st='leave'}}
+    else{const arrived=step(b,true);b.y+=Math.sin(t*11+b.ph)*dt*.8;b.x+=Math.sin(t*13+b.ph)*dt*.6;b.z+=Math.cos(t*12+b.ph)*dt*.6;
+      if(arrived){if(b.st==='leave'){b.st='gone';continue}b.st='rest';b.t=rr(1,3.5)}}
+    b.w.scale.setScalar(.8+.4*Math.abs(Math.sin(t*60+b.ph)));b.g.position.set(b.x,b.y,b.z);b.g.rotation.y=b.yaw;b.g.visible=true}
+  // the hum, only close to: a soft low buzz that rises and falls
+  BUGS.hum=(BUGS.hum||0)-dt;if(nearest<7&&AU.ctx&&AU.on&&BUGS.hum<0){BUGS.hum=rr(.7,1.6);const v=clamp(1.2-nearest/7,0,1);
+    tone({f:rr(205,240),f2:rr(215,250),d:.9,a:.25,v:.012*v,type:'sawtooth',lp:520,vib:7,vibr:rr(24,32)});sayOnce('bees','Bees in the flowers, and the butterflies going from one to the next.')}
+  if(ok&&BUGS.fl.some(b=>b.st==='rest'&&Math.hypot(b.x-H.x,b.z-H.z)<14))note('bfly','watched butterflies at the flowers in the clearing')}
+
 /* ---------- the mail: letters written at the desk, a post box by the line, and the train that stops for it ---------- */
 INV.letters=0;
 const MAILBOX={x:RAILX-7.5,z:22,letters:0};
@@ -2355,7 +2461,7 @@ const SEASON_COL=[
   {b0:[.17,.3,.12],b1:[.23,.36,.14],t0:[.42,.6,.24],t1:[.56,.66,.3],len:1.9,fl:[0xf4f0e0,0xf0c840,0xd890b0,0xe8e0f0],fog:0x34465a},
   {b0:[.32,.3,.18],b1:[.4,.36,.22],t0:[.72,.62,.4],t1:[.8,.7,.46],len:1.5,fl:[0x8a6ac0,0xb090d0,0xd8b840],fog:0x3a3c48},
   {b0:[.3,.27,.19],b1:[.38,.34,.24],t0:[.66,.6,.44],t1:[.76,.7,.52],len:1,fl:null,fog:0x2a3448}];
-function setSeason(S,quiet){const prevS=SEASON;SEASON=((S%4)+4)%4;if(quiet&&typeof SFU!=='undefined')SFU.uBloom.value=sfTarget();FLZ=-1;const C=SEASON_COL[SEASON];if(WXREADY)onSeason(prevS,quiet);
+function setSeason(S,quiet){const prevS=SEASON;SEASON=((S%4)+4)%4;if(quiet&&typeof SFU!=='undefined'){SFU.uBloom.value=sfTarget();SFL.uBloom.value=lilyTarget();const ft=fernTargets();FERNU.uUnroll.value=ft[0];FERNU.uDroop.value=ft[1]}lilySeason(SEASON);FLZ=-1;const C=SEASON_COL[SEASON];if(WXREADY)onSeason(prevS,quiet);
   GROUND.g.attributes.color.array.set(GROUND.sets[SEASON]);GROUND.g.attributes.color.needsUpdate=true;
   grassU.uB0.value.set(...C.b0);grassU.uB1.value.set(...C.b1);grassU.uT0.value.set(...C.t0);grassU.uT1.value.set(...C.t1);grassU.uLen.value=C.len;GRASS.count=SEASON===1?15000:SEASON===3?7000:11000;GRASS.visible=true;
   FLOWERS.visible=!!C.fl;if(C.fl){const r=FLOWERS.userData.r;for(let i=0;i<FLOWERS.count;i++)FLOWERS.setColorAt(i,col(C.fl[(r[i]*C.fl.length)|0]));FLOWERS.instanceColor.needsUpdate=true;FLOWERS.count=Math.min(r.length,SEASON===2?500:r.length)}
@@ -2557,7 +2663,7 @@ function frame(now){
   flakeU.uAmt.value=particleAmt();{const L=flakeU.uL.value,lit=1-DAY>.4;const src=[[porch.position,lit?1:0],[lantern.position,lantern.intensity>0?.8:0],[WSPOT[0].position,lit?.7:0],[WSPOT[1].position,lit?.7:0],[head.position,head.intensity>0?1.2:0],[stoveL.position,0]];src.forEach(([p,w],i)=>L[i].set(p.x,p.y,p.z,w))}flakeU.uTime.value=t;flakeU.uC.value.copy(tgt);flakeU.uPx.value=clamp(1.3*PR/PIXE*2,1,3);flakeU.uLit.value=lerp(.7,1,DAY);
   const ph=HOUR<6.4?'night':HOUR<7.7?'dawn':HOUR<15.9?'day':HOUR<17.3?'dusk':'night';if(ph!==lastPhase){if(lastPhase&&started&&(ph==='dawn'||ph==='dusk'))sfx.motif(ph==='dawn');lastPhase=ph}
   for(const s of SMOKE){s.userData.t=(s.userData.t+dt*.08)%1;const k=s.userData.t;s.position.set(CABIN.chim.x+k*12+Math.sin(t+k*6)*1.2,CABIN.chim.y+k*18,CABIN.chim.z-k*4);s.visible=false}
-  trainStep(dt,t);puffs(dt,t);boatFrame(dt,t);fishFrame(dt,t);geeseFrame(dt,t);alekFrame(dt,t);pathFrame();dialogueFrame(dt);fadeFrame(dt);jobFrame();lifeFrame(dt,t);sundayBell(Math.min(dt,.05));villageFrame(dt,t);townFrame(dt,t);orchardFrame(dt,t);riverFrame(dt,t);WASH.forEach((w,i)=>{w.rotation.z=Math.sin(t*2.1+i)*.12*SNOWU.uWind.value;w.visible=SEASON!==3||i<2});studyFrame(dt);owlFrame(dt,t);deerFrame(dt,t);foxFrame(dt,t);sfFrame(dt);chuckFrame(dt,t);squirrelFrame(dt,t);mailFrame();critterTags();
+  trainStep(dt,t);puffs(dt,t);boatFrame(dt,t);fishFrame(dt,t);geeseFrame(dt,t);alekFrame(dt,t);pathFrame();dialogueFrame(dt);fadeFrame(dt);jobFrame();lifeFrame(dt,t);sundayBell(Math.min(dt,.05));villageFrame(dt,t);townFrame(dt,t);orchardFrame(dt,t);riverFrame(dt,t);WASH.forEach((w,i)=>{w.rotation.z=Math.sin(t*2.1+i)*.12*SNOWU.uWind.value;w.visible=SEASON!==3||i<2});studyFrame(dt);owlFrame(dt,t);deerFrame(dt,t);foxFrame(dt,t);sfFrame(dt);bugsFrame(dt,t);chuckFrame(dt,t);squirrelFrame(dt,t);mailFrame();critterTags();
   {const show=BOAT.state==='afloat'&&!FISHING&&INV.pole;act2.hidden=!show;if(show){const k=(pin&&pin.gp)?'○':'B';if(act2.dataset.k!==k){act2.dataset.k=k;act2.innerHTML='<kbd>'+k+'</kbd>Row back to shore'}}}
   boat.position.y=WATER_Y+.9+Math.sin(t*1.1)*.08;boat.rotation.z=Math.sin(t*.9)*.03;if(BOAT.state!=='none')boat.rotation.x=Math.sin(t*.7)*.02;
   tLoon+=dt;if(!(SEASON===0||SEASON===2))loon.visible=false;else if(loonDive>0){loonDive-=dt;loon.visible=false;if(loonDive<=0){loon.position.x=lerp(-60,80,Math.random());loon.position.z=lerp(70,140,Math.random());loon.visible=true;if(started&&Math.random()<.7)sfx.loon(.8)}}
@@ -2780,7 +2886,7 @@ const SAVED=loadSave();
   fresh.onclick=()=>{if(fresh.dataset.sure!=='1'){fresh.dataset.sure='1';fresh.textContent='Erase the saved game? Click again';return}try{localStorage.removeItem(SAVEKEY)}catch(e){}location.reload()}}
 setInterval(saveGame,30000);
 addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveGame()});addEventListener('pagehide',saveGame);
-window.__pd=pondD;window.__cam=()=>({sub:[postU.uSub.value.x.toFixed(2),postU.uSub.value.y.toFixed(2)],cam:[camera.position.x.toFixed(2),camera.position.z.toFixed(2)],h:rt.height,view:VIEW.toFixed(1)});window.groundH=groundH;window.__postU=postU;window.__wxU=wxU;window.__realState=()=>({ready:REAL.ready,n:Object.fromEntries(Object.entries(REAL.buf).map(([k,v])=>[k,v.filter(Boolean).map(b=>+b.duration.toFixed(2))])),ctx:AU.ctx&&AU.ctx.state});window.__snow={realPlay:real,sfxT:sfx,saveGame,snapshot,TILES,BOOTS,bootsSeason,mendBoots,dressHenry,setWeather,WX,strike:()=>boltStrike(new THREE.Vector3(H.x,H.g.position.y+3,H.z)),EMERSON,ACH,emersonArrives,takeEmerson,readEmerson,replyEmerson,landNow,setTime,setSnow,turnView,H,start,act,TREES,callTrain,TRAIN,CAB,currentAction,setPix,ALEK,SUNBELL,CAL,ICE,VIS,visitorsCome,SOUNDINGS,JOURNAL,lifeAction,JOB,FARMER,SMITH,payStove,takeJob,measureStake,getPaid,jobAction,CAL,FF,startSleep,newDay,APPLE_TREES,ORCH,camSnap:()=>{camera.userData.init=0},VIL,VX,VZ,JAIL,travel,FOLK,PO,openStudy,closeStudy,MAILBOX,OWL,DEER,writeLetter,BOAT,boat,setLook,toggleMap,alekTalk,setHeld,cycleHeld,toggleBag,held:()=>HELD,slots,run:()=>RUN,setSeason,INV,TILES,GT,advance,stageOf,FISHING:()=>FISHING,season:()=>SEASON,setView:v=>{VIEW_OUT=v;VIEW=v}};window.__snow.fox=()=>({FOX,foxBark});window.__snow.flowers=()=>({FLOWERS,SFU,sfTarget});window.__snow.chest=()=>({CHEST,inv:INV.chest,openChest,closeChest,chestPut,chestTake,onHim});ledger();setPix(PIX);
+window.__pd=pondD;window.__cam=()=>({sub:[postU.uSub.value.x.toFixed(2),postU.uSub.value.y.toFixed(2)],cam:[camera.position.x.toFixed(2),camera.position.z.toFixed(2)],h:rt.height,view:VIEW.toFixed(1)});window.groundH=groundH;window.__postU=postU;window.__wxU=wxU;window.__realState=()=>({ready:REAL.ready,n:Object.fromEntries(Object.entries(REAL.buf).map(([k,v])=>[k,v.filter(Boolean).map(b=>+b.duration.toFixed(2))])),ctx:AU.ctx&&AU.ctx.state});window.__snow={realPlay:real,sfxT:sfx,saveGame,snapshot,TILES,BOOTS,bootsSeason,mendBoots,dressHenry,setWeather,WX,strike:()=>boltStrike(new THREE.Vector3(H.x,H.g.position.y+3,H.z)),EMERSON,ACH,emersonArrives,takeEmerson,readEmerson,replyEmerson,landNow,setTime,setSnow,turnView,H,start,act,TREES,callTrain,TRAIN,CAB,currentAction,setPix,ALEK,SUNBELL,CAL,ICE,VIS,visitorsCome,SOUNDINGS,JOURNAL,lifeAction,JOB,FARMER,SMITH,payStove,takeJob,measureStake,getPaid,jobAction,CAL,FF,startSleep,newDay,APPLE_TREES,ORCH,camSnap:()=>{camera.userData.init=0},VIL,VX,VZ,JAIL,travel,FOLK,PO,openStudy,closeStudy,MAILBOX,OWL,DEER,writeLetter,BOAT,boat,setLook,toggleMap,alekTalk,setHeld,cycleHeld,toggleBag,held:()=>HELD,slots,run:()=>RUN,setSeason,INV,TILES,GT,advance,stageOf,FISHING:()=>FISHING,season:()=>SEASON,setView:v=>{VIEW_OUT=v;VIEW=v}};window.__snow.fox=()=>({FOX,foxBark});window.__snow.flowers=()=>({FLOWERS,SFU,sfTarget,LILY,SFL,SFW,FERNU,BUGS,PLANTS});window.__snow.chest=()=>({CHEST,inv:INV.chest,openChest,closeChest,chestPut,chestTake,onHim});ledger();setPix(PIX);
 /* ---------- the way back to the Temporary Custody index. In the index's frame, the game saves, fades its sound and asks
    the index to close the frame; on its own, it saves and goes to the index ---------- */
 {const FRAMED=window.parent!==window&&/[#?&]frame/.test(location.href);const home=document.getElementById('home');
