@@ -1219,11 +1219,11 @@ function setSnow(l,quiet){if(SEASON!==3){SNOW=0;SNOWU.uSnowT.value=3;return}
 let rt;
 let PIX=3;try{PIX=+(localStorage.getItem('walden-snow-pix')||3)}catch(e){}
 function makeRT(w,h){if(rt)rt.dispose();rt=new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,stencilBuffer:true});rt.texture.encoding=THREE.sRGBEncoding;const dt=new THREE.DepthTexture(w,h,THREE.UnsignedInt248Type);dt.format=THREE.DepthStencilFormat;rt.depthTexture=dt}
-const postU={tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},uTime:{value:0},cNear:{value:camera.near},cFar:{value:camera.far},uNight:{value:0},uPrint:{value:0},uFade:{value:0},uScr:{value:new THREE.Vector2(1,1)},uPR:{value:PR},uSub:{value:new THREE.Vector2()},uFlash:{value:0},uWet:{value:0}};
+const postU={tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},uTime:{value:0},cNear:{value:camera.near},cFar:{value:camera.far},uNight:{value:0},uPrint:{value:0},uFade:{value:0},uScr:{value:new THREE.Vector2(1,1)},uPR:{value:PR},uSub:{value:new THREE.Vector2()},uOut:{value:new THREE.Vector2(1,1)},uCam:{value:new THREE.Vector2()},uFlash:{value:0},uWet:{value:0}};
 const post=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:postU,depthTest:false,depthWrite:false,
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
   fragmentShader:`#include <packing>
-  uniform sampler2D tColor,tDepth;uniform vec2 res,uScr,uSub;uniform float uTime,cNear,cFar,uNight,uPrint,uPR,uFade,uFlash,uWet;varying vec2 vUv;
+  uniform sampler2D tColor,tDepth;uniform vec2 res,uScr,uSub,uOut,uCam;uniform float uTime,cNear,cFar,uNight,uPrint,uPR,uFade,uFlash,uWet;varying vec2 vUv;
   float lin(vec2 uv){return -orthographicDepthToViewZ(texture2D(tDepth,uv).x,cNear,cFar);}
   float luma(vec3 c){return dot(c,vec3(.299,.587,.114));}
   float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -1232,7 +1232,7 @@ const post=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial(
   vec3 grade(vec3 c){float l=luma(c);c=mix(vec3(l),c,mix(.84,.5,uNight));
     c*=mix(vec3(.8,.9,1.12),vec3(1.03,1.,.95),smoothstep(.12,.8,l));
     c=(c-.42)*1.2+.42;return pow(max(c,0.),vec3(1.06));}
-  void main(){vec2 px=1./res;vec2 tp=floor(vUv*res);vec2 uv=(tp+.5)*px;
+  void main(){vec2 px=1./res;vec2 tp=floor(vUv*uOut+uSub);vec2 uv=(tp+.5)*px;
     vec3 raw=texture2D(tColor,uv).rgb;vec3 c=grade(raw);
     // the dark rim one pixel wide at every edge of depth, as in pixel art
     float d0=lin(uv);float dn=max(max(d0-lin(uv+vec2(px.x,0.)),d0-lin(uv-vec2(px.x,0.))),max(d0-lin(uv+vec2(0.,px.y)),d0-lin(uv-vec2(0.,px.y))));
@@ -1241,12 +1241,12 @@ const post=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial(
     vec3 bl=vec3(0.);for(int i=0;i<8;i++){float a=float(i)*.785;for(int r=1;r<3;r++){vec2 o=vec2(cos(a),sin(a))*px*float(r)*1.7;vec3 s=texture2D(tColor,uv+o).rgb;bl+=max(s-vec3(.9),0.)*vec3(1.,.8,.55);}}
     c+=bl*.16*uNight;
     c=mix(c,vec3(luma(c)),uWet*.18)*(1.-uWet*.06);c=mix(c,c*1.55+vec3(.05,.06,.09),uFlash);
-    // grain that sits in the pixels, and a little that moves
-    c*=.985+.025*hash(tp);c+=(hash(tp+floor(uTime*2.)*.37)-.5)*.006;
+    // grain that sits in the pixels and stays with the ground as the view moves
+    vec2 wp=tp+uCam;c*=.985+.025*hash(wp);c+=(hash(wp*.73+3.1)-.5)*.006;
     float v=length(vUv-.5);c*=1.-v*v*(.7+uNight*.4);
     // a limited palette, ordered-dithered
     // a lighter print than before: more steps in the palette, a softer dither, less tint and grain, the shadows lifted a little
-    {float L=14.;c=c*.94+.035;vec3 cc=c*L+(bayer(tp)-.5)*.72+.5;c=floor(cc)/L;c=mix(c,c*vec3(1.03,1.,.94),.45);c+=(hash(tp*1.7+floor(uTime*2.))-.5)*.006;}
+    {float L=14.;c=c*.94+.035;vec3 cc=c*L+(bayer(tp)-.5)*.72+.5;c=floor(cc)/L;c=mix(c,c*vec3(1.03,1.,.94),.45);c+=(hash(wp*1.7)-.5)*.006;}
     c*=step(uFade*1.06,bayer(tp)*.94+.03+(1.-length(vUv-.5)*1.4)*.0);
     {vec2 sc=gl_FragCoord.xy,hs=uScr*.5;float rad=34.*uPR,ins=10.*uPR;vec2 q2=abs(sc-hs)-(hs-ins-rad);float dd=length(max(q2,0.))-rad;
       c*=1.-smoothstep(-40.*uPR,0.,dd)*.4;c=mix(c,vec3(0.),smoothstep(-1.,1.,dd));}
@@ -2941,7 +2941,7 @@ function blocked(x,z){if(VIL.jailed)return false;if(riverBlocked(x,z))return tru
 let crackT=0;const vv=new THREE.Vector3();
 function cabinFrame(dt,t){const {lx,lz}=cl();const inside=Math.abs(lx)<7.3&&Math.abs(lz)<4.8;
   if(inside!==CAB.inside){CAB.inside=inside;setCut(inside);if(inside)sayOnce('in','Inside. The roof is lifted away so the room can be seen.')}
-  const vw=(FISHING||BOAT.state!=='none')?VIEW_FISH:VIEW_OUT;VIEW=lerp(VIEW,vw,Math.min(1,dt*3));if(window.__snapView){VIEW=vw}
+  const vw=(FISHING||BOAT.state!=='none')?VIEW_FISH:VIEW_OUT;VIEW=lerp(VIEW,vw,Math.min(1,dt*3));if(window.__snapView||Math.abs(VIEW-vw)<.03){VIEW=vw}
   const nearDoor=Math.hypot(lx+7.5,lz-1)<5.5;const want=nearDoor?-1.35:0;if(Math.abs(CAB.door.rotation.y-want)>.4&&!CAB.doorMoving){CAB.doorMoving=1;sfx.creak()}CAB.door.rotation.y=lerp(CAB.door.rotation.y,want,Math.min(1,dt*5));if(Math.abs(CAB.door.rotation.y-want)<.05)CAB.doorMoving=0;
   const f=CAB.fire/6,fl=.82+.1*Math.sin(t*13)+.08*Math.sin(t*31+1.3);
   CAB.g.localToWorld(CAB.hasStove?vv.set(4.4,2.6,2):vv.set(4.4,2,-2.2));stoveL.position.copy(vv);CAB.fpGlow.material.emissive.setRGB(!CAB.hasStove&&CAB.fire>0?(.7+.3*f)*fl:0,!CAB.hasStove&&CAB.fire>0?.3*fl:0,0);for(const l of CAB.fpLogs)l.material.emissive.setRGB(CAB.fire>0?.55*fl:0,CAB.fire>0?.18*fl:0,0);stoveL.intensity=CAB.fire>0?(.6+.8*f)*fl:0;
@@ -2984,12 +2984,12 @@ function frame(now){
     if(tr.felled&&tr.fall<1){tr.fall=Math.min(1,tr.fall+dt*(.4+tr.fall*2));tr.m.decompose(v4,q4,s4);const ax=new THREE.Vector3(Math.cos(tr.fdir),0,-Math.sin(tr.fdir));const qf=new THREE.Quaternion().setFromAxisAngle(ax,tr.fall*tr.fall*Math.PI/2);m4b.compose(v4,qf.multiply(q4),s4);setTreeM(tr,m4b)}}
   const tgt=new THREE.Vector3(H.x,H.g.position.y+3,H.z);
   const want=new THREE.Vector3(tgt.x+Math.sin(yawNow)*Math.cos(PITCH)*600,tgt.y+Math.sin(PITCH)*600,tgt.z+Math.cos(yawNow)*Math.cos(PITCH)*600);
-  if(!camera.userData.init){camera.position.copy(want);camera.userData.init=1}camera.position.lerp(want,Math.min(1,dt*5));camera.up.set(0,1,0);camera.lookAt(camera.position.clone().sub(want.clone().sub(tgt)));
-  ZPX.value=VIEW/rt.height;flowerZoom();const asp=innerWidth/innerHeight;camera.left=-VIEW*asp/2;camera.right=VIEW*asp/2;camera.top=VIEW/2;camera.bottom=-VIEW/2;camera.updateProjectionMatrix();
+  const CSM=camera.userData.sp||(camera.userData.sp=new THREE.Vector3());if(!camera.userData.init){CSM.copy(want);camera.userData.init=1}CSM.lerp(want,Math.min(1,dt*5));camera.position.copy(CSM);camera.up.set(0,1,0);camera.lookAt(camera.position.clone().sub(want.clone().sub(tgt)));
+  ZPX.value=VIEW/OUT.h;flowerZoom();const asp=innerWidth/innerHeight;{const ux=VIEW*asp/OUT.w,uy=VIEW/OUT.h;camera.left=-ux*(OUT.w/2+SNAPM);camera.right=ux*(OUT.w/2+SNAPM);camera.top=uy*(OUT.h/2+SNAPM);camera.bottom=-uy*(OUT.h/2+SNAPM);camera.updateProjectionMatrix();snapCam(ux,uy)}
   if(AUTO&&!FF.on)advance(dt*.02);ffTick();
   if(CAB.fire>0)burnHours(dt/90*.75);
   cabinFrame(dt,t);
-  const L=sun.userData.dir||new THREE.Vector3(0,1,0);sun.position.copy(tgt).addScaledVector(L,600);sun.target.position.copy(tgt);sun.target.updateMatrixWorld();
+  const L=sun.userData.dir||new THREE.Vector3(0,1,0);{const st=snapShadow(tgt,L);sun.position.copy(st).addScaledVector(L,600);sun.target.position.copy(st)}sun.target.updateMatrixWorld();
   const night=1-DAY;const lit=night>.4;porch.intensity=lit?1.1:0;porch.userData.bulb.visible=lit;for(const w of WSPOT)w.intensity=lit?1.6:0;
   lantern.intensity=night>.5&&!CAB.inside?1.3:0;LANT.userData.glass.material.color.set(night>.5?0xffd08a:0x5a5040);LANT.getWorldPosition(lantern.position);lantern.position.y+=.6;
   SNOWU.uTime.value=t;CLOUDU.value.set(t,DAY*(SEASON===1?.8:1)*(1+WX.cur.cover*.6),WX.cur.cover);SNOWU.uWind.value=[.8,.6,1.1,1.25][SEASON]*(.12+WX.cur.wind*1.05);leafU.uWind.value=.1+WX.cur.wind*1.1;grassU.uWindG.value=.12+WX.cur.wind*1.1; // a still day is still: the sway follows the wind nearly to nothing
@@ -3132,13 +3132,25 @@ function wxFrame(dt,t,tgt){
   wxSound(dt)}
 // the closer the view, the finer the pixels: one step finer under 150, two under 75 (indoors), never finer than 2 unless the
 // slider is set finer still. Far off the world keeps its coarse print; close to, Henry and his things show their detail
-let PIXE=0;function effPix(){const steps=(VIEW<150?1:0)+(VIEW<75?1:0);return Math.max(Math.min(PIX,2),PIX-steps)}
+let PIXE=0;const SNAPM=4,OUT={w:1,h:1};
+/* Pixel snap. The camera follows smoothly, but it is set down only on the grid of the low picture, four pixels at a step so the
+   dither and the dotted shadows (both four pixels round) stay with the ground; what is left over is a shift of the finished
+   picture, so the view still glides. The world stays put in its pixels, and only what really moves changes. */
+const SNR=new THREE.Vector3(),SNU=new THREE.Vector3();
+function snapCam(ux,uy){camera.updateMatrixWorld();const e=camera.matrixWorld.elements;SNR.set(e[0],e[1],e[2]);SNU.set(e[4],e[5],e[6]);const p=camera.userData.sp;
+  const a=p.dot(SNR)/ux,b=p.dot(SNU)/uy,A=Math.round(a/4)*4,B=Math.round(b/4)*4;camera.position.copy(p).addScaledVector(SNR,(A-a)*ux).addScaledVector(SNU,(B-b)*uy);camera.updateMatrixWorld();
+  postU.uSub.value.set(SNAPM-(A-a),SNAPM-(B-b));postU.uCam.value.set(((A%1024)+1024)%1024,((B%1024)+1024)%1024)}
+{const P0=THREE.Vector3.prototype.project;THREE.Vector3.prototype.project=function(cam){P0.call(this,cam);if(cam===camera&&OUT.w>1){const W=OUT.w+2*SNAPM,H=OUT.h+2*SNAPM,o=postU.uSub.value;this.x=(((this.x+1)/2*W)-o.x)/OUT.w*2-1;this.y=(((this.y+1)/2*H)-o.y)/OUT.h*2-1}return this}}// names over heads land where the picture puts them
+const SHX=new THREE.Vector3(),SHY=new THREE.Vector3(),SHUP=new THREE.Vector3(0,1,0),SHT=new THREE.Vector3();
+function snapShadow(t,L){const c=sun.shadow.camera,tx=(c.right-c.left)/sun.shadow.mapSize.x,ty=(c.top-c.bottom)/sun.shadow.mapSize.y;SHX.crossVectors(SHUP,L);if(SHX.lengthSq()<1e-6)SHX.set(1,0,0);SHX.normalize();SHY.crossVectors(L,SHX).normalize();
+  const x=t.dot(SHX),y=t.dot(SHY);return SHT.copy(t).addScaledVector(SHX,Math.round(x/tx)*tx-x).addScaledVector(SHY,Math.round(y/ty)*ty-y)}
+function effPix(){const steps=(VIEW<150?1:0)+(VIEW<75?1:0);return Math.max(Math.min(PIX,2),PIX-steps)}
 let FLZ=-1;function flowerZoom(){const s=Math.min(2.4,Math.max(1,ZPX.value/.3)),b=Math.round(s*5);if(b===FLZ)return;FLZ=b;
   const im=FLOWERS,m0=im.userData.m0,a=im.instanceMatrix.array,r=im.userData.r,keep=1.1/(s*s);
   for(let i=0,n=m0.length/16;i<n;i++){const o=i*16;if((r[i]*7.13+.21)%1>keep){for(let j=0;j<16;j++)a[o+j]=0;continue}
     for(let j=0;j<16;j++)a[o+j]=m0[o+j];for(const j of [0,1,2,4,5,6,8,9,10])a[o+j]*=s}
   im.instanceMatrix.needsUpdate=true}
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);postU.uScr.value.set(w*PR,h*PR);PIXE=effPix();const rw=Math.max(80,Math.floor(w/PIXE)),rh=Math.max(60,Math.floor(h/PIXE));makeRT(rw,rh);postU.res.value.set(rw,rh);flakeU.uPx.value=1}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);postU.uScr.value.set(w*PR,h*PR);PIXE=effPix();const rw=Math.max(80,Math.floor(w/PIXE)),rh=Math.max(60,Math.floor(h/PIXE));OUT.w=rw;OUT.h=rh;makeRT(rw+2*SNAPM,rh+2*SNAPM);postU.res.value.set(rw+2*SNAPM,rh+2*SNAPM);postU.uOut.value.set(rw,rh);flakeU.uPx.value=1}
 function setPix(v){PIX=clamp(Math.round(v),1,6);try{localStorage.setItem('walden-snow-pix',PIX)}catch(e){}const r=document.getElementById('pix');if(document.activeElement!==r)r.value=PIX;document.getElementById('pixv').textContent=PIX===1?'off':PIX+' px';resize()}
 document.getElementById('pix').addEventListener('input',e=>setPix(+e.target.value));
 addEventListener('resize',resize);resize();setTime(16.9);setSeason(3,true);setSound(AU.on);drawInv();purse();setLook(PRINT);setVol(VOL);
