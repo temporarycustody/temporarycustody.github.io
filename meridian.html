@@ -33,6 +33,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0d0b0a;color:var(--in
 #ledger h1{font:400 30px/1 var(--fell);margin:0 0 5px;letter-spacing:.01em}
 #ledger .row{font-size:11px;color:var(--ink-dim);display:flex;justify-content:space-between;gap:16px;font-variant-numeric:tabular-nums}
 #ledger .row b{color:var(--ink);font-weight:500}
+#tod{display:block;width:100%;height:32px;margin:4px 0 5px;image-rendering:pixelated}
 #water{width:96px;height:6px;border:1px solid var(--rule);position:relative;align-self:center}#water i{position:absolute;inset:0 auto 0 0;background:var(--ember)}
 #ctl{right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(12px + var(--bt,0px) + env(safe-area-inset-bottom,0px));padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;gap:7px 10px;align-items:center;width:min(330px,calc(100vw - 24px));font-size:11px}
 #ctl label{color:var(--ink-dim)}#ctl input[type=range]{width:100%;accent-color:var(--ember)}#ctl .v{font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
@@ -120,6 +121,7 @@ button:focus-visible{outline:1px solid var(--ember);outline-offset:2px}
 <div id="ledger" class="panel">
   <h1>Blood Meridian</h1>
   <div class="row"><span id="date">1849</span><b id="clock">5:00 am</b></div>
+  <canvas id="tod" width="460" height="64" aria-hidden="true"></canvas>
   <div class="row" id="waterRow"><span>Water</span><div id="water"><i></i></div></div>
   <div class="row wxrow" id="wxrow"></div>
   <div id="actname"></div>
@@ -169,9 +171,52 @@ window.__bootT0=performance.now();window.__bootReady=function(){const b=document
       const k=.35+.65*s.b*(.7+.3*Math.sin(t*2+s.tw));g.fillStyle=`rgba(240,232,214,${k})`;g.fillRect(x|0,y|0,1,1);if(s.big&&k>.6){g.fillStyle=`rgba(240,232,214,${k*.4})`;g.fillRect((x|0)-1,y|0,3,1);g.fillRect(x|0,(y|0)-1,1,3)}}
     // the hills, black against the sky
     g.fillStyle='#020204';g.beginPath();g.moveTo(0,H);for(let x=0;x<=W;x+=2){g.lineTo(x,H*.86-Math.abs(Math.sin(x*.013)*7+Math.sin(x*.041)*3))}g.lineTo(W,H);g.fill();
-    if(!met&&Math.random()<.008)met={x:Math.random()*W*.8+W*.1,y:Math.random()*H*.3,vx:-(40+Math.random()*40),vy:30+Math.random()*20,t:0};
+    if(!met&&Math.random()<.008&&(window.__bootMeteor&&__bootMeteor(),1))met={x:Math.random()*W*.8+W*.1,y:Math.random()*H*.3,vx:-(40+Math.random()*40),vy:30+Math.random()*20,t:0};
     if(met){met.t+=1/60;for(let i=0;i<14;i++){const q=i/14;g.fillStyle=`rgba(190,240,190,${(1-q)*(1-met.t/1.2)})`;g.fillRect((met.x-met.vx*q*.12)|0,(met.y-met.vy*q*.12)|0,1,1)}met.x+=met.vx/60;met.y+=met.vy/60;if(met.t>1.2)met=null}}
   requestAnimationFrame(f)})();
+
+/* the loading screen's sound: a night on the desert. Wind rising and falling, a low open drone, crickets, now and then a
+   slow note on a guitar's open strings, and a hiss and a faint bell when a meteor crosses. It begins at once where the
+   browser allows; where it waits for a gesture, a small "Sound" button starts it without skipping anything. It carries
+   through the opening and the title card, and fades when play begins */
+(function(){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;let c=null,M=null,on=false,dead=false;
+  const btn=document.createElement('button');btn.id='bootSnd';btn.type='button';btn.textContent='♪ Sound';
+  const st=document.createElement('style');st.textContent='#bootSnd{position:fixed;left:20px;bottom:16px;z-index:61;font:500 11px var(--pix,monospace);letter-spacing:.3em;text-transform:uppercase;color:#a89c84;background:rgba(10,10,16,.6);border:1px solid #4a4436;padding:7px 12px;cursor:pointer;transition:opacity .8s}#bootSnd.gone{opacity:0;pointer-events:none}';
+  document.head.appendChild(st);
+  function noise(sec,brown){const b=c.createBuffer(1,c.sampleRate*sec,c.sampleRate),d=b.getChannelData(0);let l=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;if(brown){l=(l+.02*w)/1.02;d[i]=l*3.2}else d[i]=w}return b}
+  function build(){M=c.createGain();M.gain.value=0;M.connect(c.destination);const t=c.currentTime;M.gain.linearRampToValueAtTime(.9,t+3.5);
+    // wind: brown noise through a band that wanders, its level swelling slowly
+    {const s=c.createBufferSource();s.buffer=noise(6,true);s.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=380;f.Q.value=.7;const g=c.createGain();g.gain.value=.16;
+      const l1=c.createOscillator(),l1g=c.createGain();l1.frequency.value=.07;l1g.gain.value=160;l1.connect(l1g);l1g.connect(f.frequency);
+      const l2=c.createOscillator(),l2g=c.createGain();l2.frequency.value=.045;l2g.gain.value=.09;l2.connect(l2g);l2g.connect(g.gain);
+      s.connect(f);f.connect(g);g.connect(M);s.start();l1.start();l2.start()}
+    // a drone on D and A, two voices a little apart so they beat
+    for(const [fr,v] of [[73.42,.05],[73.9,.035],[110,.03],[146.83,.012]]){const o=c.createOscillator();o.type='triangle';o.frequency.value=fr;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=420;const g=c.createGain();g.gain.value=v;o.connect(lp);lp.connect(g);g.connect(M);o.start()}
+    loop()}
+  // a plucked string: a short burst of noise fed round a tuned delay
+  function pluck(fr,v,at){const t=c.currentTime+at,d=c.createDelay(.05);d.delayTime.value=1/fr;const fb=c.createGain();fb.gain.value=.985;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;
+    const s=c.createBufferSource();s.buffer=noise(.03,false);const ig=c.createGain();ig.gain.value=v;const out=c.createGain();out.gain.setValueAtTime(1,t);out.gain.exponentialRampToValueAtTime(.001,t+5);
+    s.connect(ig);ig.connect(d);d.connect(lp);lp.connect(fb);fb.connect(d);lp.connect(out);out.connect(M);s.start(t);setTimeout(()=>{try{out.disconnect()}catch(e){}},(at+5.5)*1000)}
+  function chirp(at){const t=c.currentTime+at;for(let k=0;k<3;k++){const o=c.createOscillator();o.type='sine';o.frequency.value=4300+Math.random()*300;const g=c.createGain();const s=t+k*.055;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.006,s+.01);g.gain.exponentialRampToValueAtTime(.0001,s+.04);o.connect(g);g.connect(M);o.start(s);o.stop(s+.06)}}
+  const SCALE=[146.83,174.61,196,220,261.63,293.66,349.23,392,440];
+  function loop(){if(dead)return;const r=Math.random();
+    if(r<.55){const i=(Math.random()*SCALE.length)|0;pluck(SCALE[i],.5,0);if(Math.random()<.4)pluck(SCALE[Math.max(0,i-2)],.32,.35)}
+    for(let k=0;k<4;k++)if(Math.random()<.7)chirp(Math.random()*2.6);setTimeout(loop,2200+Math.random()*1800)}
+  window.__bootMeteor=function(){if(!on||dead)return;const t=c.currentTime,s=c.createBufferSource();s.buffer=noise(1.4,false);const f=c.createBiquadFilter();f.type='bandpass';f.Q.value=3;f.frequency.setValueAtTime(5200,t);f.frequency.exponentialRampToValueAtTime(900,t+1.2);
+    const g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.15);g.gain.exponentialRampToValueAtTime(.0001,t+1.3);s.connect(f);f.connect(g);g.connect(M);s.start(t);s.stop(t+1.4);
+    const o=c.createOscillator();o.type='sine';o.frequency.value=1318.5;const og=c.createGain();og.gain.setValueAtTime(0,t+.2);og.gain.linearRampToValueAtTime(.018,t+.25);og.gain.exponentialRampToValueAtTime(.0001,t+3);o.connect(og);og.connect(M);o.start(t+.2);o.stop(t+3.1)};
+  function start(){if(on||dead)return;try{if(!c)c=new A();if(c.state==='suspended')c.resume();}catch(e){return}if(c.state!=='running'){return}on=true;build();btn.classList.add('gone')}
+  function tryStart(){if(on||dead)return;try{if(!c)c=new A()}catch(e){return}c.resume().then(()=>{if(c.state==='running')start()}).catch(()=>{})}
+  // where the page may play at once, it does; otherwise the button (which does not skip the opening), or any first gesture
+  tryStart();btn.addEventListener('pointerdown',e=>{e.stopPropagation()});btn.addEventListener('click',e=>{e.stopPropagation();tryStart()});
+  addEventListener('keydown',tryStart,{once:true});addEventListener('pointerdown',tryStart,{once:true});
+  document.body.appendChild(btn);
+  function fade(sec){if(dead)return;dead=true;btn.classList.add('gone');if(on&&M){const t=c.currentTime;M.gain.cancelScheduledValues(t);M.gain.setValueAtTime(M.gain.value,t);M.gain.linearRampToValueAtTime(0,t+sec);setTimeout(()=>{try{c.close()}catch(e){}},sec*1000+300)}}
+  window.__bootSound={fade,get on(){return on}};
+  // fade when the title card is up, when play begins, or when the game's own sound is switched off
+  const iv=setInterval(()=>{const m=window.__mer,au=window.__AU;if(au&&au.on===false){fade(.6);clearInterval(iv);return}
+    if(m&&m.S&&m.S.phase==='play'){fade(2.5);clearInterval(iv);return}
+},250)})();
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -813,7 +858,7 @@ function loopGain(k,v,T=.4){const g=REAL.loops[k];if(g&&AU.c)g.gain.setTargetAtT
 // how loud and where a thing is, from the kid's place and the turn of the view
 function earAt(x,z,R=180){const k=S.kid,dx=x-k.x,dz=z-k.z,d=Math.hypot(dx,dz);const v=clamp(1-d/R,0,1);const rx=Math.cos(yawNow),rz=-Math.sin(yawNow);return{v:v*v,pan:d>1?clamp((dx*rx+dz*rz)/Math.max(d,30),-.8,.8):0,d}}
 /* ---------- sound, made in the page ---------- */
-const AU={c:null,m:null,on:true};
+const AU={c:null,m:null,on:true};window.__AU=AU;
 function noiseBuf(c,sec,k){const n=c.sampleRate*sec,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);let lp=0;for(let i=0;i<n;i++){lp=lp*k+(Math.random()*2-1)*(1-k);d[i]=lp*(k>.5?6:1)}return b}
 function layer(c,buf,type,f,q){const s=c.createBufferSource();s.buffer=buf;s.loop=true;const fl=c.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=c.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(AU.m);s.start();return{g,fl}}
 function au(){if(AU.c){if(AU.c.state==='suspended')AU.c.resume();return AU.c}const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;try{AU.c=new A()}catch(e){return null}
@@ -918,9 +963,9 @@ function stepKid(dt,pad){const k=S.kid;let ix=(keys.d||keys.arrowright?1:0)-(key
   const mag=Math.min(1,Math.hypot(ix,iz));const rd=riverD(k.x,k.z),wet=(rd.r&&rd.d<rd.r.w+1)||seaK(k.x,k.z)>.02;
   const running=!S.mounted&&!S.strafe&&(keys.shift||S.run);
   // the horse walks unless pressed; pressed hard it gallops, and a gallop takes its wind: run it out and it will only walk until it has its breath back
-  if(S.stam===undefined)S.stam=1;const wantG=S.mounted&&(keys.shift||S.run)&&!S.horseTired&&S.phase==='play',moving=mag>.05;
+  if(S.stam===undefined)S.stam=1;const wantG=S.mounted&&(keys.shift||S.run)&&!S.horseTired&&!S.horseLame&&S.phase==='play',moving=mag>.05;
   if(wantG&&moving){S.stam=Math.max(0,S.stam-dt/(24*(S.horseMul||1)));if(S.stam<=0){S.horseTired=true;S.run=false;if(S.mounted)say('The horse is blown. It will only walk now until it gets its wind back.');if(typeof SND!=='undefined'&&SND.neigh)SND.neigh(.4)}}
-  else S.stam=Math.min(1,S.stam+dt/(moving?38:16));if(S.horseTired&&S.stam>.45){S.horseTired=false;if(S.mounted)say('The horse has its wind again.')}
+  else S.stam=Math.min(1,S.stam+dt/(moving?38:16));if(S.horseTired&&S.stam>.8){S.horseTired=false;const now=performance.now();if(S.mounted&&!S.horseLame&&now-(S.windSaid||-1e9)>45000){S.windSaid=now;say('The horse has its wind again.')}}
   S.gallop=S.mounted&&wantG&&moving;let sp=(S.mounted?(S.gallop?26:9.5)*(S.horseMul||1):running?19:S.strafe?5.2:9.5)*S.slow*(S.water<=0&&S.showWater?.55:1)*(wet?.5:1);
   if(mag>.05){const fx=-Math.sin(yawNow),fz=-Math.cos(yawNow),rx=Math.cos(yawNow),rz=-Math.sin(yawNow);const mx=rx*ix-fx*iz,mz=rz*ix-fz*iz,ml=Math.hypot(mx,mz)||1;
     const B=S.bounds||{x0:-60,x1:3080,z0:-ZW-10,z1:ZW+10};let nx=clamp(k.x+mx/ml*mag*sp*dt,B.x0,B.x1),nz=clamp(k.z+mz/ml*mag*sp*dt,B.z0,B.z1);
@@ -2075,7 +2120,7 @@ POSTH.push((dt,t)=>{if(!FP.on)return;const p=kidP();const H=HELDM[S.mounted?1:0]
 /* ---------- the ledger in free play: health, food, water, the pistol, what he carries ---------- */
 const bar=(v,c)=>`<span class="fb"><i style="width:${Math.round(clamp(v,0,1)*100)}%;background:${c}"></i></span>`;
 function renderFree(){if(!FP.on)return;drawHot();const h=((S.t%24)+24)%24;const day=Math.floor(S.t/24)+1;
-  tasksEl.innerHTML=`<div class="fst"><span>Health</span>${bar(FP.hp/100,'#c8553a')}</div><div class="fst"><span>Food</span>${bar(FP.food,'#c8a050')}</div><div class="fst"><span>Horse</span>${bar(S.stam===undefined?1:S.stam,S.horseTired?'#7a6a5a':'#b08a5a')}</div>
+  tasksEl.innerHTML=`<div class="fst"><span>Health</span>${bar(FP.hp/100,'#c8553a')}</div><div class="fst"><span>Food</span>${bar(FP.food,'#c8a050')}</div><div class="fst"><span>Horse</span>${bar(S.stam===undefined?1:S.stam,S.horseTired||S.horseLame?'#7a6a5a':'#b08a5a')}</div>
   ${(()=>{const gk=gunHeld(),G=GUNS[gk];return `<div class="fl">${G.name} ${FP.reloadT>0?'loading…':FP[G.load]+'/'+G.cap} · ${FP[G.ammo]} ${G.an}</div>`})()}
   <div class="fl">$${FP.money}${FP.pennies?'.'+String(FP.pennies).padStart(2,'0'):''} · wood ${FP.wood}${FP.pelts?' · pelts '+FP.pelts:''}</div>
   ${jobLine()}<div class="fl dim">Day ${day}${FP.camp?' · camp '+Math.round(Math.hypot(FP.camp.x-S.kid.x,FP.camp.z-S.kid.z))+' yds':''}${FP.camp&&FP.camp.fuel>0?', fire burning':''}</div>`;
@@ -2085,7 +2130,7 @@ function renderFree(){if(!FP.on)return;drawHot();const h=((S.t%24)+24)%24;const 
 /* ---------- the controls on screen, for the pad first: each row is the button, what it does now, and the key ---------- */
 const USEN={pistol:'Shoot',rifle:'Shoot the rifle',shotgun:'Shoot the shotgun',knife:'Cut',canteen:'Drink',torch:'Torch',bedroll:'Camp / sleep',jerky:'Eat jerky',cooked:'Eat meat',raw:'Eat raw meat',wood:'Feed fire',pelt:'Look',whisky:'Drink whiskey'};
 function renderPad(){if(!FP.on)return;const near=Math.hypot(KR.g.position.x-S.kid.x,KR.g.position.z-S.kid.z)<7;const sad=S.mounted?'Get down':near?'Mount':'Whistle horse';
-  const rows=[['use','X','F',FP.held?USEN[FP.held]:'Draw and shoot'],['shoot','RT','F','Shoot'],['item','L','Z C','Change item'],['bag','U','Tab','Bag'],['reload','D','T','Reload'],['saddle','Y','M',sad],['whistle','B','H · V',S.mounted||S.kid.sp<=.3?'Whistle':'Dive and roll'],['steady','LT','G (hold)','Steady aim, walk crouched'],['run','LS','Shift',S.mounted?(S.horseTired?'Horse blown':'Gallop'):'Run'],['map','VW','N','Map'],['turn','LB','Q R','Turn view']];
+  const rows=[['use','X','F',FP.held?USEN[FP.held]:'Draw and shoot'],['shoot','RT','F','Shoot'],['item','L','Z C','Change item'],['bag','U','Tab','Bag'],['reload','D','T','Reload'],['saddle','Y','M',sad],['whistle','B','H · V',S.mounted||S.kid.sp<=.3?'Whistle':'Dive and roll'],['steady','LT','G (hold)','Steady aim, walk crouched'],['run','LS','Shift',S.mounted?(S.horseLame?'Horse lame':S.horseTired?'Horse blown':'Gallop'):'Run'],['map','VW','N','Map'],['turn','LB','Q R','Turn view']];
   const k=PADMODE+'|'+rows.map(r=>r[3]).join('|');if(fpadEl.dataset.k===k)return;fpadEl.dataset.k=k;
   fpadEl.innerHTML=rows.map(([id,g,key,lab])=>`<button data-k="${id}">${PADMODE?GLYPH[g]+(g==='L'?GLYPH.R:g==='LB'?GLYPH.RB:''):`<kbd>${key}</kbd>`}<span>${lab}</span></button>`).join('')}
 /* ---------- saving ---------- */
@@ -2910,7 +2955,7 @@ const nearWater=()=>{const k=S.kid,rd=riverD(k.x,k.z);if(rd.r&&rd.d<rd.r.w+5)ret
 function horseTick(dt){const H=M.horse;if(!FP.on)return;const gal=S.gallop?1:0;H.water=Math.max(0,H.water-dt*(gal?1/260:1/1400)*(1+(isDark()?0:Math.max(0,sunDir(S.t).y))));
   if(H.hp<100)H.hp=Math.min(100,H.hp+dt*(S.mounted&&S.gallop?0:.02));
   let mul=FP.goodHorse?1.2:1;if(H.water<.2)mul*=.82;if(H.hp<45)mul*=.8;S.horseMul=mul;
-  if(H.hp<25&&S.mounted&&!S.horseTired){S.horseTired=true;S.stam=Math.min(S.stam||0,.2)}
+  {const lame=H.hp<25;if(lame&&!S.horseLame)say(`${Hn()} is lame. He will only walk until the hostler sees to him or he mends.`,6000);S.horseLame=lame}
   if(H.water<.2&&!H.warned){H.warned=1;say(`${Hn()} is drying out. Find water for him: a river, a well, a tank in the rocks.`,7000)}if(H.water>.5)H.warned=0;
   // a horse left loose and far away at night may be gone in the morning
   if(!S.mounted&&!FP.hitch&&!H.lost&&isDark()){const d=Math.hypot(KR.g.position.x-S.kid.x,KR.g.position.z-S.kid.z);if(d>140&&Math.random()<dt/90){H.lost=true;KR.g.visible=false;say(`You whistle and nothing comes. Somebody has taken ${hn()} off in the dark.`,9000)}}
@@ -3030,7 +3075,7 @@ function setLife(L,on){if(L.on===on)return;L.on=on;for(const a of [...L.dogs,...
 /* ---------- 9. a tune for each country ---------- */
 const MOTIF={tx:[62,65,67,69,67,65,62,60],coahuila:[57,60,62,64,62,60,57,55],chihuahua:[64,62,59,57,59,62,64,67],sonora:[55,58,60,62,60,58,55,53],calif:[60,64,67,72,67,64,60,59]};
 let motT=20,motI=0,motK=null;function motifTick(dt){if(!AU.c||!FP.on||S.music)return;motT-=dt;if(motT>0)return;const reg=WX.reg||regionAt(S.kid.x);const key=Object.keys(MOTIF)[Math.abs(((reg&&reg.name)||'x').split('').reduce((a,c)=>a*7+c.charCodeAt(0),3))%5];
-  const low=S.horseTired||S.water<.2||M.horse.water<.2;const notes=MOTIF[key];const v=(isDark()?.006:.009)*(low?.45:1);const n=low?3:notes.length;
+  const low=S.horseTired||S.horseLame||S.water<.2||M.horse.water<.2;const notes=MOTIF[key];const v=(isDark()?.006:.009)*(low?.45:1);const n=low?3:notes.length;
   for(let i=0;i<n;i++){const m=notes[(motI+i)%notes.length];tone(440*Math.pow(2,(m-69)/12),low?1.4:.9,v,'triangle',i*(low?1.1:.62));if(i%4===0)tone(440*Math.pow(2,(m-81)/12),1.8,v*.6,'sine',i*.62)}motI+=n;motT=low?rr(40,70):rr(28,55)}
 
 /* ---------- 10. the kid's ledger: what he has seen, each with a small drawing ---------- */
@@ -3069,7 +3114,7 @@ for(const c of CANT){const T=TOWNS.find(t=>t.id===c.id);if(T){const g=new THREE.
 let tk=0;HOOKS.push((dt)=>{if(!FP.on||S.phase!=='play'){postU.uCloud.value=0;return}if(MENU.open||ledOpen)return;horseTick(dt);bountyTick(dt);trailTick();companyTick(dt);cloudTick(dt);lifeTick(dt);motifTick(dt);
   for(const c of CANT)if(c.g)c.g.visible=Math.hypot(c.x-S.kid.x,c.z-S.kid.z)<300;if((tk-=dt)<0){tk=1;seenTick();M.notor=Math.max(0,M.notor-1/(24*60)*S.rate)}});
 {const _sf=startFree;startFree=async function(fresh){if(fresh){M.horse={name:null,water:1,hp:100,lost:false};M.notor=0;M.journal={};saveM()}else loadM();return _sf(fresh)}}
-{const _cf=clearFree;clearFree=function(){for(const id in LIFE)setLife(LIFE[id],false);postU.uCloud.value=0;TRK.forEach(m=>m.visible=false);return _cf()}}
+{const _cf=clearFree;clearFree=function(){S.horseLame=false;for(const id in LIFE)setLife(LIFE[id],false);postU.uCloud.value=0;TRK.forEach(m=>m.visible=false);return _cf()}}
 window.__more={M,openLedger,monte,nameHorse,note};
 return{M,openLedger,closeLedger}})();
 
@@ -3143,7 +3188,7 @@ const SEC=[
 <tr><td>Ramada</td><td>$4</td><td>Shade along the front.</td></tr></table>`],
 ['Weather and the country',`<p>The country is wide. It runs east and west along the trail, and a rider can leave the trail and go far north into broken hills, mesas, and the sierras, or south toward the head of the gulf, where the sea opens below the Colorado. Santa Rita and the homestead lie in the north. The hideouts are scattered far out on either side.</p>
 <p>The country runs through seven regions: Texas, Chihuahua, the alkali flats, the Apachería, the Colorado, El Pinacate, and California. Each has its own ground, plants, and weather, and its own tune on the guitar. The tune goes quiet when the horse is blown or the water is low.</p>
-<p>The weather turns by itself: clear, overcast, wind, drizzle, rain, thunderstorms, fog, snow in the high country, dust storms, dust devils, and dry lightning at night. Tumbleweeds roll before the wind. Cloud shadows cross the ground, and at noon the heat shimmers over the flats. Day turns to night, and the stars come out.</p>`],
+<p>The weather turns by itself: clear, overcast, wind, drizzle, rain, thunderstorms, fog, snow in the high country, dust storms, dust devils, and dry lightning at night. Tumbleweeds roll before the wind. Cloud shadows cross the ground, and at noon the heat shimmers over the flats. Day turns to night, and the stars come out. The ledger at the side shows the hour on a strip of horizon: the sun goes over it from sunrise to dark, and the moon, waxing and waning with the days, goes over it until sunrise.</p>`],
 ['The map',`<p>The map is an old sheet, torn at the edges and foxed with age. It shows the country in sepia, with hills in hachures and the sierras drawn as rows of peaks. The sea is engraved in water lines, and a compass rose and a scale of leagues sit in the sea. The border carries degrees of longitude and latitude, and a cartouche holds the title. Over it are drawn the towns, the trail, the rivers, his camp, his place, his work, and an arrow for the kid himself. Move the pointer and set a marker anywhere. Markers show on the small map in the corner, whose border is a compass.</p>`],
 ['The kid’s ledger',`<p>The kid keeps a ledger of what he has seen, twenty-one things in all: the plants and animals of the country, the river, the mission, the volcano, the alkali, the malpais, the sea, and the towns. Each is set down with a small ink sketch and the day he saw it. Open it with J, or from the pause menu.</p>`]];
 const el=document.createElement('div');el.id='about';el.hidden=true;document.body.appendChild(el);
@@ -3191,6 +3236,32 @@ function addBtn(){const f=tc.querySelector('button[data-go="free"]');if(!f||tc.q
 new MutationObserver(addBtn).observe(tc,{childList:true,subtree:true});addBtn();
 window.__about={show,hide,go,isOpen:()=>open};
 return{show,hide}})();
+
+/* ---------- the hour in the ledger: a straight horizon, the sun going over it from sunrise to dark, then the moon going
+   over it from dark to sunrise. The sky behind changes with the hour, and stars come out at night ---------- */
+(()=>{const cv=document.getElementById('tod');if(!cv)return;const g=cv.getContext('2d');const RISE=5,SET=19;let acc=1;
+  const lerpC=(a,b,k)=>a.map((v,i)=>Math.round(v+(b[i]-v)*k));
+  const SKY=[[0,[14,16,34]],[4.3,[16,18,40]],[5,[150,96,80]],[6.2,[150,170,186]],[12,[164,190,206]],[17.6,[176,170,160]],[19,[160,80,56]],[19.8,[26,24,48]],[24,[14,16,34]]];
+  const skyAt=h=>{for(let i=1;i<SKY.length;i++)if(h<=SKY[i][0]){const [h0,c0]=SKY[i-1],[h1,c1]=SKY[i];return lerpC(c0,c1,(h-h0)/(h1-h0))}return SKY[0][1]};
+  const STARS=[];for(let i=0;i<26;i++)STARS.push([Math.random(),Math.random()*.8,Math.random()]);
+  function draw(){const W=cv.width,H=cv.height,hz=Math.round(H*.74),h=((S.t%24)+24)%24;const day=h>=RISE&&h<SET;
+    // the sky, darker overhead
+    const c=skyAt(h),top=lerpC(c,[6,6,16],.35),gr=g.createLinearGradient(0,0,0,hz);gr.addColorStop(0,`rgb(${top})`);gr.addColorStop(1,`rgb(${c})`);g.fillStyle=gr;g.fillRect(0,0,W,hz);
+    const night=clamp(1-(c[0]+c[1]+c[2])/300,0,1);if(night>.2)for(const [x,y,b] of STARS){g.fillStyle=`rgba(240,232,214,${(night-.2)*b*(.6+.4*Math.sin(performance.now()/500+b*9))})`;g.fillRect((x*W)|0,(y*hz)|0,2,2)}
+    // the body on its arc: the sun by day, the moon by night, each from the left end of the horizon to the right
+    const k=day?(h-RISE)/(SET-RISE):((h-SET+24)%24)/(24-(SET-RISE)),x=8+k*(W-16),y=hz-Math.sin(k*Math.PI)*(hz-10)+2;
+    g.save();g.beginPath();g.rect(0,0,W,hz);g.clip();
+    if(day){const r=7;const gl=g.createRadialGradient(x,y,1,x,y,r*3);gl.addColorStop(0,'rgba(255,230,160,.55)');gl.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=gl;g.beginPath();g.arc(x,y,r*3,0,6.29);g.fill();
+      g.fillStyle=k<.1||k>.9?'#f0a050':'#ffe9a8';g.beginPath();g.arc(x,y,r,0,6.29);g.fill()}
+    else{const r=6;const ph=((Math.floor(S.t/24)%29)+29)%29/29;// the moon's phase goes round with the days
+      const gl=g.createRadialGradient(x,y,1,x,y,r*2.6);gl.addColorStop(0,'rgba(220,226,240,.35)');gl.addColorStop(1,'rgba(220,226,240,0)');g.fillStyle=gl;g.beginPath();g.arc(x,y,r*2.6,0,6.29);g.fill();
+      g.fillStyle='#e8e4d6';g.beginPath();g.arc(x,y,r,0,6.29);g.fill();
+      const off=Math.max(r*.75,4*r*Math.min(ph,1-ph));if(off<2*r-.5){g.fillStyle=`rgb(${c})`;g.beginPath();g.arc(x+(ph<.5?-off:off),y,r*1.02,0,6.29);g.fill()}}
+    g.restore();
+    // the ground below the line, and the line itself
+    g.fillStyle=day?'#5a4634':'#1e1a18';g.fillRect(0,hz,W,H-hz);g.fillStyle=day?'#2a1e16':'#0c0a0a';g.fillRect(0,hz,W,2);
+    g.strokeStyle='rgba(236,228,204,.25)';g.lineWidth=1;g.strokeRect(.5,.5,W-1,H-1)}
+  HOOKS.push(dt=>{acc+=dt;if(acc<.12)return;acc=0;if(cv.offsetParent!==null)draw()});draw()})();
 
 
 requestAnimationFrame(frame);
